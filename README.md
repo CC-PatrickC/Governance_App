@@ -1,4 +1,1 @@
-Goverenance App
-
-To-Do List
-TBD
+Patrick's Goverenance App for CC ITS
