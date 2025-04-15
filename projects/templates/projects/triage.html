@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Project Triage</h2>
+        <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Projects
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Project Name</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Department</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>{{ project.formatted_id }}</td>
+                    <td>{{ project.title }}</td>
+                    <td>{{ project.description|truncatewords:20 }}</td>
+                    <td>
+                        <span class="badge bg-info">
+                            {{ project.get_project_type_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if project.priority == 'Top' %}bg-dark-red
+                                         {% elif project.priority == 'High' %}bg-danger
+                                         {% elif project.priority == 'Normal' %}bg-warning
+                                         {% else %}bg-success{% endif %}">
+                            {{ project.priority }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if project.status == 'pending' %}bg-warning
+                                         {% elif project.status == 'approved' %}bg-success
+                                         {% elif project.status == 'rejected' %}bg-danger
+                                         {% elif project.status == 'in_progress' %}bg-info
+                                         {% else %}bg-secondary{% endif %}">
+                            {{ project.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ project.department|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'projects:project_update' project.id %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No projects found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .bg-dark-red {
+        background-color: #8B0000;
+        color: white;
+    }
+</style>
+{% endblock %} 
