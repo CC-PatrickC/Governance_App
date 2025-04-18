@@ -35,7 +35,18 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
+                        <label for="project_type" class="form-label">Project Type</label>
+                        <select class="form-select" id="project_type" name="project_type" required>
+                            {% for value, label in project.PROJECT_TYPE_CHOICES %}
+                            <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
                         <label for="priority" class="form-label">Priority</label>
                         <select class="form-select" id="priority" name="priority" required>
                             <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
@@ -45,7 +56,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select" id="status" name="status" required>
                             <option value="pending" {% if project.status == 'pending' %}selected{% endif %}>Pending</option>
@@ -55,7 +66,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="department" class="form-label">Department</label>
                         <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
                     </div>

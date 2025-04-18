@@ -87,6 +87,7 @@ def project_update(request, pk):
         # Update project fields
         project.title = request.POST.get('title')
         project.description = request.POST.get('description')
+        project.project_type = request.POST.get('project_type')
         project.priority = request.POST.get('priority')
         project.status = request.POST.get('status')
         project.department = request.POST.get('department')
@@ -100,6 +101,22 @@ def project_update(request, pk):
             messages.error(request, f'Error updating project: {str(e)}')
     
     return render(request, 'projects/project_edit.html', {'project': project})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_update_type(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        project_type = request.POST.get('project_type')
+        if project_type in dict(Project.PROJECT_TYPE_CHOICES):
+            project.project_type = project_type
+            project.save()
+            messages.success(request, 'Project type updated successfully!')
+        else:
+            messages.error(request, 'Invalid project type selected.')
+    
+    return redirect('projects:project_detail', pk=pk)
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
