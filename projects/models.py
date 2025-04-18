@@ -18,6 +18,12 @@ class Project(models.Model):
         ('Top', 'Top'),
     ]
 
+    FINAL_PRIORITY_CHOICES = [
+        (1, 'Low'),
+        (2, 'Medium'),
+        (3, 'High'),
+    ]
+
     PROJECT_TYPE_CHOICES = [
         ('not_yet_decided', 'Not Yet Decided'),
         ('process_improvement', 'Process Improvement'),
@@ -42,8 +48,8 @@ class Project(models.Model):
     triage_notes = models.TextField(blank=True, null=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Normal')
     scoring_notes = models.TextField(blank=True, null=True, help_text="Notes related to project scoring or evaluation")
-    final_priority = models.IntegerField(null=True, blank=True, help_text="Final priority score as a number")
-    final_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Final score as a decimal number")
+    final_priority = models.IntegerField(choices=FINAL_PRIORITY_CHOICES, null=True, blank=True, help_text="Final priority score (1=Low, 2=Medium, 3=High)")
+    final_score = models.IntegerField(null=True, blank=True, help_text="Final score (0-100)")
 
     def __str__(self):
         return self.title

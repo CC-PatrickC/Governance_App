@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Score Project - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Score Project: {{ project.title }}</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Project Details</h5>
+            <p><strong>Description:</strong> {{ project.description }}</p>
+            <p><strong>Submitted By:</strong> {{ project.submitted_by }}</p>
+            <p><strong>Submission Date:</strong> {{ project.submission_date }}</p>
+        </div>
+    </div>
+
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+        
+        <div class="form-group mb-3">
+            <label for="final_priority">Final Priority</label>
+            <select name="final_priority" id="final_priority" class="form-control" required>
+                <option value="">Select Priority</option>
+                <option value="High" {% if project.final_priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Medium" {% if project.final_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Low" {% if project.final_priority == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="final_score">Final Score (0-100)</label>
+            <input type="number" name="final_score" id="final_score" class="form-control" 
+                   min="0" max="100" value="{{ project.final_score }}" required>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="scoring_notes">Scoring Notes</label>
+            <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
+                      rows="4">{{ project.scoring_notes }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Scoring</button>
+        <a href="{% url 'projects:project_detail' project.pk %}" class="btn btn-secondary">Back to Project</a>
+    </form>
+</div>
+{% endblock %} 

@@ -137,3 +137,28 @@ def project_delete(request, pk):
             return redirect('projects:project_detail', pk=pk)
     
     return redirect('projects:project_detail', pk=pk)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_scoring_list(request):
+    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
+    return render(request, 'projects/project_scoring_list.html', {'projects': projects})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_scoring(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        project.final_priority = request.POST.get('final_priority')
+        project.final_score = request.POST.get('final_score')
+        project.scoring_notes = request.POST.get('scoring_notes')
+        
+        try:
+            project.save()
+            messages.success(request, 'Project scoring updated successfully!')
+            return redirect('projects:project_scoring', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error updating project scoring: {str(e)}')
+    
+    return render(request, 'projects/project_scoring.html', {'project': project})

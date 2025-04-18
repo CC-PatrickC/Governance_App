@@ -68,6 +68,23 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'projects:project_triage' %}">Triage</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'projects:project_scoring_list' %}">Scoring</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="nav-link">Welcome, {{ user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                    </li>
                     {% endif %}
                 </ul>
             </div>
