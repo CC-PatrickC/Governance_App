@@ -50,6 +50,7 @@ class Project(models.Model):
     scoring_notes = models.TextField(blank=True, null=True, help_text="Notes related to project scoring or evaluation")
     final_priority = models.IntegerField(choices=FINAL_PRIORITY_CHOICES, null=True, blank=True, help_text="Final priority score (1=Low, 2=Medium, 3=High)")
     final_score = models.IntegerField(null=True, blank=True, help_text="Final score (0-100)")
+    strategic_alignment = models.IntegerField(null=True, blank=True, help_text="Strategic alignment score (1-5)")
 
     def __str__(self):
         return self.title

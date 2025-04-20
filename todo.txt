@@ -1,0 +1,69 @@
+# Project Intake System - Todo List
+
+## Completed Tasks
+- [x] Set up Django project structure
+- [x] Create Project model with necessary fields
+- [x] Implement project list view
+- [x] Implement project detail view
+- [x] Implement project creation form
+- [x] Add file upload functionality
+- [x] Implement project triage functionality
+- [x] Add authentication and authorization
+- [x] Implement project scoring functionality
+- [x] Add navigation menu with links to different sections
+- [x] Fix login redirect issues
+
+## Pending Tasks
+- [ ] Add filtering and sorting to project lists
+- [ ] Implement search functionality
+- [ ] Add pagination to project lists
+- [ ] Create dashboard with project statistics
+- [ ] Add email notifications for project status changes
+- [ ] Implement user profile management
+- [ ] Add export functionality (CSV, PDF)
+- [ ] Improve mobile responsiveness
+- [ ] Add unit tests and integration tests
+- [ ] Set up CI/CD pipeline
+- [ ] Optimize database queries
+- [ ] Add data visualization for project metrics
+- [ ] Implement project archiving functionality
+- [ ] Add audit logging for all actions
+- [ ] Create documentation for users and administrators
+
+### Scoring Page
+- [ ] Add validation for scoring values (ensure they're within acceptable ranges)
+- [ ] Implement scoring history to track changes over time
+- [ ] Add ability to compare scores between different projects
+- [ ] Create scoring templates for different project types
+- [ ] Add comments/feedback section for each scoring criterion
+- [ ] Implement scoring guidelines display
+- [ ] Add export functionality for scoring reports
+- [ ] Create scoring dashboard with statistics and trends
+- [ ] Add more project details in the details section
+- [ ] Implement weighted scoring questions
+- [ ] Create a popup dialog for score changes that requires a reason
+- [ ] Add score change history with reasons for each change
+
+### Final Scoring Page
+- [ ] Create a dedicated final scoring review page
+- [ ] Add summary of all previous scores and changes
+- [ ] Implement final approval workflow with multiple approvers
+- [ ] Add ability to request additional information before final approval
+- [ ] Create a scoring summary report for final review
+- [ ] Add comparison with similar projects for reference
+- [ ] Implement final score justification requirements
+- [ ] Add budget impact assessment section
+- [ ] Create timeline estimation based on final score
+- [ ] Add resource allocation recommendations
+- [ ] Implement final decision tracking (approved, rejected, deferred)
+- [ ] Add notification system for final scoring decisions
+
+## Future Enhancements
+- [ ] Add API endpoints for integration with other systems
+- [ ] Implement real-time updates using WebSockets
+- [ ] Add support for project templates
+- [ ] Implement project dependencies tracking
+- [ ] Add support for project budgets and resource allocation
+- [ ] Create a mobile app version
+- [ ] Implement advanced reporting features
+- [ ] Add support for multiple languages 

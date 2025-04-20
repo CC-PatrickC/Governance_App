@@ -5,44 +5,215 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Score Project: {{ project.title }}</h1>
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Project Details</h5>
-            <p><strong>Description:</strong> {{ project.description }}</p>
-            <p><strong>Submitted By:</strong> {{ project.submitted_by }}</p>
-            <p><strong>Submission Date:</strong> {{ project.submission_date }}</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ project.title }}</h2>
+        <div>
+            <a href="{% url 'projects:project_scoring_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Scoring
+            </a>
         </div>
     </div>
 
-    <form method="post" class="mb-4">
-        {% csrf_token %}
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Details</h5>
+                    <span class="badge {% if project.status == 'approved' %}bg-success
+                                     {% elif project.status == 'rejected' %}bg-danger
+                                     {% elif project.status == 'in_progress' %}bg-primary
+                                     {% elif project.status == 'completed' %}bg-secondary
+                                     {% else %}bg-warning{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Description</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    
+                    <h5 class="card-title mt-4">Project Details</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                            <p><strong>Project Type:</strong> 
+                                <span class="badge bg-info">
+                                    {{ project.get_project_type_display }}
+                                </span>
+                            </p>
+                            <p><strong>Priority:</strong> 
+                                <span class="badge {% if project.priority == 'Top' %}bg-dark-red
+                                                 {% elif project.priority == 'High' %}bg-danger
+                                                 {% elif project.priority == 'Normal' %}bg-warning
+                                                 {% else %}bg-success{% endif %}">
+                                    {{ project.priority }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
+                            <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                            <p><strong>Notes:</strong> {{ project.notes|default:"No notes" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if project.files.all %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Attached Files</h5>
+                    <div class="list-group">
+                        {% for file in project.files.all %}
+                        <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                            <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Scoring Form</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Criteria</th>
+                                        <th>Weight</th>
+                                        <th>Score (1-5)</th>
+                                        <th>Weighted Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Strategic Alignment</td>
+                                        <td>20%</td>
+                                        <td>
+                                            <input type="number" name="strategic_alignment" id="strategic_alignment" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.strategic_alignment|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="strategic_alignment_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Final Score:</strong></td>
+                                        <td><span id="final_score_display" class="weighted-score">0</span></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="scoring_notes">Scoring Notes</label>
+                            <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
+                                    rows="4">{{ project.scoring_notes }}</textarea>
+                        </div>
+
+                        <input type="hidden" name="final_score" id="final_score" value="0">
+                        <button type="submit" class="btn btn-primary">Save Scoring</button>
+                    </form>
+                </div>
+            </div>
+        </div>
         
-        <div class="form-group mb-3">
-            <label for="final_priority">Final Priority</label>
-            <select name="final_priority" id="final_priority" class="form-control" required>
-                <option value="">Select Priority</option>
-                <option value="High" {% if project.final_priority == 'High' %}selected{% endif %}>High</option>
-                <option value="Medium" {% if project.final_priority == 'Medium' %}selected{% endif %}>Medium</option>
-                <option value="Low" {% if project.final_priority == 'Low' %}selected{% endif %}>Low</option>
-            </select>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Contact Person:</strong> 
+                        {% if project.submitted_by.first_name and project.submitted_by.last_name %}
+                            {{ project.submitted_by.get_full_name }}
+                        {% else %}
+                            {{ project.submitted_by.username }}
+                        {% endif %}
+                    </p>
+                    <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                    <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                    <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                </div>
+            </div>
         </div>
-
-        <div class="form-group mb-3">
-            <label for="final_score">Final Score (0-100)</label>
-            <input type="number" name="final_score" id="final_score" class="form-control" 
-                   min="0" max="100" value="{{ project.final_score }}" required>
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="scoring_notes">Scoring Notes</label>
-            <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                      rows="4">{{ project.scoring_notes }}</textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Save Scoring</button>
-        <a href="{% url 'projects:project_detail' project.pk %}" class="btn btn-secondary">Back to Project</a>
-    </form>
+    </div>
 </div>
+
+<style>
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .bg-dark-red {
+        background-color: #8B0000;
+        color: white;
+    }
+
+    .weighted-score {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .score-input {
+        width: 80px;
+    }
+
+    /* Remove number input arrows */
+    .score-input::-webkit-outer-spin-button,
+    .score-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .score-input {
+        -moz-appearance: textfield;
+    }
+</style>
+
+<script>
+    function calculateWeightedScore(input) {
+        const score = parseFloat(input.value) || 1;
+        const weight = 0.2; // 20% weight
+        const weightedScore = score * weight;
+        
+        // Update the weighted score display
+        const weightedScoreElement = document.getElementById(input.id + '_weighted');
+        weightedScoreElement.textContent = weightedScore.toFixed(1);
+        
+        // Update the final score
+        const finalScore = weightedScore;
+        document.getElementById('final_score_display').textContent = finalScore.toFixed(1);
+        document.getElementById('final_score').value = Math.round(finalScore);
+    }
+
+    // Initialize scores on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const strategicAlignmentInput = document.getElementById('strategic_alignment');
+        if (strategicAlignmentInput) {
+            calculateWeightedScore(strategicAlignmentInput);
+        }
+    });
+</script>
 {% endblock %} 
