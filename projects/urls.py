@@ -14,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/update-type/', views.project_update_type, name='project_update_type'),
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),
     path('<int:pk>/score/', views.project_scoring, name='project_scoring'),
+    path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
 ] 

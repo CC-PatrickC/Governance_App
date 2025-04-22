@@ -51,6 +51,12 @@ class Project(models.Model):
     final_priority = models.IntegerField(choices=FINAL_PRIORITY_CHOICES, null=True, blank=True, help_text="Final priority score (1=Low, 2=Medium, 3=High)")
     final_score = models.IntegerField(null=True, blank=True, help_text="Final score (0-100)")
     strategic_alignment = models.IntegerField(null=True, blank=True, help_text="Strategic alignment score (1-5)")
+    cost_benefit = models.IntegerField(null=True, blank=True, help_text="Cost benefit score (1-5)")
+    user_impact = models.IntegerField(null=True, blank=True, help_text="User impact and adoption score (1-5)")
+    ease_of_implementation = models.IntegerField(null=True, blank=True, help_text="Ease of implementation score (1-5)")
+    vendor_reputation_support = models.IntegerField(null=True, blank=True, help_text="Vendor reputation and support score (1-5)")
+    security_compliance = models.IntegerField(null=True, blank=True, help_text="Security and compliance score (1-5)")
+    student_centered = models.IntegerField(null=True, blank=True, help_text="Student-centered score (1-5)")
 
     def __str__(self):
         return self.title

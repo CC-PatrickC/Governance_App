@@ -62,16 +62,12 @@
                         <div class="col-md-6">
                             <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                            <p><strong>Notes:</strong> {{ project.notes|default:"No notes" }}</p>
+                            <p><strong>Triage Notes:</strong> {{ project.triage_notes|default:"No triage notes" }}</p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {% if project.files.all %}
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Attached Files</h5>
+                    {% if project.files.all %}
+                    <h5 class="card-title mt-4">Attachments</h5>
                     <div class="list-group">
                         {% for file in project.files.all %}
                         <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
@@ -79,10 +75,10 @@
                         </a>
                         {% endfor %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
-            
+
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Scoring Form</h5>
@@ -113,6 +109,84 @@
                                         </td>
                                         <td>
                                             <span id="strategic_alignment_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cost Benefit</td>
+                                        <td>15%</td>
+                                        <td>
+                                            <input type="number" name="cost_benefit" id="cost_benefit" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.cost_benefit|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="cost_benefit_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>User Impact and Adoption</td>
+                                        <td>20%</td>
+                                        <td>
+                                            <input type="number" name="user_impact" id="user_impact" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.user_impact|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="user_impact_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ease of Implementation</td>
+                                        <td>15%</td>
+                                        <td>
+                                            <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.ease_of_implementation|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="ease_of_implementation_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Vendor Reputation and Support</td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.vendor_reputation_support|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="vendor_reputation_support_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Security and Compliance</td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="security_compliance" id="security_compliance" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.security_compliance|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="security_compliance_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Student-Centered</td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="student_centered" id="student_centered" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ project.student_centered|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="student_centered_weighted" class="weighted-score">0</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -195,24 +269,71 @@
 <script>
     function calculateWeightedScore(input) {
         const score = parseFloat(input.value) || 1;
-        const weight = 0.2; // 20% weight
+        let weight = 0.2; // Default weight for strategic alignment and user impact
+        
+        // Set weight based on the input field
+        if (input.id === 'cost_benefit' || input.id === 'ease_of_implementation') {
+            weight = 0.15; // 15% weight for cost benefit and ease of implementation
+        } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || input.id === 'student_centered') {
+            weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered
+        }
+        
         const weightedScore = score * weight;
         
-        // Update the weighted score display
+        // Update the weighted score display with 2 decimal places
         const weightedScoreElement = document.getElementById(input.id + '_weighted');
-        weightedScoreElement.textContent = weightedScore.toFixed(1);
+        weightedScoreElement.textContent = weightedScore.toFixed(2);
         
-        // Update the final score
-        const finalScore = weightedScore;
-        document.getElementById('final_score_display').textContent = finalScore.toFixed(1);
-        document.getElementById('final_score').value = Math.round(finalScore);
+        // Calculate and update the final score
+        const strategicAlignmentScore = parseFloat(document.getElementById('strategic_alignment').value) || 1;
+        const costBenefitScore = parseFloat(document.getElementById('cost_benefit').value) || 1;
+        const userImpactScore = parseFloat(document.getElementById('user_impact').value) || 1;
+        const easeOfImplementationScore = parseFloat(document.getElementById('ease_of_implementation').value) || 1;
+        const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 1;
+        const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 1;
+        const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 1;
+        
+        const finalScore = (strategicAlignmentScore * 0.2) + 
+                          (costBenefitScore * 0.15) + 
+                          (userImpactScore * 0.2) + 
+                          (easeOfImplementationScore * 0.15) +
+                          (vendorReputationScore * 0.10) +
+                          (securityComplianceScore * 0.10) +
+                          (studentCenteredScore * 0.10);
+        document.getElementById('final_score_display').textContent = finalScore.toFixed(2);
+        document.getElementById('final_score').value = Math.round(finalScore * 100); // Convert to 0-100 scale
     }
 
     // Initialize scores on page load
     document.addEventListener('DOMContentLoaded', function() {
         const strategicAlignmentInput = document.getElementById('strategic_alignment');
+        const costBenefitInput = document.getElementById('cost_benefit');
+        const userImpactInput = document.getElementById('user_impact');
+        const easeOfImplementationInput = document.getElementById('ease_of_implementation');
+        const vendorReputationInput = document.getElementById('vendor_reputation_support');
+        const securityComplianceInput = document.getElementById('security_compliance');
+        const studentCenteredInput = document.getElementById('student_centered');
+        
         if (strategicAlignmentInput) {
             calculateWeightedScore(strategicAlignmentInput);
+        }
+        if (costBenefitInput) {
+            calculateWeightedScore(costBenefitInput);
+        }
+        if (userImpactInput) {
+            calculateWeightedScore(userImpactInput);
+        }
+        if (easeOfImplementationInput) {
+            calculateWeightedScore(easeOfImplementationInput);
+        }
+        if (vendorReputationInput) {
+            calculateWeightedScore(vendorReputationInput);
+        }
+        if (securityComplianceInput) {
+            calculateWeightedScore(securityComplianceInput);
+        }
+        if (studentCenteredInput) {
+            calculateWeightedScore(studentCenteredInput);
         }
     });
 </script>
