@@ -95,6 +95,18 @@ def project_update(request, pk):
         
         try:
             project.save()
+            
+            # Handle file uploads
+            files = request.FILES.getlist('files')
+            if files:
+                if len(files) > 5:
+                    messages.error(request, 'You can upload a maximum of 5 files.')
+                    return render(request, 'projects/project_edit.html', {'project': project})
+                
+                for file in files:
+                    ProjectFile.objects.create(project=project, file=file)
+                messages.success(request, 'Files uploaded successfully!')
+            
             messages.success(request, 'Project updated successfully!')
             return redirect('projects:project_triage')
         except Exception as e:
@@ -137,3 +149,50 @@ def project_delete(request, pk):
             return redirect('projects:project_detail', pk=pk)
     
     return redirect('projects:project_detail', pk=pk)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def delete_attachment(request, project_pk, file_pk):
+    project = get_object_or_404(Project, pk=project_pk)
+    file = get_object_or_404(ProjectFile, pk=file_pk, project=project)
+    
+    if request.method == 'POST':
+        try:
+            file.delete()
+            messages.success(request, 'Attachment deleted successfully.')
+        except Exception as e:
+            messages.error(request, f'Error deleting attachment: {str(e)}')
+    
+    return redirect('projects:project_update', pk=project_pk)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_scoring_list(request):
+    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
+    return render(request, 'projects/project_scoring_list.html', {'projects': projects})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_scoring(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        project.final_priority = request.POST.get('final_priority')
+        project.final_score = request.POST.get('final_score')
+        project.scoring_notes = request.POST.get('scoring_notes')
+        project.strategic_alignment = request.POST.get('strategic_alignment')
+        project.cost_benefit = request.POST.get('cost_benefit')
+        project.user_impact = request.POST.get('user_impact')
+        project.ease_of_implementation = request.POST.get('ease_of_implementation')
+        project.vendor_reputation_support = request.POST.get('vendor_reputation_support')
+        project.security_compliance = request.POST.get('security_compliance')
+        project.student_centered = request.POST.get('student_centered')
+        
+        try:
+            project.save()
+            messages.success(request, 'Project scoring updated successfully!')
+            return redirect('projects:project_scoring', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error updating project scoring: {str(e)}')
+    
+    return render(request, 'projects/project_scoring.html', {'project': project})
