@@ -187,6 +187,7 @@ def project_scoring(request, pk):
         project.vendor_reputation_support = request.POST.get('vendor_reputation_support')
         project.security_compliance = request.POST.get('security_compliance')
         project.student_centered = request.POST.get('student_centered')
+        project.college_centered = request.POST.get('college_centered')
         
         try:
             project.save()
@@ -196,3 +197,51 @@ def project_scoring(request, pk):
             messages.error(request, f'Error updating project scoring: {str(e)}')
     
     return render(request, 'projects/project_scoring.html', {'project': project})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_final_scoring_list(request):
+    projects = Project.objects.all().select_related('submitted_by').order_by('-final_priority', '-submission_date')
+    return render(request, 'projects/project_final_scoring_list.html', {'projects': projects})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_final_scoring(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        project.final_priority = request.POST.get('final_priority')
+        project.final_score = request.POST.get('final_score')
+        project.scoring_notes = request.POST.get('scoring_notes')
+        
+        try:
+            project.save()
+            messages.success(request, 'Project final scoring updated successfully!')
+            return redirect('projects:project_final_scoring_list')
+        except Exception as e:
+            messages.error(request, f'Error updating project final scoring: {str(e)}')
+    
+    return render(request, 'projects/project_final_scoring.html', {'project': project})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def update_final_priority(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    try:
+        data = json.loads(request.body)
+        final_priority = data.get('final_priority')
+        
+        if final_priority is not None:
+            # Validate the priority value
+            if int(final_priority) not in [1, 2, 3]:
+                return JsonResponse({'success': False, 'error': 'Invalid priority value'})
+            
+            project.final_priority = final_priority
+            project.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': 'No priority value provided'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

@@ -57,6 +57,7 @@ class Project(models.Model):
     vendor_reputation_support = models.IntegerField(null=True, blank=True, help_text="Vendor reputation and support score (1-5)")
     security_compliance = models.IntegerField(null=True, blank=True, help_text="Security and compliance score (1-5)")
     student_centered = models.IntegerField(null=True, blank=True, help_text="Student-centered score (1-5)")
+    college_centered = models.IntegerField(null=True, blank=True, help_text="College-centered score (1-5)")
 
     def __str__(self):
         return self.title

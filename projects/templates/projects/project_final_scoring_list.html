@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Final Project Scoring{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Final Project Scoring</h2>
+        <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Projects
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Project Name</th>
+                    <th>Description</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Department</th>
+                    <th>Final Score</th>
+                    <th>Final Priority</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>{{ project.formatted_id }}</td>
+                    <td>{{ project.title }}</td>
+                    <td>{{ project.description|truncatechars:100 }}</td>
+                    <td>
+                        <span class="priority-badge priority-{{ project.priority|lower }}">
+                            {{ project.priority }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ project.status|lower }}">
+                            {{ project.status|title }}
+                        </span>
+                    </td>
+                    <td>{{ project.department|default:"-" }}</td>
+                    <td>
+                        {% if project.final_score %}
+                            <span class="badge {% if project.final_score >= 80 %}bg-success
+                                             {% elif project.final_score >= 60 %}bg-warning
+                                             {% else %}bg-danger{% endif %}">
+                                {{ project.final_score }}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if project.final_priority %}
+                            <form class="final-priority-form" data-project-id="{{ project.pk }}">
+                                <input type="number" class="form-control form-control-sm final-priority-input" 
+                                       min="1" max="3" value="{{ project.final_priority }}" 
+                                       data-project-id="{{ project.pk }}"
+                                       style="width: 60px; display: inline-block;">
+                                <span class="badge {% if project.final_priority == 3 %}bg-success
+                                                 {% elif project.final_priority == 2 %}bg-warning
+                                                 {% else %}bg-danger{% endif %} ms-2">
+                                    {{ project.get_final_priority_display }}
+                                </span>
+                            </form>
+                        {% else %}
+                            <form class="final-priority-form" data-project-id="{{ project.pk }}">
+                                <input type="number" class="form-control form-control-sm final-priority-input" 
+                                       min="1" max="3" placeholder="1-3" 
+                                       data-project-id="{{ project.pk }}"
+                                       style="width: 60px; display: inline-block;">
+                            </form>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'projects:project_final_scoring' project.pk %}" class="btn btn-primary btn-sm">
+                            Final Score
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center">No projects found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .priority-badge, .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        display: inline-block;
+    }
+
+    .priority-low {
+        background-color: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .priority-normal {
+        background-color: #bee3f8;
+        color: #2b6cb0;
+    }
+
+    .priority-high {
+        background-color: #feb2b2;
+        color: #c53030;
+    }
+
+    .priority-top {
+        background-color: #f56565;
+        color: white;
+    }
+
+    .status-pending {
+        background-color: #f6e05e;
+        color: #744210;
+    }
+
+    .status-approved {
+        background-color: #68d391;
+        color: #1a4731;
+    }
+
+    .status-rejected {
+        background-color: #fc8181;
+        color: #742a2a;
+    }
+
+    .status-in_progress {
+        background-color: #63b3ed;
+        color: #2a4365;
+    }
+
+    .status-completed {
+        background-color: #a0aec0;
+        color: #2d3748;
+    }
+    
+    .final-priority-input {
+        text-align: center;
+    }
+    
+    /* Remove arrows from number input */
+    .final-priority-input::-webkit-outer-spin-button,
+    .final-priority-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .final-priority-input {
+        -moz-appearance: textfield; /* Firefox */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners to all final priority inputs
+        const priorityInputs = document.querySelectorAll('.final-priority-input');
+        
+        priorityInputs.forEach(input => {
+            // Handle blur event (when user leaves the input)
+            input.addEventListener('blur', function() {
+                const projectId = this.getAttribute('data-project-id');
+                const priorityValue = this.value;
+                
+                // Validate input
+                if (priorityValue < 1 || priorityValue > 3) {
+                    alert('Priority must be between 1 and 3');
+                    this.value = '';
+                    return;
+                }
+                
+                // Send AJAX request to update priority
+                fetch(`/projects/${projectId}/update-final-priority/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        final_priority: priorityValue
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the badge next to the input
+                        const form = this.closest('.final-priority-form');
+                        const badge = form.querySelector('.badge');
+                        
+                        if (badge) {
+                            // Update existing badge
+                            badge.textContent = getPriorityLabel(priorityValue);
+                            badge.className = `badge ${getPriorityClass(priorityValue)} ms-2`;
+                        } else {
+                            // Create new badge if it doesn't exist
+                            const newBadge = document.createElement('span');
+                            newBadge.className = `badge ${getPriorityClass(priorityValue)} ms-2`;
+                            newBadge.textContent = getPriorityLabel(priorityValue);
+                            this.parentNode.appendChild(newBadge);
+                        }
+                        
+                        // Reload the page to update sorting
+                        window.location.reload();
+                    } else {
+                        alert('Error updating priority: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating priority');
+                });
+            });
+        });
+        
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Helper function to get priority label
+        function getPriorityLabel(value) {
+            switch(parseInt(value)) {
+                case 1: return 'Low';
+                case 2: return 'Medium';
+                case 3: return 'High';
+                default: return '';
+            }
+        }
+        
+        // Helper function to get priority class
+        function getPriorityClass(value) {
+            switch(parseInt(value)) {
+                case 1: return 'bg-danger';
+                case 2: return 'bg-warning';
+                case 3: return 'bg-success';
+                default: return 'bg-secondary';
+            }
+        }
+    });
+</script>
+{% endblock %} 
