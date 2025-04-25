@@ -226,6 +226,7 @@ def project_final_scoring(request, pk):
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 @require_POST
+@csrf_exempt
 def update_final_priority(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
@@ -234,11 +235,8 @@ def update_final_priority(request, pk):
         final_priority = data.get('final_priority')
         
         if final_priority is not None:
-            # Validate the priority value
-            if int(final_priority) not in [1, 2, 3]:
-                return JsonResponse({'success': False, 'error': 'Invalid priority value'})
-            
-            project.final_priority = final_priority
+            # Convert to integer and save
+            project.final_priority = int(final_priority)
             project.save()
             return JsonResponse({'success': True})
         else:

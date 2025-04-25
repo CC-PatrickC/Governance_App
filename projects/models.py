@@ -48,7 +48,7 @@ class Project(models.Model):
     triage_notes = models.TextField(blank=True, null=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Normal')
     scoring_notes = models.TextField(blank=True, null=True, help_text="Notes related to project scoring or evaluation")
-    final_priority = models.IntegerField(choices=FINAL_PRIORITY_CHOICES, null=True, blank=True, help_text="Final priority score (1=Low, 2=Medium, 3=High)")
+    final_priority = models.IntegerField(null=True, blank=True, help_text="Project ranking (lower number = higher priority)")
     final_score = models.IntegerField(null=True, blank=True, help_text="Final score (0-100)")
     strategic_alignment = models.IntegerField(null=True, blank=True, help_text="Strategic alignment score (1-5)")
     cost_benefit = models.IntegerField(null=True, blank=True, help_text="Cost benefit score (1-5)")

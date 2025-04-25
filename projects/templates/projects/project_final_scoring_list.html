@@ -66,30 +66,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if project.final_priority %}
-                            <form class="final-priority-form" data-project-id="{{ project.pk }}">
-                                <input type="number" class="form-control form-control-sm final-priority-input" 
-                                       min="1" max="3" value="{{ project.final_priority }}" 
-                                       data-project-id="{{ project.pk }}"
-                                       style="width: 60px; display: inline-block;">
-                                <span class="badge {% if project.final_priority == 3 %}bg-success
-                                                 {% elif project.final_priority == 2 %}bg-warning
-                                                 {% else %}bg-danger{% endif %} ms-2">
-                                    {{ project.get_final_priority_display }}
-                                </span>
-                            </form>
-                        {% else %}
-                            <form class="final-priority-form" data-project-id="{{ project.pk }}">
-                                <input type="number" class="form-control form-control-sm final-priority-input" 
-                                       min="1" max="3" placeholder="1-3" 
-                                       data-project-id="{{ project.pk }}"
-                                       style="width: 60px; display: inline-block;">
-                            </form>
-                        {% endif %}
+                        <input type="number" 
+                               class="form-control form-control-sm final-priority-input" 
+                               value="{{ project.final_priority|default:'' }}"
+                               min="1"
+                               data-project-id="{{ project.id }}"
+                               placeholder="Rank"
+                               style="width: 70px;">
                     </td>
                     <td>
                         <a href="{% url 'projects:project_final_scoring' project.pk %}" class="btn btn-primary btn-sm">
-                            Final Score
+                            Details
                         </a>
                     </td>
                 </tr>
@@ -185,100 +172,122 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners to all final priority inputs
         const priorityInputs = document.querySelectorAll('.final-priority-input');
         
         priorityInputs.forEach(input => {
-            // Handle blur event (when user leaves the input)
-            input.addEventListener('blur', function() {
-                const projectId = this.getAttribute('data-project-id');
-                const priorityValue = this.value;
+            input.addEventListener('change', function() {
+                const projectId = this.dataset.projectId;
+                const newRank = parseInt(this.value) || 0;
                 
-                // Validate input
-                if (priorityValue < 1 || priorityValue > 3) {
-                    alert('Priority must be between 1 and 3');
+                if (newRank <= 0) {
+                    alert('Please enter a valid rank (1 or higher)');
                     this.value = '';
                     return;
                 }
                 
-                // Send AJAX request to update priority
-                fetch(`/projects/${projectId}/update-final-priority/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({
-                        final_priority: priorityValue
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update the badge next to the input
-                        const form = this.closest('.final-priority-form');
-                        const badge = form.querySelector('.badge');
-                        
-                        if (badge) {
-                            // Update existing badge
-                            badge.textContent = getPriorityLabel(priorityValue);
-                            badge.className = `badge ${getPriorityClass(priorityValue)} ms-2`;
-                        } else {
-                            // Create new badge if it doesn't exist
-                            const newBadge = document.createElement('span');
-                            newBadge.className = `badge ${getPriorityClass(priorityValue)} ms-2`;
-                            newBadge.textContent = getPriorityLabel(priorityValue);
-                            this.parentNode.appendChild(newBadge);
+                // Get all projects with their current ranks
+                const projects = Array.from(priorityInputs).map(input => ({
+                    id: input.dataset.projectId,
+                    input: input,
+                    rank: parseInt(input.value) || 0
+                }));
+                
+                // Sort projects by current rank (excluding the one being changed)
+                const sortedProjects = projects
+                    .filter(p => p.id !== projectId)
+                    .sort((a, b) => a.rank - b.rank);
+                
+                // Find the position where the new rank should be inserted
+                let insertIndex = 0;
+                while (insertIndex < sortedProjects.length && sortedProjects[insertIndex].rank < newRank) {
+                    insertIndex++;
+                }
+                
+                // Update ranks for all affected projects
+                const updates = [];
+                
+                // First, update the project being changed
+                updates.push({
+                    id: projectId,
+                    rank: newRank
+                });
+                
+                // Then, update all projects that need to shift down
+                for (let i = insertIndex; i < sortedProjects.length; i++) {
+                    const project = sortedProjects[i];
+                    const newProjectRank = newRank + (i - insertIndex + 1);
+                    updates.push({
+                        id: project.id,
+                        rank: newProjectRank
+                    });
+                }
+                
+                // Send all updates to the server
+                Promise.all(updates.map(update => 
+                    fetch(`/${update.id}/update-final-priority/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            final_priority: update.rank
+                        })
+                    }).then(response => response.json())
+                ))
+                .then(() => {
+                    // Update the UI to reflect the new ranks
+                    updates.forEach(update => {
+                        const input = document.querySelector(`.final-priority-input[data-project-id="${update.id}"]`);
+                        if (input) {
+                            input.value = update.rank;
                         }
-                        
-                        // Reload the page to update sorting
-                        window.location.reload();
-                    } else {
-                        alert('Error updating priority: ' + data.error);
-                    }
+                    });
+                    
+                    // Sort the table
+                    sortTableByRank();
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error updating priority');
+                    alert('Error updating ranks. Please try again.');
                 });
             });
         });
-        
-        // Helper function to get CSRF token
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+
+        // Function to sort table by rank
+        function sortTableByRank() {
+            const tbody = document.querySelector('table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const rankA = parseInt(a.querySelector('.final-priority-input').value) || Infinity;
+                const rankB = parseInt(b.querySelector('.final-priority-input').value) || Infinity;
+                return rankA - rankB;
+            });
+            
+            // Clear and re-append sorted rows
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Initial sort
+        sortTableByRank();
+    });
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
-        
-        // Helper function to get priority label
-        function getPriorityLabel(value) {
-            switch(parseInt(value)) {
-                case 1: return 'Low';
-                case 2: return 'Medium';
-                case 3: return 'High';
-                default: return '';
-            }
-        }
-        
-        // Helper function to get priority class
-        function getPriorityClass(value) {
-            switch(parseInt(value)) {
-                case 1: return 'bg-danger';
-                case 2: return 'bg-warning';
-                case 3: return 'bg-success';
-                default: return 'bg-secondary';
-            }
-        }
-    });
+        return cookieValue;
+    }
 </script>
 {% endblock %} 
