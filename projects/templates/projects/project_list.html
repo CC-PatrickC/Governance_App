@@ -47,16 +47,16 @@
                     </td>
                     <td>{{ project.title }}</td>
                     <td class="description-cell">
-                        <div class="description-content">
-                            {{ project.description|truncatewords:20 }}
+                        <div class="description-content text-start">
+                            <div class="description-text">{{ project.description|truncatewords:20 }}</div>
                             {% if project.description|wordcount > 20 %}
                             <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this)">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                             {% endif %}
                         </div>
-                        <div class="full-description d-none">
-                            {{ project.description }}
+                        <div class="full-description d-none text-start">
+                            <div class="description-text">{{ project.description }}</div>
                             <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this)">
                                 <i class="fas fa-chevron-up"></i>
                             </button>
@@ -217,20 +217,39 @@ function toggleDescription(button) {
     .description-cell {
         max-width: 300px;
         word-wrap: break-word;
-        text-align: left;
+        text-align: left !important;
+        padding-left: 0 !important;
+        vertical-align: middle !important;
     }
 
     .description-content, .full-description {
         white-space: pre-wrap;
-        text-align: left;
+        text-align: left !important;
         display: block;
         width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        vertical-align: middle;
+    }
+    
+    .description-text {
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block;
+        width: 100%;
+        line-height: 1.5;
     }
 
     .description-content p, .full-description p {
-        text-align: left;
-        margin: 0;
-        padding: 0;
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ensure table cells have consistent vertical alignment */
+    .table td {
+        vertical-align: middle !important;
     }
 
     /* Add animation for refresh icon */

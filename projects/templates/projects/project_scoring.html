@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load project_tags %}
 
 {% block title %}Score Project - {{ project.title }}{% endblock %}
 
@@ -62,7 +63,13 @@
                         <div class="col-md-6">
                             <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                            <p><strong>Triage Notes:</strong> {{ project.triage_notes|default:"No triage notes" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <p><strong>Triage Notes:</strong></p>
+                        <div class="p-3 rounded">
+                            {{ project.triage_notes|default:"No triage notes"|linebreaks }}
                         </div>
                     </div>
 
@@ -93,7 +100,7 @@
                                     <tr>
                                         <th>Criteria</th>
                                         <th>Weight</th>
-                                        <th>Score (1-5)</th>
+                                        <th>Your Score (1-5)</th>
                                         <th>Weighted Score</th>
                                     </tr>
                                 </thead>
@@ -104,7 +111,7 @@
                                         <td>
                                             <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.strategic_alignment|default:1 }}"
+                                                   value="{{ user_score.strategic_alignment|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -117,7 +124,7 @@
                                         <td>
                                             <input type="number" name="cost_benefit" id="cost_benefit" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.cost_benefit|default:1 }}"
+                                                   value="{{ user_score.cost_benefit|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -130,7 +137,7 @@
                                         <td>
                                             <input type="number" name="user_impact" id="user_impact" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.user_impact|default:1 }}"
+                                                   value="{{ user_score.user_impact|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -143,7 +150,7 @@
                                         <td>
                                             <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.ease_of_implementation|default:1 }}"
+                                                   value="{{ user_score.ease_of_implementation|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -156,7 +163,7 @@
                                         <td>
                                             <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.vendor_reputation_support|default:1 }}"
+                                                   value="{{ user_score.vendor_reputation_support|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -169,7 +176,7 @@
                                         <td>
                                             <input type="number" name="security_compliance" id="security_compliance" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.security_compliance|default:1 }}"
+                                                   value="{{ user_score.security_compliance|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -182,17 +189,30 @@
                                         <td>
                                             <input type="number" name="student_centered" id="student_centered" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.student_centered|default:1 }}"
+                                                   value="{{ user_score.student_centered|default:1 }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
                                             <span id="student_centered_weighted" class="weighted-score">0</span>
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <td>College-Centered</td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="college_centered" id="college_centered" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="{{ user_score.college_centered|default:1 }}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="college_centered_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="3" class="text-end"><strong>Final Score:</strong></td>
+                                        <td colspan="3" class="text-end"><strong>Your Final Score:</strong></td>
                                         <td><span id="final_score_display" class="weighted-score">0</span></td>
                                     </tr>
                                 </tfoot>
@@ -202,10 +222,10 @@
                         <div class="form-group mb-3">
                             <label for="scoring_notes">Scoring Notes</label>
                             <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                                    rows="4">{{ project.scoring_notes }}</textarea>
+                                    rows="4">{{ user_score.scoring_notes|default:'' }}</textarea>
                         </div>
 
-                        <input type="hidden" name="final_score" id="final_score" value="0">
+                        <input type="hidden" name="final_score" id="final_score" value="{{ user_score.final_score|default:0 }}">
                         <button type="submit" class="btn btn-primary">Save Scoring</button>
                     </form>
                 </div>
@@ -274,8 +294,9 @@
         // Set weight based on the input field
         if (input.id === 'cost_benefit' || input.id === 'ease_of_implementation') {
             weight = 0.15; // 15% weight for cost benefit and ease of implementation
-        } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || input.id === 'student_centered') {
-            weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered
+        } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || 
+                  input.id === 'student_centered' || input.id === 'college_centered') {
+            weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered, college-centered
         }
         
         const weightedScore = score * weight;
@@ -292,6 +313,7 @@
         const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 1;
         const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 1;
         const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 1;
+        const collegeCenteredScore = parseFloat(document.getElementById('college_centered').value) || 1;
         
         const finalScore = (strategicAlignmentScore * 0.2) + 
                           (costBenefitScore * 0.15) + 
@@ -299,9 +321,14 @@
                           (easeOfImplementationScore * 0.15) +
                           (vendorReputationScore * 0.10) +
                           (securityComplianceScore * 0.10) +
-                          (studentCenteredScore * 0.10);
+                          (studentCenteredScore * 0.10) +
+                          (collegeCenteredScore * 0.10);
+        
+        // Display the raw final score with 2 decimal places
         document.getElementById('final_score_display').textContent = finalScore.toFixed(2);
-        document.getElementById('final_score').value = Math.round(finalScore * 100); // Convert to 0-100 scale
+        
+        // Store the raw final score value (not converted to 0-100 scale)
+        document.getElementById('final_score').value = finalScore.toFixed(2);
     }
 
     // Initialize scores on page load
@@ -313,27 +340,21 @@
         const vendorReputationInput = document.getElementById('vendor_reputation_support');
         const securityComplianceInput = document.getElementById('security_compliance');
         const studentCenteredInput = document.getElementById('student_centered');
+        const collegeCenteredInput = document.getElementById('college_centered');
         
-        if (strategicAlignmentInput) {
-            calculateWeightedScore(strategicAlignmentInput);
-        }
-        if (costBenefitInput) {
-            calculateWeightedScore(costBenefitInput);
-        }
-        if (userImpactInput) {
-            calculateWeightedScore(userImpactInput);
-        }
-        if (easeOfImplementationInput) {
-            calculateWeightedScore(easeOfImplementationInput);
-        }
-        if (vendorReputationInput) {
-            calculateWeightedScore(vendorReputationInput);
-        }
-        if (securityComplianceInput) {
-            calculateWeightedScore(securityComplianceInput);
-        }
-        if (studentCenteredInput) {
-            calculateWeightedScore(studentCenteredInput);
+        if (strategicAlignmentInput) calculateWeightedScore(strategicAlignmentInput);
+        if (costBenefitInput) calculateWeightedScore(costBenefitInput);
+        if (userImpactInput) calculateWeightedScore(userImpactInput);
+        if (easeOfImplementationInput) calculateWeightedScore(easeOfImplementationInput);
+        if (vendorReputationInput) calculateWeightedScore(vendorReputationInput);
+        if (securityComplianceInput) calculateWeightedScore(securityComplianceInput);
+        if (studentCenteredInput) calculateWeightedScore(studentCenteredInput);
+        if (collegeCenteredInput) calculateWeightedScore(collegeCenteredInput);
+        
+        // Initialize the final score display with the user's existing score if available
+        const finalScoreInput = document.getElementById('final_score');
+        if (finalScoreInput && finalScoreInput.value) {
+            document.getElementById('final_score_display').textContent = parseFloat(finalScoreInput.value).toFixed(2);
         }
     });
 </script>
