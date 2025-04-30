@@ -12,9 +12,11 @@
 - [x] Implement project scoring functionality
 - [x] Add navigation menu with links to different sections
 - [x] Fix login redirect issues
+- [x] Set up Django project
+- [x] Create initial models
+- [x] Add filtering and sorting to project lists
 
 ## Pending Tasks
-- [x] Add filtering and sorting to project lists
 - [ ] Implement search functionality
 - [ ] Add pagination to project lists
 - [ ] Create dashboard with project statistics
@@ -29,6 +31,9 @@
 - [ ] Implement project archiving functionality
 - [ ] Add audit logging for all actions
 - [ ] Create documentation for users and administrators
+- [ ] Create a new project
+- [ ] Add scoring criteria
+- [ ] Submit project for review
 
 ### Scoring Page
 - [ ] Add validation for scoring values (ensure they're within acceptable ranges)

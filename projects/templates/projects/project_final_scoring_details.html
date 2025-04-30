@@ -69,13 +69,7 @@
                         <div class="col-md-4">
                             <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                            <p><strong>Final Score:</strong> 
-                                <span class="badge {% if project.final_score >= 4 %}bg-success
-                                                 {% elif project.final_score >= 3 %}bg-warning
-                                                 {% else %}bg-danger{% endif %}">
-                                    {{ project.final_score|floatformat:2|default:"Not scored" }}
-                                </span>
-                            </p>
+                            <p><strong>Final Score:</strong> {{ project.final_score|floatformat:2|default:"Not scored" }}</p>
                         </div>
                         <div class="col-md-4">
                             <p><strong>Contact Person:</strong> 

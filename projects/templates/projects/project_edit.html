@@ -72,6 +72,23 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="submitted_by" class="form-label">Submitted By</label>
+                        <input type="text" class="form-control" id="submitted_by" name="submitted_by" value="{{ project.submitted_by.username|default:'' }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="contact_person" class="form-label">Contact Person</label>
+                        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="contact_email" class="form-label">Contact Email</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ project.contact_email|default:'' }}">
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <label for="notes" class="form-label">Notes</label>
                     <textarea class="form-control" id="notes" name="notes" rows="3">{{ project.notes|default:'' }}</textarea>

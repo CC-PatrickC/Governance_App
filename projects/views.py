@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
 from .models import Project, ProjectFile, ProjectScore
 from .forms import ProjectForm
 import json
@@ -92,6 +93,21 @@ def project_update(request, pk):
         project.status = request.POST.get('status')
         project.department = request.POST.get('department')
         project.notes = request.POST.get('notes')
+        
+        # Update contact information
+        project.contact_person = request.POST.get('contact_person')
+        project.contact_email = request.POST.get('contact_email')
+        
+        # Handle submitted_by field
+        submitted_by_username = request.POST.get('submitted_by')
+        if submitted_by_username:
+            try:
+                # Try to find the user by username
+                user = User.objects.get(username=submitted_by_username)
+                project.submitted_by = user
+            except User.DoesNotExist:
+                # If user doesn't exist, keep the current submitted_by
+                messages.warning(request, f'User "{submitted_by_username}" not found. Keeping current submitter.')
         
         try:
             project.save()
