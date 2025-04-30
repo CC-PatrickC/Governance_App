@@ -15,17 +15,16 @@
 - [x] Set up Django project
 - [x] Create initial models
 - [x] Add filtering and sorting to project lists
+- [x] Add validation for scoring values (ensure they're within acceptable ranges)
+
 
 ## Pending Tasks
 - [ ] Implement search functionality
-- [ ] Add pagination to project lists
-- [ ] Create dashboard with project statistics
 - [ ] Add email notifications for project status changes
 - [ ] Implement user profile management
 - [ ] Add export functionality (CSV, PDF)
 - [ ] Improve mobile responsiveness
 - [ ] Add unit tests and integration tests
-- [ ] Set up CI/CD pipeline
 - [ ] Optimize database queries
 - [ ] Add data visualization for project metrics
 - [ ] Implement project archiving functionality
@@ -36,10 +35,8 @@
 - [ ] Submit project for review
 
 ### Scoring Page
-- [ ] Add validation for scoring values (ensure they're within acceptable ranges)
 - [ ] Implement scoring history to track changes over time
 - [ ] Add ability to compare scores between different projects
-- [ ] Create scoring templates for different project types
 - [ ] Add comments/feedback section for each scoring criterion
 - [ ] Implement scoring guidelines display
 - [ ] Add export functionality for scoring reports
@@ -74,3 +71,4 @@
 - [ ] Add support for multiple languages
 - [ ] Various dark modes
 - [ ] Color blind mode 
+- [ ] Create dashboard with project statistics

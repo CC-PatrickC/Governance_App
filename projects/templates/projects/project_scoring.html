@@ -106,7 +106,11 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Strategic Alignment</td>
+                                        <td>
+                                            Strategic Alignment
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures how well the project aligns with institutional strategic goals and priorities. Consider the project's impact on key strategic initiatives and its contribution to long-term objectives."></i>
+                                        </td>
                                         <td>20%</td>
                                         <td>
                                             <input type="number" name="strategic_alignment" id="strategic_alignment" 
@@ -119,7 +123,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Cost Benefit</td>
+                                        <td>
+                                            Cost Benefit
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the financial viability and return on investment. Consider both direct and indirect costs, potential savings, and the overall value proposition."></i>
+                                        </td>
                                         <td>15%</td>
                                         <td>
                                             <input type="number" name="cost_benefit" id="cost_benefit" 
@@ -132,7 +140,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>User Impact and Adoption</td>
+                                        <td>
+                                            User Impact and Adoption
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the potential impact on users and the likelihood of successful adoption. Consider user needs, training requirements, and change management implications."></i>
+                                        </td>
                                         <td>20%</td>
                                         <td>
                                             <input type="number" name="user_impact" id="user_impact" 
@@ -145,7 +157,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Ease of Implementation</td>
+                                        <td>
+                                            Ease of Implementation
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the complexity and feasibility of implementation. Consider technical requirements, resource needs, timeline, and potential risks."></i>
+                                        </td>
                                         <td>15%</td>
                                         <td>
                                             <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
@@ -158,7 +174,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Vendor Reputation and Support</td>
+                                        <td>
+                                            Vendor Reputation and Support
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the vendor's track record, reliability, and support capabilities. Consider past performance, customer service, and long-term viability."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
@@ -171,7 +191,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Security and Compliance</td>
+                                        <td>
+                                            Security and Compliance
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates security requirements and compliance obligations. Consider data protection, regulatory requirements, and risk management."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="security_compliance" id="security_compliance" 
@@ -184,7 +208,11 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Student-Centered</td>
+                                        <td>
+                                            Student-Centered
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures the project's impact on student success and experience. Consider direct benefits to students, learning outcomes, and student engagement."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="student_centered" id="student_centered" 
@@ -271,6 +299,17 @@
     .score-input {
         -moz-appearance: textfield;
     }
+
+    .info-icon {
+        color: #6c757d;
+        font-size: 15px;
+        margin-left: 5px;
+        cursor: help;
+    }
+
+    .tooltip {
+        max-width: 300px;
+    }
 </style>
 
 <script>
@@ -339,6 +378,17 @@
         if (finalScoreInput && finalScoreInput.value) {
             document.getElementById('final_score_display').textContent = parseFloat(finalScoreInput.value).toFixed(2);
         }
+    });
+
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                placement: 'right',
+                html: true
+            });
+        });
     });
 </script>
 {% endblock %} 
