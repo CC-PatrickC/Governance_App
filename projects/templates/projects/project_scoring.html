@@ -196,19 +196,6 @@
                                             <span id="student_centered_weighted" class="weighted-score">0</span>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td>College-Centered</td>
-                                        <td>10%</td>
-                                        <td>
-                                            <input type="number" name="college_centered" id="college_centered" 
-                                                   class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.college_centered|default:1 }}"
-                                                   onchange="calculateWeightedScore(this)">
-                                        </td>
-                                        <td>
-                                            <span id="college_centered_weighted" class="weighted-score">0</span>
-                                        </td>
-                                    </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -295,8 +282,8 @@
         if (input.id === 'cost_benefit' || input.id === 'ease_of_implementation') {
             weight = 0.15; // 15% weight for cost benefit and ease of implementation
         } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || 
-                  input.id === 'student_centered' || input.id === 'college_centered') {
-            weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered, college-centered
+                  input.id === 'student_centered') {
+            weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered
         }
         
         const weightedScore = score * weight;
@@ -313,7 +300,6 @@
         const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 1;
         const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 1;
         const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 1;
-        const collegeCenteredScore = parseFloat(document.getElementById('college_centered').value) || 1;
         
         const finalScore = (strategicAlignmentScore * 0.2) + 
                           (costBenefitScore * 0.15) + 
@@ -321,8 +307,7 @@
                           (easeOfImplementationScore * 0.15) +
                           (vendorReputationScore * 0.10) +
                           (securityComplianceScore * 0.10) +
-                          (studentCenteredScore * 0.10) +
-                          (collegeCenteredScore * 0.10);
+                          (studentCenteredScore * 0.10);
         
         // Display the raw final score with 2 decimal places
         document.getElementById('final_score_display').textContent = finalScore.toFixed(2);
@@ -340,7 +325,6 @@
         const vendorReputationInput = document.getElementById('vendor_reputation_support');
         const securityComplianceInput = document.getElementById('security_compliance');
         const studentCenteredInput = document.getElementById('student_centered');
-        const collegeCenteredInput = document.getElementById('college_centered');
         
         if (strategicAlignmentInput) calculateWeightedScore(strategicAlignmentInput);
         if (costBenefitInput) calculateWeightedScore(costBenefitInput);
@@ -349,7 +333,6 @@
         if (vendorReputationInput) calculateWeightedScore(vendorReputationInput);
         if (securityComplianceInput) calculateWeightedScore(securityComplianceInput);
         if (studentCenteredInput) calculateWeightedScore(studentCenteredInput);
-        if (collegeCenteredInput) calculateWeightedScore(collegeCenteredInput);
         
         // Initialize the final score display with the user's existing score if available
         const finalScoreInput = document.getElementById('final_score');

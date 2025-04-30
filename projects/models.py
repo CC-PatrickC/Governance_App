@@ -57,7 +57,6 @@ class Project(models.Model):
     vendor_reputation_support = models.IntegerField(null=True, blank=True, help_text="Vendor reputation and support score (1-5)")
     security_compliance = models.IntegerField(null=True, blank=True, help_text="Security and compliance score (1-5)")
     student_centered = models.IntegerField(null=True, blank=True, help_text="Student-centered score (1-5)")
-    college_centered = models.IntegerField(null=True, blank=True, help_text="College-centered score (1-5)")
 
     def __str__(self):
         return self.title
@@ -141,7 +140,6 @@ class ProjectScore(models.Model):
     vendor_reputation_support = models.IntegerField(null=True, blank=True, help_text="Vendor reputation and support score (1-5)")
     security_compliance = models.IntegerField(null=True, blank=True, help_text="Security and compliance score (1-5)")
     student_centered = models.IntegerField(null=True, blank=True, help_text="Student-centered score (1-5)")
-    college_centered = models.IntegerField(null=True, blank=True, help_text="College-centered score (1-5)")
     scoring_notes = models.TextField(blank=True, null=True)
     final_score = models.FloatField(null=True, blank=True, help_text="Calculated final score for this user")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -164,8 +162,7 @@ class ProjectScore(models.Model):
                 self.ease_of_implementation,
                 self.vendor_reputation_support,
                 self.security_compliance,
-                self.student_centered,
-                self.college_centered
+                self.student_centered
             ]):
                 return None
 
@@ -177,7 +174,6 @@ class ProjectScore(models.Model):
             vendor_reputation_support = float(self.vendor_reputation_support)
             security_compliance = float(self.security_compliance)
             student_centered = float(self.student_centered)
-            college_centered = float(self.college_centered)
 
             # Calculate weighted score
             return (
@@ -187,8 +183,7 @@ class ProjectScore(models.Model):
                 ease_of_implementation * 0.15 +
                 vendor_reputation_support * 0.10 +
                 security_compliance * 0.10 +
-                student_centered * 0.10 +
-                college_centered * 0.10
+                student_centered * 0.10
             )
         except (ValueError, TypeError, AttributeError):
             return None

@@ -33,7 +33,7 @@
                     <th>Priority</th>
                     <th>Status</th>
                     <th>Department</th>
-                    <th>Final Score</th>
+                    <th>Final Average Score</th>
                     <th>Final Priority</th>
                     <th>Actions</th>
                 </tr>
@@ -57,11 +57,7 @@
                     <td>{{ project.department|default:"-" }}</td>
                     <td>
                         {% if project.final_score %}
-                            <span class="badge {% if project.final_score >= 4 %}bg-success
-                                             {% elif project.final_score >= 3 %}bg-warning
-                                             {% else %}bg-danger{% endif %}">
-                                {{ project.final_score|floatformat:2 }}
-                            </span>
+                            {{ project.final_score|floatformat:2 }}
                         {% else %}
                             -
                         {% endif %}
@@ -76,7 +72,7 @@
                                style="width: 70px;">
                     </td>
                     <td>
-                        <a href="{% url 'projects:project_final_scoring' project.pk %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'projects:project_final_scoring_details' project.pk %}" class="btn btn-primary btn-sm">
                             Details
                         </a>
                     </td>

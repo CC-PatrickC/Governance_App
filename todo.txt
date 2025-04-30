@@ -14,7 +14,7 @@
 - [x] Fix login redirect issues
 
 ## Pending Tasks
-- [ ] Add filtering and sorting to project lists
+- [x] Add filtering and sorting to project lists
 - [ ] Implement search functionality
 - [ ] Add pagination to project lists
 - [ ] Create dashboard with project statistics
@@ -66,4 +66,6 @@
 - [ ] Add support for project budgets and resource allocation
 - [ ] Create a mobile app version
 - [ ] Implement advanced reporting features
-- [ ] Add support for multiple languages 
+- [ ] Add support for multiple languages
+- [ ] Various dark modes
+- [ ] Color blind mode 

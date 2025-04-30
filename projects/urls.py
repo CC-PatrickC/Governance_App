@@ -16,6 +16,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),
     path('<int:pk>/score/', views.project_scoring, name='project_scoring'),
     path('<int:pk>/final-score/', views.project_final_scoring, name='project_final_scoring'),
+    path('<int:pk>/final-score-details/', views.project_final_scoring_details, name='project_final_scoring_details'),
     path('<int:pk>/update-final-priority/', views.update_final_priority, name='update_final_priority'),
     path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
 ] 

@@ -186,7 +186,6 @@ def project_scoring(request, pk):
             vendor_reputation_support = int(request.POST.get('vendor_reputation_support', 1))
             security_compliance = int(request.POST.get('security_compliance', 1))
             student_centered = int(request.POST.get('student_centered', 1))
-            college_centered = int(request.POST.get('college_centered', 1))
             
             # Get or create the ProjectScore instance for this user and project
             score, created = ProjectScore.objects.get_or_create(
@@ -200,7 +199,6 @@ def project_scoring(request, pk):
                     'vendor_reputation_support': vendor_reputation_support,
                     'security_compliance': security_compliance,
                     'student_centered': student_centered,
-                    'college_centered': college_centered,
                     'scoring_notes': request.POST.get('scoring_notes')
                 }
             )
@@ -214,7 +212,6 @@ def project_scoring(request, pk):
                 score.vendor_reputation_support = vendor_reputation_support
                 score.security_compliance = security_compliance
                 score.student_centered = student_centered
-                score.college_centered = college_centered
                 score.scoring_notes = request.POST.get('scoring_notes')
             
             # Save the score - this will automatically calculate and save the final_score
@@ -305,3 +302,14 @@ def update_final_priority(request, pk):
             return JsonResponse({'success': False, 'error': 'No priority value provided'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def project_final_scoring_details(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    scores = project.scores.all().order_by('-created_at')
+    
+    return render(request, 'projects/project_final_scoring_details.html', {
+        'project': project,
+        'scores': scores
+    })
