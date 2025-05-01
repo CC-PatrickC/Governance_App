@@ -24,6 +24,5 @@ class Command(BaseCommand):
                 self.stdout.write(f"    Vendor Reputation: {score.vendor_reputation_support}")
                 self.stdout.write(f"    Security Compliance: {score.security_compliance}")
                 self.stdout.write(f"    Student Centered: {score.student_centered}")
-                self.stdout.write(f"    College Centered: {score.college_centered}")
                 self.stdout.write(f"    Final Score: {score.final_score}")
                 self.stdout.write(f"    Calculated Final Score: {score.calculate_final_score()}") 

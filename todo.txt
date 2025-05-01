@@ -12,35 +12,37 @@
 - [x] Implement project scoring functionality
 - [x] Add navigation menu with links to different sections
 - [x] Fix login redirect issues
+- [x] Set up Django project
+- [x] Create initial models
+- [x] Add filtering and sorting to project lists
 
 ## Pending Tasks
-- [ ] Add filtering and sorting to project lists
 - [ ] Implement search functionality
-- [ ] Add pagination to project lists
-- [ ] Create dashboard with project statistics
 - [ ] Add email notifications for project status changes
 - [ ] Implement user profile management
 - [ ] Add export functionality (CSV, PDF)
 - [ ] Improve mobile responsiveness
 - [ ] Add unit tests and integration tests
-- [ ] Set up CI/CD pipeline
 - [ ] Optimize database queries
 - [ ] Add data visualization for project metrics
 - [ ] Implement project archiving functionality
 - [ ] Add audit logging for all actions
 - [ ] Create documentation for users and administrators
+- [ ] Create a new project
+- [ ] Add scoring criteria
+- [ ] Submit project for review
+- [ ] Filter to only show end-users projects
 
 ### Scoring Page
-- [ ] Add validation for scoring values (ensure they're within acceptable ranges)
+- [x] Add validation for scoring values (ensure they're within acceptable ranges)
 - [ ] Implement scoring history to track changes over time
 - [ ] Add ability to compare scores between different projects
-- [ ] Create scoring templates for different project types
 - [ ] Add comments/feedback section for each scoring criterion
-- [ ] Implement scoring guidelines display
+- [x] Implement scoring guidelines display
 - [ ] Add export functionality for scoring reports
 - [ ] Create scoring dashboard with statistics and trends
 - [ ] Add more project details in the details section
-- [ ] Implement weighted scoring questions
+- [x] Implement weighted scoring questions
 - [ ] Create a popup dialog for score changes that requires a reason
 - [ ] Add score change history with reasons for each change
 
@@ -66,4 +68,6 @@
 - [ ] Add support for project budgets and resource allocation
 - [ ] Create a mobile app version
 - [ ] Implement advanced reporting features
-- [ ] Add support for multiple languages 
+- [ ] Add support for multiple languages
+- [ ] Various dark modes
+- [ ] Color blind mode 

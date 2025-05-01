@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+{% load project_tags %}
+
+{% block title %}Final Score Details - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ project.title }} - Final Score Details</h2>
+        <div>
+            <a href="{% url 'projects:project_final_scoring_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Final Scoring
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Project Summary</h5>
+                    <span class="badge {% if project.status == 'approved' %}bg-success
+                                     {% elif project.status == 'rejected' %}bg-danger
+                                     {% elif project.status == 'in_progress' %}bg-primary
+                                     {% elif project.status == 'completed' %}bg-secondary
+                                     {% else %}bg-warning{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                            <p><strong>Project Type:</strong> 
+                                <span class="badge bg-info">
+                                    {{ project.get_project_type_display }}
+                                </span>
+                            </p>
+                            <p><strong>Priority:</strong> 
+                                <span class="badge {% if project.priority == 'Top' %}bg-dark-red
+                                                 {% elif project.priority == 'High' %}bg-danger
+                                                 {% elif project.priority == 'Normal' %}bg-warning
+                                                 {% else %}bg-success{% endif %}">
+                                    {{ project.priority }}
+                                </span>
+                            </p>
+                            <p><strong>Final Priority:</strong> 
+                                <span class="badge {% if project.final_priority == 3 %}bg-danger
+                                                 {% elif project.final_priority == 2 %}bg-warning
+                                                 {% else %}bg-success{% endif %}">
+                                    {% if project.final_priority == 3 %}High
+                                    {% elif project.final_priority == 2 %}Medium
+                                    {% elif project.final_priority == 1 %}Low
+                                    {% else %}Not Set{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
+                            <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                            <p><strong>Final Score:</strong> {{ project.final_score|floatformat:2|default:"Not scored" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Contact Person:</strong> 
+                                {% if project.submitted_by.first_name and project.submitted_by.last_name %}
+                                    {{ project.submitted_by.get_full_name }}
+                                {% else %}
+                                    {{ project.submitted_by.username }}
+                                {% endif %}
+                            </p>
+                            <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                            <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                            <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Description section moved outside the columns to span full width -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Project Description</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <p>{{ project.description|linebreaks }}</p>
+                </div>
+            </div>
+            
+            {% if project.triage_notes %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Triage Notes:</strong></h6>
+                <div class="p-3 rounded bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                        <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
+                    </div>
+                    <div class="triage-notes-content">
+                        {{ project.triage_notes|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if scores %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
+                {% for score in scores %}
+                    {% if score.scoring_notes %}
+                    <div class="p-3 rounded bg-light mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ score.scored_by.username }}</strong>
+                            <small class="text-muted">Score: {{ score.final_score|floatformat:2 }}</small>
+                        </div>
+                        <div class="scoring-notes-content">
+                            {{ score.scoring_notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if project.files.all %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Attachments:</strong></h6>
+                <div class="list-group">
+                    {% for file in project.files.all %}
+                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Individual User Scores section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Individual User Scores</h5>
+        </div>
+        <div class="card-body">
+            {% if scores %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Strategic Alignment - (20%)</th>
+                                <th>Cost Benefit - (15%)</th>
+                                <th>User Impact - (20%)</th>
+                                <th>Ease of Implementation - (15%)</th>
+                                <th>Vendor Reputation - (10%)</th>
+                                <th>Security Compliance - (10%)</th>
+                                <th>Student-Centered - (10%)</th>
+                                <th>Final Weighted Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for score in scores %}
+                            <tr>
+                                <td>{{ score.scored_by.username }}</td>
+                                <td>{{ score.strategic_alignment|default:"-" }}</td>
+                                <td>{{ score.cost_benefit|default:"-" }}</td>
+                                <td>{{ score.user_impact|default:"-" }}</td>
+                                <td>{{ score.ease_of_implementation|default:"-" }}</td>
+                                <td>{{ score.vendor_reputation_support|default:"-" }}</td>
+                                <td>{{ score.security_compliance|default:"-" }}</td>
+                                <td>{{ score.student_centered|default:"-" }}</td>
+                                <td>{{ score.final_score|floatformat:2|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No individual scores have been submitted yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge {
+        font-size: 0.875rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .bg-dark-red {
+        background-color: #8B0000;
+        color: white;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .scoring-notes-content {
+        border-left: 3px solid #6c757d;
+        padding-left: 15px;
+    }
+
+    .triage-notes-content {
+        border-left: 3px solid #0d6efd;
+        padding-left: 15px;
+    }
+</style>
+{% endblock %} 
