@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from .models import Project, ProjectFile, ProjectScore
 from .forms import ProjectForm
 import json
+from django.utils import timezone
 
 def project_list(request):
     projects = Project.objects.all().select_related('submitted_by')
@@ -26,28 +27,76 @@ def project_triage(request):
 def project_update_ajax(request, pk):
     try:
         project = get_object_or_404(Project, pk=pk)
-        data = json.loads(request.body)
         
         # Debug print
-        print(f"Updating project {pk} with data: {data}")
+        print(f"Updating project {pk}")
+        print(f"POST data: {request.POST}")
+        print(f"FILES data: {request.FILES}")
         
         # Update project fields
-        if 'title' in data:
-            project.title = data['title']
-        if 'description' in data:
-            project.description = data['description']
-        if 'priority' in data:
-            project.priority = data['priority']
-        if 'status' in data:
-            project.status = data['status']
-        if 'department' in data:
-            project.department = data['department']
+        title = request.POST.get('title')
+        if not title:
+            raise ValueError("Title is required")
         
-        project.save()
-        print(f"Project {pk} updated successfully")
+        print(f"Title: {title}")
+        print(f"Current project title: {project.title}")
+        
+        project.title = title
+        project.description = request.POST.get('description', '')
+        project.project_type = request.POST.get('project_type')
+        project.priority = request.POST.get('priority')
+        project.status = request.POST.get('status')
+        project.department = request.POST.get('department', '')
+        project.notes = request.POST.get('notes', '')
+        
+        # Update triage information
+        project.triage_notes = request.POST.get('triage_notes', '')
+        project.triaged_by = request.user
+        project.triage_date = timezone.now()
+        
+        # Update contact information
+        project.contact_person = request.POST.get('contact_person', '')
+        project.contact_email = request.POST.get('contact_email', '')
+        
+        # Handle submitted_by field
+        submitted_by_username = request.POST.get('submitted_by')
+        if submitted_by_username:
+            try:
+                # Try to find the user by username
+                user = User.objects.get(username=submitted_by_username)
+                project.submitted_by = user
+            except User.DoesNotExist:
+                # If user doesn't exist, keep the current submitted_by
+                pass
+        
+        print("About to save project...")
+        try:
+            # Save the project
+            project.save()
+            print(f"Project {pk} updated successfully")
+        except Exception as e:
+            print(f"Error saving project: {str(e)}")
+            print(f"Project fields before save: {project.__dict__}")
+            raise
+        
+        # Handle file uploads
+        files = request.FILES.getlist('files')
+        if files:
+            print(f"Processing {len(files)} files")
+            if len(files) > 5:
+                return JsonResponse({'success': False, 'error': 'You can upload a maximum of 5 files.'})
+            
+            for file in files:
+                ProjectFile.objects.create(project=project, file=file)
+        
         return JsonResponse({'success': True})
+    except ValueError as e:
+        print(f"Validation error: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
     except Exception as e:
         print(f"Error updating project {pk}: {str(e)}")
+        print(f"Error type: {type(e)}")
+        print(f"Error args: {e.args}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 def project_create(request):
@@ -83,38 +132,40 @@ def project_detail(request, pk):
 @user_passes_test(lambda u: u.is_staff)
 def project_update(request, pk):
     project = get_object_or_404(Project, pk=pk)
+    print(f"Project update view called for project {pk}")
+    print(f"Request method: {request.method}")
+    print(f"Request path: {request.path}")
+    print(f"Request POST data: {request.POST}")
+    print(f"Request FILES data: {request.FILES}")
     
     if request.method == 'POST':
-        # Update project fields
-        project.title = request.POST.get('title')
-        project.description = request.POST.get('description')
-        project.project_type = request.POST.get('project_type')
-        project.priority = request.POST.get('priority')
-        project.status = request.POST.get('status')
-        project.department = request.POST.get('department')
-        project.notes = request.POST.get('notes')
-        
-        # Update contact information
-        project.contact_person = request.POST.get('contact_person')
-        project.contact_email = request.POST.get('contact_email')
-        
-        # Handle submitted_by field
-        submitted_by_username = request.POST.get('submitted_by')
-        if submitted_by_username:
-            try:
-                # Try to find the user by username
-                user = User.objects.get(username=submitted_by_username)
-                project.submitted_by = user
-            except User.DoesNotExist:
-                # If user doesn't exist, keep the current submitted_by
-                messages.warning(request, f'User "{submitted_by_username}" not found. Keeping current submitter.')
+        print("POST request received")  # Debug log
+        print(f"POST data: {request.POST}")  # Debug log
+        print(f"FILES data: {request.FILES}")  # Debug log
         
         try:
+            # Update project fields
+            title = request.POST.get('title')
+            if not title:
+                raise ValueError("Title is required")
+            
+            project.title = title
+            project.description = request.POST.get('description', '')
+            project.project_type = request.POST.get('project_type')
+            project.priority = request.POST.get('priority')
+            project.status = request.POST.get('status')
+            project.department = request.POST.get('department', '')
+            project.notes = request.POST.get('notes', '')
+            project.triage_notes = request.POST.get('triage_notes', '')
+            
+            # Save the project
             project.save()
+            print("Project saved successfully")  # Debug log
             
             # Handle file uploads
             files = request.FILES.getlist('files')
             if files:
+                print(f"Processing {len(files)} files")  # Debug log
                 if len(files) > 5:
                     messages.error(request, 'You can upload a maximum of 5 files.')
                     return render(request, 'projects/project_edit.html', {'project': project})
@@ -125,8 +176,15 @@ def project_update(request, pk):
             
             messages.success(request, 'Project updated successfully!')
             return redirect('projects:project_triage')
-        except Exception as e:
+            
+        except ValueError as e:
+            print(f"Validation error: {str(e)}")  # Debug log
             messages.error(request, f'Error updating project: {str(e)}')
+            return render(request, 'projects/project_edit.html', {'project': project})
+        except Exception as e:
+            print(f"Error saving project: {str(e)}")  # Debug log
+            messages.error(request, f'Error updating project: {str(e)}')
+            return render(request, 'projects/project_edit.html', {'project': project})
     
     return render(request, 'projects/project_edit.html', {'project': project})
 

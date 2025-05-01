@@ -22,21 +22,22 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
+            <form id="main-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
+                
                 <div class="mb-3">
-                    <label for="title" class="form-label">Project Title</label>
+                    <label for="title" class="form-label">Project Title *</label>
                     <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
+                    <label for="description" class="form-label">Description *</label>
                     <textarea class="form-control" id="description" name="description" rows="4" required>{{ project.description }}</textarea>
                 </div>
 
                 <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label for="project_type" class="form-label">Project Type</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="project_type" class="form-label">Project Type *</label>
                         <select class="form-select" id="project_type" name="project_type" required>
                             {% for value, label in project.PROJECT_TYPE_CHOICES %}
                             <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
@@ -46,8 +47,8 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <label for="priority" class="form-label">Priority</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="priority" class="form-label">Priority *</label>
                         <select class="form-select" id="priority" name="priority" required>
                             <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
                             <option value="High" {% if project.priority == 'High' %}selected{% endif %}>High</option>
@@ -56,8 +57,8 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <label for="status" class="form-label">Status</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="status" class="form-label">Status *</label>
                         <select class="form-select" id="status" name="status" required>
                             <option value="pending" {% if project.status == 'pending' %}selected{% endif %}>Pending</option>
                             <option value="in_progress" {% if project.status == 'in_progress' %}selected{% endif %}>In Progress</option>
@@ -65,33 +66,17 @@
                             <option value="rejected" {% if project.status == 'rejected' %}selected{% endif %}>Rejected</option>
                         </select>
                     </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label for="department" class="form-label">Department</label>
-                        <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="submitted_by" class="form-label">Submitted By</label>
-                        <input type="text" class="form-control" id="submitted_by" name="submitted_by" value="{{ project.submitted_by.username|default:'' }}">
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="contact_person" class="form-label">Contact Person</label>
-                        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}">
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="contact_email" class="form-label">Contact Email</label>
-                        <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ project.contact_email|default:'' }}">
-                    </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="notes" class="form-label">Notes</label>
-                    <textarea class="form-control" id="notes" name="notes" rows="3">{{ project.notes|default:'' }}</textarea>
+                    <label for="department" class="form-label">Department</label>
+                    <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="triage_notes" class="form-label">Triage Notes</label>
+                    <textarea class="form-control" id="triage_notes" name="triage_notes" rows="4">{{ project.triage_notes|default:'' }}</textarea>
+                    <small class="form-text text-muted">Add any notes or observations from the triage process.</small>
                 </div>
 
                 {% if project.files.all %}
@@ -125,7 +110,7 @@
                 </div>
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="submit" class="btn btn-primary" onclick="document.getElementById('main-form').submit();">Save Changes</button>
                 </div>
             </form>
         </div>

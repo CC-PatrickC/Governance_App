@@ -15,8 +15,6 @@
 - [x] Set up Django project
 - [x] Create initial models
 - [x] Add filtering and sorting to project lists
-- [x] Add validation for scoring values (ensure they're within acceptable ranges)
-
 
 ## Pending Tasks
 - [ ] Implement search functionality
@@ -33,16 +31,18 @@
 - [ ] Create a new project
 - [ ] Add scoring criteria
 - [ ] Submit project for review
+- [ ] Filter to only show end-users projects
 
 ### Scoring Page
+- [x] Add validation for scoring values (ensure they're within acceptable ranges)
 - [ ] Implement scoring history to track changes over time
 - [ ] Add ability to compare scores between different projects
 - [ ] Add comments/feedback section for each scoring criterion
-- [ ] Implement scoring guidelines display
+- [x] Implement scoring guidelines display
 - [ ] Add export functionality for scoring reports
 - [ ] Create scoring dashboard with statistics and trends
 - [ ] Add more project details in the details section
-- [ ] Implement weighted scoring questions
+- [x] Implement weighted scoring questions
 - [ ] Create a popup dialog for score changes that requires a reason
 - [ ] Add score change history with reasons for each change
 
@@ -71,4 +71,3 @@
 - [ ] Add support for multiple languages
 - [ ] Various dark modes
 - [ ] Color blind mode 
-- [ ] Create dashboard with project statistics

@@ -105,16 +105,45 @@
             <div class="mt-4">
                 <h6 class="mb-3"><strong>Triage Notes:</strong></h6>
                 <div class="p-3 rounded bg-light">
-                    {{ project.triage_notes|linebreaks }}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                        <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
+                    </div>
+                    <div class="triage-notes-content">
+                        {{ project.triage_notes|linebreaks }}
+                    </div>
                 </div>
             </div>
             {% endif %}
             
-            {% if project.scoring_notes %}
+            {% if scores %}
             <div class="mt-4">
                 <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
-                <div class="p-3 rounded bg-light">
-                    {{ project.scoring_notes|linebreaks }}
+                {% for score in scores %}
+                    {% if score.scoring_notes %}
+                    <div class="p-3 rounded bg-light mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ score.scored_by.username }}</strong>
+                            <small class="text-muted">Score: {{ score.final_score|floatformat:2 }}</small>
+                        </div>
+                        <div class="scoring-notes-content">
+                            {{ score.scoring_notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if project.files.all %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Attachments:</strong></h6>
+                <div class="list-group">
+                    {% for file in project.files.all %}
+                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                    </a>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
@@ -189,6 +218,16 @@
     .card-header {
         background-color: #f8f9fa;
         border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .scoring-notes-content {
+        border-left: 3px solid #6c757d;
+        padding-left: 15px;
+    }
+
+    .triage-notes-content {
+        border-left: 3px solid #0d6efd;
+        padding-left: 15px;
     }
 </style>
 {% endblock %} 
