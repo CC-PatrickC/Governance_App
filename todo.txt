@@ -32,11 +32,14 @@
 - [ ] Add scoring criteria
 - [ ] Submit project for review
 - [ ] Filter to only show end-users projects
+- [ ] Add Single Sign-on
+- [x] Make the nav bar bold and and not selected 
+- [ ] Connect to AD to auto populate the Department / Name
+- [ ] Add POC on Triage detail page to include name, email, and phone number.
 
 ### Scoring Page
 - [x] Add validation for scoring values (ensure they're within acceptable ranges)
 - [ ] Implement scoring history to track changes over time
-- [ ] Add ability to compare scores between different projects
 - [ ] Add comments/feedback section for each scoring criterion
 - [x] Implement scoring guidelines display
 - [ ] Add export functionality for scoring reports
@@ -47,7 +50,7 @@
 - [ ] Add score change history with reasons for each change
 
 ### Final Scoring Page
-- [ ] Create a dedicated final scoring review page
+- [x] Create a dedicated final scoring review page
 - [ ] Add summary of all previous scores and changes
 - [ ] Implement final approval workflow with multiple approvers
 - [ ] Add ability to request additional information before final approval

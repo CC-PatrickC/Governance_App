@@ -20,6 +20,9 @@
         }
         .nav-link.active {
             font-weight: bold;
+            color: #fff !important;
+            pointer-events: none;
+            cursor: default;
         }
         .priority-badge {
             padding: 0.25rem 0.5rem;
@@ -59,20 +62,20 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects:project_list' %}">Projects</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'project_list' %}active{% endif %}" href="{% url 'projects:project_list' %}">Projects</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects:project_create' %}">New Project</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'project_create' %}active{% endif %}" href="{% url 'projects:project_create' %}">New Project</a>
                     </li>
                     {% if user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects:project_triage' %}">Triage</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'project_triage' %}active{% endif %}" href="{% url 'projects:project_triage' %}">Triage</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects:project_scoring_list' %}">Scoring</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'project_scoring_list' %}active{% endif %}" href="{% url 'projects:project_scoring_list' %}">Scoring</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects:project_final_scoring_list' %}">Final Scoring</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'project_final_scoring_list' %}active{% endif %}" href="{% url 'projects:project_final_scoring_list' %}">Final Scoring</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -86,7 +89,7 @@
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">Login</a>
                     </li>
                     {% endif %}
                 </ul>
