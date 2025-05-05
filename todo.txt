@@ -71,3 +71,4 @@
 - [ ] Add support for multiple languages
 - [ ] Various dark modes
 - [ ] Color blind mode 
+- [ ] Change the color of status, priorty, ect
