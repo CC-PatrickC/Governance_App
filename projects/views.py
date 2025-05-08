@@ -9,16 +9,46 @@ from .models import Project, ProjectFile, ProjectScore
 from .forms import ProjectForm
 import json
 from django.utils import timezone
+from django.db import models
 
 def project_list(request):
+    search_query = request.GET.get('search', '')
+    filter_type = request.GET.get('filter', '')
     projects = Project.objects.all().select_related('submitted_by')
-    return render(request, 'projects/project_list.html', {'projects': projects})
+    
+    # Filter for user's projects if requested
+    if filter_type == 'my_projects' and request.user.is_authenticated:
+        projects = projects.filter(submitted_by=request.user)
+    
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    return render(request, 'projects/project_list.html', {
+        'projects': projects, 
+        'search_query': search_query,
+        'filter_type': filter_type
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def project_triage(request):
+    search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
-    return render(request, 'projects/triage.html', {'projects': projects})
+    
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    return render(request, 'projects/triage.html', {'projects': projects, 'search_query': search_query})
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -74,6 +104,7 @@ def project_update_ajax(request, pk):
             # Save the project
             project.save()
             print(f"Project {pk} updated successfully")
+            print(f"Contact person: {project.contact_person}")  # Debug log for contact person
         except Exception as e:
             print(f"Error saving project: {str(e)}")
             print(f"Project fields before save: {project.__dict__}")
@@ -101,27 +132,19 @@ def project_update_ajax(request, pk):
 
 def project_create(request):
     if request.method == 'POST':
-        form = ProjectForm(request.POST, request.FILES)
-        files = request.FILES.getlist('files')
-        
-        if len(files) > 5:
-            messages.error(request, 'You can upload a maximum of 5 files.')
-            return render(request, 'projects/project_form.html', {'form': form})
-            
+        form = ProjectForm(request.POST)
         if form.is_valid():
             project = form.save(commit=False)
             project.submitted_by = request.user if request.user.is_authenticated else None
-            project.priority = 'Normal'  # Set default priority
+            project.status = 'pending'
+            project.priority = 'Normal'
             project.save()
-            
-            # Handle file uploads
-            for file in files:
-                ProjectFile.objects.create(project=project, file=file)
             
             messages.success(request, 'Project submitted successfully!')
             return redirect('projects:project_list')
     else:
         form = ProjectForm()
+    
     return render(request, 'projects/project_form.html', {'form': form})
 
 def project_detail(request, pk):
@@ -157,10 +180,12 @@ def project_update(request, pk):
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
             project.triage_notes = request.POST.get('triage_notes', '')
+            project.contact_person = request.POST.get('contact_person', '')
             
             # Save the project
             project.save()
             print("Project saved successfully")  # Debug log
+            print(f"Contact person: {project.contact_person}")  # Debug log for contact person
             
             # Handle file uploads
             files = request.FILES.getlist('files')
@@ -175,7 +200,7 @@ def project_update(request, pk):
                 messages.success(request, 'Files uploaded successfully!')
             
             messages.success(request, 'Project updated successfully!')
-            return redirect('projects:project_triage')
+            return redirect('projects:project_detail', pk=pk)
             
         except ValueError as e:
             print(f"Validation error: {str(e)}")  # Debug log
@@ -242,8 +267,18 @@ def delete_attachment(request, project_pk, file_pk):
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def project_scoring_list(request):
+    search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
-    return render(request, 'projects/project_scoring_list.html', {'projects': projects})
+    
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    return render(request, 'projects/project_scoring_list.html', {'projects': projects, 'search_query': search_query})
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -314,8 +349,18 @@ def project_scoring(request, pk):
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def project_final_scoring_list(request):
+    search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-final_priority', '-submission_date')
-    return render(request, 'projects/project_final_scoring_list.html', {'projects': projects})
+    
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    return render(request, 'projects/project_final_scoring_list.html', {'projects': projects, 'search_query': search_query})
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Project Triage</h2>
         <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
@@ -19,6 +19,22 @@
         {% endfor %}
     </div>
     {% endif %}
+
+    <div class="mb-4">
+        <form method="get" class="d-flex">
+            <div class="input-group">
+                <input type="text" 
+                       name="search" 
+                       class="form-control" 
+                       placeholder="Search projects..." 
+                       value="{{ search_query|default:'' }}"
+                       aria-label="Search projects">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
 
     <div class="table-responsive">
         <table class="table table-striped table-hover">
