@@ -74,6 +74,12 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="contact_person" class="form-label">Contact Person</label>
+                    <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}" required>
+                    <small class="form-text text-muted">The primary contact person for this project.</small>
+                </div>
+
+                <div class="mb-3">
                     <label for="triage_notes" class="form-label">Triage Notes</label>
                     <textarea class="form-control" id="triage_notes" name="triage_notes" rows="4">{{ project.triage_notes|default:'' }}</textarea>
                     <small class="form-text text-muted">Add any notes or observations from the triage process.</small>

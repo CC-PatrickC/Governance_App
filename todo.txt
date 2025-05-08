@@ -17,25 +17,18 @@
 - [x] Add filtering and sorting to project lists
 
 ## Pending Tasks
-- [ ] Implement search functionality
-- [ ] Add email notifications for project status changes
-- [ ] Implement user profile management
-- [ ] Add export functionality (CSV, PDF)
-- [ ] Improve mobile responsiveness
+- [x] Implement search functionality
 - [ ] Add unit tests and integration tests
-- [ ] Optimize database queries
-- [ ] Add data visualization for project metrics
 - [ ] Implement project archiving functionality
-- [ ] Add audit logging for all actions
 - [ ] Create documentation for users and administrators
-- [ ] Create a new project
-- [ ] Add scoring criteria
+- [x] Create a new project
+- [x] Add scoring criteria
 - [ ] Submit project for review
-- [ ] Filter to only show end-users projects
-- [ ] Add Single Sign-on
+- [x] Filter to only show end-users projects
 - [x] Make the nav bar bold and and not selected 
-- [ ] Connect to AD to auto populate the Department / Name
 - [ ] Add POC on Triage detail page to include name, email, and phone number.
+- [x] Project List page - Make the Type column the same size and font as the priorty and status
+- [x] Add an X to the search bar to clear the input
 
 ### Scoring Page
 - [x] Add validation for scoring values (ensure they're within acceptable ranges)
@@ -46,8 +39,8 @@
 - [ ] Create scoring dashboard with statistics and trends
 - [ ] Add more project details in the details section
 - [x] Implement weighted scoring questions
-- [ ] Create a popup dialog for score changes that requires a reason
-- [ ] Add score change history with reasons for each change
+- [?] Create a popup dialog for score changes that requires a reason
+- [?] Add score change history with reasons for each change
 
 ### Final Scoring Page
 - [x] Create a dedicated final scoring review page
@@ -72,6 +65,20 @@
 - [ ] Create a mobile app version
 - [ ] Implement advanced reporting features
 - [ ] Add support for multiple languages
-- [ ] Various dark modes
+- [ ] Various dark modes Dark / Grey
 - [ ] Color blind mode 
 - [ ] Change the color of status, priorty, ect
+- [ ] Implement AI to help review and summary
+- [ ] Add a Tile list 
+- [ ] Implement user profile management
+- [ ] Add export functionality (CSV, PDF)
+- [ ] Add audit logging for all actions
+- [ ] Add Single Sign-on
+- [ ] Connect to AD to auto populate the Department / Name
+- [ ] Add email notifications for project status changes
+- [ ] Feedback page
+- [ ] Filters on the project list page
+- [ ] Create a dashboard with tile list and filters
+- [ ] Add data visualization for project metrics with a dashboard
+- [ ] Optimize database queries
+- [ ] Improve mobile responsiveness

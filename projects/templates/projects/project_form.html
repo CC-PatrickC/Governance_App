@@ -1,69 +1,36 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Project Intake{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10">
-            <h2>{% if project %}Edit{% else %}New{% endif %} Project</h2>
-            
-            {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-                {% endfor %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Project Intake Form</h2>
             </div>
-            {% endif %}
-            
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                <div class="mb-3">
-                    <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
-                    {{ form.title }}
-                    {% if form.title.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.title.errors }}
+            <div class="card-body">
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
                     </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                    {{ form.description }}
-                    {% if form.description.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.description.errors }}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Submit Project</button>
                     </div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="files" class="form-label">Files (up to 5)</label>
-                    <input type="file" name="files" id="files" multiple class="form-control">
-                    <small class="form-text text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Submit</button>
-                <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">Cancel</a>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
-
-<style>
-    .container-fluid {
-        padding: 0 2rem;
-    }
-    
-    .col-lg-10 {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .form-control {
-        width: 100%;
-    }
-</style>
 {% endblock %} 
