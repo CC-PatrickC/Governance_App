@@ -4,12 +4,18 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from .models import Project, ProjectFile, ProjectScore
 from .forms import ProjectForm
 import json
 from django.utils import timezone
 from django.db import models
+
+def is_triage_user(user):
+    return user.is_staff or user.groups.filter(name='Triage Group').exists()
+
+def is_scoring_user(user):
+    return user.is_staff or user.groups.filter(name='Scoring Group').exists()
 
 def project_list(request):
     search_query = request.GET.get('search', '')
@@ -35,7 +41,7 @@ def project_list(request):
     })
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_triage_user)
 def project_triage(request):
     search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
@@ -152,7 +158,7 @@ def project_detail(request, pk):
     return render(request, 'projects/project_detail.html', {'project': project})
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_triage_user)
 def project_update(request, pk):
     project = get_object_or_404(Project, pk=pk)
     print(f"Project update view called for project {pk}")
@@ -200,7 +206,7 @@ def project_update(request, pk):
                 messages.success(request, 'Files uploaded successfully!')
             
             messages.success(request, 'Project updated successfully!')
-            return redirect('projects:project_detail', pk=pk)
+            return redirect('projects:project_triage')
             
         except ValueError as e:
             print(f"Validation error: {str(e)}")  # Debug log
@@ -265,7 +271,7 @@ def delete_attachment(request, project_pk, file_pk):
     return redirect('projects:project_update', pk=project_pk)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_scoring_list(request):
     search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
@@ -281,7 +287,7 @@ def project_scoring_list(request):
     return render(request, 'projects/project_scoring_list.html', {'projects': projects, 'search_query': search_query})
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_scoring(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
@@ -347,7 +353,7 @@ def project_scoring(request, pk):
     })
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_final_scoring_list(request):
     search_query = request.GET.get('search', '')
     projects = Project.objects.all().select_related('submitted_by').order_by('-final_priority', '-submission_date')
@@ -363,7 +369,7 @@ def project_final_scoring_list(request):
     return render(request, 'projects/project_final_scoring_list.html', {'projects': projects, 'search_query': search_query})
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_final_scoring(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
@@ -423,7 +429,7 @@ def update_final_priority(request, pk):
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_final_scoring_details(request, pk):
     project = get_object_or_404(Project, pk=pk)
     scores = project.scores.all().order_by('-created_at')

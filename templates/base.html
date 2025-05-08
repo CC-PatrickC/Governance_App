@@ -1,4 +1,5 @@
 {% load static %}
+{% load project_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,10 +68,12 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_create' %}active{% endif %}" href="{% url 'projects:project_create' %}">New Project</a>
                     </li>
-                    {% if user.is_staff %}
+                    {% if user.is_staff or user|has_group:'Triage Group' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_triage' %}active{% endif %}" href="{% url 'projects:project_triage' %}">Triage</a>
                     </li>
+                    {% endif %}
+                    {% if user.is_staff or user|has_group:'Scoring Group' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_scoring_list' %}active{% endif %}" href="{% url 'projects:project_scoring_list' %}">Scoring</a>
                     </li>
@@ -98,14 +101,6 @@
     </nav>
 
     <div class="container mt-4">
-        {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-        </div>
-        {% endfor %}
-        {% endif %}
-
         {% block content %}{% endblock %}
     </div>
 

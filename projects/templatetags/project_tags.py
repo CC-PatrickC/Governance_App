@@ -31,4 +31,8 @@ def average_score(queryset, field_name):
             return None
         return sum(values) / len(values)
     except (ValueError, TypeError, AttributeError):
-        return None 
+        return None
+
+@register.filter
+def has_group(user, group_name):
+    return user.groups.filter(name=group_name).exists() 
