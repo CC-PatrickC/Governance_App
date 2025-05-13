@@ -46,6 +46,7 @@
                     <th>ID</th>
                     <th>Project Name</th>
                     <th>Description</th>
+                    <th>Type</th>
                     <th>Priority</th>
                     <th>Status</th>
                     <th>Department</th>
@@ -60,14 +61,19 @@
                     <td>{{ project.formatted_id }}</td>
                     <td>{{ project.title }}</td>
                     <td>{{ project.description|truncatechars:100 }}</td>
-                    <td>
+                    <td class="text-center">
+                        <span class="type-badge type-{{ project.project_type|lower }}">
+                            {{ project.get_project_type_display }}
+                        </span>
+                    </td>
+                    <td class="text-center">
                         <span class="priority-badge priority-{{ project.priority|lower }}">
                             {{ project.priority }}
                         </span>
                     </td>
-                    <td>
+                    <td class="text-center">
                         <span class="status-badge status-{{ project.status|lower }}">
-                            {{ project.status|title }}
+                            {{ project.get_status_display }}
                         </span>
                     </td>
                     <td>{{ project.department|default:"-" }}</td>
@@ -104,67 +110,9 @@
 </div>
 
 <style>
-    .badge {
-        font-size: 0.875rem;
-        padding: 0.35em 0.65em;
-    }
-    
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
-    }
-
-    .priority-badge, .status-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        display: inline-block;
-    }
-
-    .priority-low {
-        background-color: #e2e8f0;
-        color: #4a5568;
-    }
-
-    .priority-normal {
-        background-color: #bee3f8;
-        color: #2b6cb0;
-    }
-
-    .priority-high {
-        background-color: #feb2b2;
-        color: #c53030;
-    }
-
-    .priority-top {
-        background-color: #f56565;
-        color: white;
-    }
-
-    .status-pending {
-        background-color: #f6e05e;
-        color: #744210;
-    }
-
-    .status-approved {
-        background-color: #68d391;
-        color: #1a4731;
-    }
-
-    .status-rejected {
-        background-color: #fc8181;
-        color: #742a2a;
-    }
-
-    .status-in_progress {
-        background-color: #63b3ed;
-        color: #2a4365;
-    }
-
-    .status-completed {
-        background-color: #a0aec0;
-        color: #2d3748;
     }
     
     .final-priority-input {
