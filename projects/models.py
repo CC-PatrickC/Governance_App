@@ -192,3 +192,15 @@ class ProjectScore(models.Model):
         # Calculate and save the final score before saving
         self.final_score = self.calculate_final_score()
         super().save(*args, **kwargs)
+
+class TriageNote(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='triage_note_history')
+    notes = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Triage note for {self.project.title} by {self.created_by.username} on {self.created_at}"

@@ -29,7 +29,8 @@
 - [ ] Add POC on Triage detail page to include name, email, and phone number.
 - [x] Project List page - Make the Type column the same size and font as the priorty and status
 - [x] Add an X to the search bar to clear the input
-- [ ] Fix to the triage notes to include all updates and place then in decending order by date and time
+- [x] Fix to the triage notes to include all updates and place then in decending order by date and time
+- [x] Made the all the type, priorty, and status columns the same throughout the app
 
 ### Scoring Page
 - [x] Add validation for scoring values (ensure they're within acceptable ranges)
@@ -85,3 +86,4 @@
 - [ ] Improve mobile responsiveness
 - [ ] Automated system to update the status as the request is going through the process
 - [ ] Archive page for requests
+- [ ] Workflow with notifications and reminders

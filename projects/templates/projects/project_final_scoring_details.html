@@ -5,7 +5,7 @@
 {% block title %}Final Score Details - {{ project.title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ project.title }} - Final Score Details</h2>
         <div>
@@ -29,7 +29,7 @@
         <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Project Summary</h5>
+                    <h5 class="mb-0">Project Details</h5>
                     <span class="badge {% if project.status == 'approved' %}bg-success
                                      {% elif project.status == 'rejected' %}bg-danger
                                      {% elif project.status == 'in_progress' %}bg-primary
@@ -41,38 +41,35 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
+                            <h6 class="mb-3">Project Information</h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Project Type:</strong> 
-                                <span class="badge bg-info">
+                                <span class="type-badge type-{{ project.project_type|lower }}">
                                     {{ project.get_project_type_display }}
                                 </span>
                             </p>
                             <p><strong>Priority:</strong> 
-                                <span class="badge {% if project.priority == 'Top' %}bg-dark-red
-                                                 {% elif project.priority == 'High' %}bg-danger
-                                                 {% elif project.priority == 'Normal' %}bg-warning
-                                                 {% else %}bg-success{% endif %}">
+                                <span class="priority-badge priority-{{ project.priority|lower }}">
                                     {{ project.priority }}
                                 </span>
                             </p>
-                            <p><strong>Final Priority:</strong> 
-                                <span class="badge {% if project.final_priority == 3 %}bg-danger
-                                                 {% elif project.final_priority == 2 %}bg-warning
-                                                 {% else %}bg-success{% endif %}">
-                                    {% if project.final_priority == 3 %}High
-                                    {% elif project.final_priority == 2 %}Medium
-                                    {% elif project.final_priority == 1 %}Low
-                                    {% else %}Not Set{% endif %}
-                                </span>
-                            </p>
-                        </div>
-                        <div class="col-md-4">
-                            <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
-                            <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                             <p><strong>Final Score:</strong> {{ project.final_score|floatformat:2|default:"Not scored" }}</p>
+                            {% if project.files.all %}
+                            <div class="mt-3">
+                                <h6 class="mb-2"><strong>Attachments:</strong></h6>
+                                <div class="list-group">
+                                    {% for file in project.files.all %}
+                                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <p><strong>Contact Person:</strong> 
+                            <h6 class="mb-3">Contact Information</h6>
+                            <p><strong>Submitted By:</strong> 
                                 {% if project.submitted_by.first_name and project.submitted_by.last_name %}
                                     {{ project.submitted_by.get_full_name }}
                                 {% else %}
@@ -81,72 +78,83 @@
                             </p>
                             <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-3">Timeline</h6>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                            <p><strong>Last Updated:</strong> {{ project.updated_at|date:"F j, Y" }}</p>
+                            {% if project.triage_date %}
+                            <p><strong>Triage Date:</strong> {{ project.triage_date|date:"F j, Y" }}</p>
+                            {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Project Description section moved outside the columns to span full width -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Project Description</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-12">
-                    <p>{{ project.description|linebreaks }}</p>
-                </div>
-            </div>
-            
-            {% if project.triage_notes %}
-            <div class="mt-4">
-                <h6 class="mb-3"><strong>Triage Notes:</strong></h6>
-                <div class="p-3 rounded bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>{{ project.triaged_by.username|default:"System" }}</strong>
-                        <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
-                    </div>
-                    <div class="triage-notes-content">
-                        {{ project.triage_notes|linebreaks }}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if scores %}
-            <div class="mt-4">
-                <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
-                {% for score in scores %}
-                    {% if score.scoring_notes %}
-                    <div class="p-3 rounded bg-light mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>{{ score.scored_by.username }}</strong>
-                            <small class="text-muted">Score: {{ score.final_score|floatformat:2 }}</small>
-                        </div>
-                        <div class="scoring-notes-content">
-                            {{ score.scoring_notes|linebreaks }}
+
+                    <h5 class="card-title mt-4 fw-bold">Description</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    
+                    {% if project.triage_notes %}
+                    <div class="mt-4">
+                        <h6 class="mb-3"><strong>Triage Notes:</strong></h6>
+                        <div class="p-3 rounded bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                                <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
+                            </div>
+                            <div class="triage-notes-content">
+                                {{ project.triage_notes|linebreaks }}
+                            </div>
                         </div>
                     </div>
                     {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
 
-            {% if project.files.all %}
-            <div class="mt-4">
-                <h6 class="mb-3"><strong>Attachments:</strong></h6>
-                <div class="list-group">
-                    {% for file in project.files.all %}
-                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
-                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
-                    </a>
-                    {% endfor %}
+                    {% if project.triage_note_history.exists %}
+                    <div class="mt-4">
+                        <h6 class="mb-3"><strong>Triage Note History:</strong></h6>
+                        <div class="list-group">
+                            {% for note in project.triage_note_history.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> {{ note.created_by.username }} 
+                                        <i class="fas fa-clock ms-2"></i> 
+                                        <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
+                                            {{ note.created_at|date:"F j, Y, g:i a" }}
+                                        </span>
+                                    </small>
+                                </div>
+                                <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if scores %}
+                    <div class="mt-4">
+                        <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
+                        {% for score in scores %}
+                            {% if score.scoring_notes %}
+                            <div class="p-3 rounded bg-light mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>{{ score.scored_by.username }}</strong>
+                                    <small class="text-muted">
+                                        Score: {{ score.final_score|floatformat:2 }}
+                                        <i class="fas fa-clock ms-2"></i>
+                                        <span class="local-time" data-utc="{{ score.created_at|date:'c' }}">
+                                            {{ score.created_at|date:"F j, Y, g:i a" }}
+                                        </span>
+                                    </small>
+                                </div>
+                                <div class="scoring-notes-content">
+                                    {{ score.scoring_notes|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
     
@@ -230,4 +238,25 @@
         padding-left: 15px;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Convert all UTC timestamps to local time
+    document.querySelectorAll('.local-time').forEach(function(element) {
+        const utcTime = element.getAttribute('data-utc');
+        if (utcTime) {
+            const date = new Date(utcTime);
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            };
+            element.textContent = date.toLocaleString(undefined, options);
+        }
+    });
+});
+</script>
 {% endblock %} 

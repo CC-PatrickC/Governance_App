@@ -79,11 +79,29 @@
                     <small class="form-text text-muted">The primary contact person for this project.</small>
                 </div>
 
-                <div class="mb-3">
-                    <label for="triage_notes" class="form-label">Triage Notes</label>
-                    <textarea class="form-control" id="triage_notes" name="triage_notes" rows="4">{{ project.triage_notes|default:'' }}</textarea>
-                    <small class="form-text text-muted">Add any notes or observations from the triage process.</small>
+                <div class="form-group">
+                    <label for="triage_notes">Triage Notes</label>
+                    <textarea class="form-control" id="triage_notes" name="triage_notes" rows="3">{{ project.triage_notes }}</textarea>
                 </div>
+
+                {% if project.triage_note_history.exists %}
+                <div class="mt-4">
+                    <h5>Triage Note History</h5>
+                    <div class="list-group">
+                        {% for note in project.triage_note_history.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ note.created_by.username }} 
+                                    <i class="fas fa-clock ms-2"></i> {{ note.created_at|date:"F j, Y, g:i a" }}
+                                </small>
+                            </div>
+                            <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
 
                 {% if project.files.all %}
                 <div class="mb-3">

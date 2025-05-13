@@ -5,9 +5,9 @@
 {% block title %}Score Project - {{ project.title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ project.title }}</h2>
+        <h2>{{ project.title }} - Scoring Details</h2>
         <div>
             <a href="{% url 'projects:project_scoring_list' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Scoring
@@ -26,7 +26,7 @@
     {% endif %}
 
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Project Details</h5>
@@ -39,48 +39,91 @@
                     </span>
                 </div>
                 <div class="card-body">
-                    <h5 class="card-title">Description</h5>
-                    <p class="card-text">{{ project.description }}</p>
-                    
-                    <h5 class="card-title mt-4">Project Details</h5>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <h6 class="mb-3">Project Information</h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Project Type:</strong> 
-                                <span class="badge bg-info">
+                                <span class="type-badge type-{{ project.project_type|lower }}">
                                     {{ project.get_project_type_display }}
                                 </span>
                             </p>
                             <p><strong>Priority:</strong> 
-                                <span class="badge {% if project.priority == 'Top' %}bg-dark-red
-                                                 {% elif project.priority == 'High' %}bg-danger
-                                                 {% elif project.priority == 'Normal' %}bg-warning
-                                                 {% else %}bg-success{% endif %}">
+                                <span class="priority-badge priority-{{ project.priority|lower }}">
                                     {{ project.priority }}
                                 </span>
                             </p>
+
+                            {% if project.files.all %}
+                            <div class="mt-3">
+                                <h6 class="mb-2"><strong>Attachments:</strong></h6>
+                                <div class="list-group">
+                                    {% for file in project.files.all %}
+                                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
+                        <div class="col-md-4">
+                            <h6 class="mb-3">Contact Information</h6>
+                            <p><strong>Submitted By:</strong> 
+                                {% if project.submitted_by.first_name and project.submitted_by.last_name %}
+                                    {{ project.submitted_by.get_full_name }}
+                                {% else %}
+                                    {{ project.submitted_by.username }}
+                                {% endif %}
+                            </p>
+                            <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                            <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-3">Timeline</h6>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
+                            <p><strong>Last Updated:</strong> {{ project.updated_at|date:"F j, Y" }}</p>
+                            {% if project.triage_date %}
+                            <p><strong>Triage Date:</strong> {{ project.triage_date|date:"F j, Y" }}</p>
+                            {% endif %}
                         </div>
                     </div>
 
+                    <h5 class="card-title mt-4 fw-bold">Description</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    
                     <div class="mt-3">
                         <p><strong>Triage Notes:</strong></p>
-                        <div class="p-3 rounded">
-                            {{ project.triage_notes|default:"No triage notes"|linebreaks }}
+                        <div class="p-3 rounded bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                                <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
+                            </div>
+                            <div class="triage-notes-content">
+                                {{ project.triage_notes|default:"No triage notes"|linebreaks }}
+                            </div>
                         </div>
                     </div>
 
-                    {% if project.files.all %}
-                    <h5 class="card-title mt-4">Attachments</h5>
-                    <div class="list-group">
-                        {% for file in project.files.all %}
-                        <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
-                            <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
-                        </a>
-                        {% endfor %}
+                    {% if project.triage_note_history.exists %}
+                    <div class="mt-4">
+                        <h6 class="mb-3"><strong>Triage Note History:</strong></h6>
+                        <div class="list-group">
+                            {% for note in project.triage_note_history.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> {{ note.created_by.username }} 
+                                        <i class="fas fa-clock ms-2"></i> 
+                                        <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
+                                            {{ note.created_at|date:"F j, Y, g:i a" }}
+                                        </span>
+                                    </small>
+                                </div>
+                                <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -246,26 +289,6 @@
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Contact Information</h5>
-                </div>
-                <div class="card-body">
-                    <p><strong>Contact Person:</strong> 
-                        {% if project.submitted_by.first_name and project.submitted_by.last_name %}
-                            {{ project.submitted_by.get_full_name }}
-                        {% else %}
-                            {{ project.submitted_by.username }}
-                        {% endif %}
-                    </p>
-                    <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
-                    <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
-                    <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -309,6 +332,11 @@
 
     .tooltip {
         max-width: 300px;
+    }
+
+    .triage-notes-content {
+        border-left: 3px solid #0d6efd;
+        padding-left: 15px;
     }
 </style>
 

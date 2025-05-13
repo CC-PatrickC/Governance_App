@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
-from .models import Project, ProjectFile, ProjectScore
+from .models import Project, ProjectFile, ProjectScore, TriageNote
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -178,6 +178,16 @@ def project_update(request, pk):
             if not title:
                 raise ValueError("Title is required")
             
+            # Check if triage notes have changed
+            new_triage_notes = request.POST.get('triage_notes', '')
+            if new_triage_notes != project.triage_notes:
+                # Create a new triage note
+                TriageNote.objects.create(
+                    project=project,
+                    notes=new_triage_notes,
+                    created_by=request.user
+                )
+            
             project.title = title
             project.description = request.POST.get('description', '')
             project.project_type = request.POST.get('project_type')
@@ -185,7 +195,7 @@ def project_update(request, pk):
             project.status = request.POST.get('status')
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
-            project.triage_notes = request.POST.get('triage_notes', '')
+            project.triage_notes = new_triage_notes
             project.contact_person = request.POST.get('contact_person', '')
             
             # Save the project
