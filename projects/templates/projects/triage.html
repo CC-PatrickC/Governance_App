@@ -56,25 +56,18 @@
                     <td>{{ project.formatted_id }}</td>
                     <td>{{ project.title }}</td>
                     <td>{{ project.description|truncatewords:20 }}</td>
-                    <td>
-                        <span class="badge bg-info">
+                    <td class="text-center">
+                        <span class="type-badge type-{{ project.project_type|lower }}">
                             {{ project.get_project_type_display }}
                         </span>
                     </td>
-                    <td>
-                        <span class="badge {% if project.priority == 'Top' %}bg-dark-red
-                                         {% elif project.priority == 'High' %}bg-danger
-                                         {% elif project.priority == 'Normal' %}bg-warning
-                                         {% else %}bg-success{% endif %}">
+                    <td class="text-center">
+                        <span class="priority-badge priority-{{ project.priority|lower }}">
                             {{ project.priority }}
                         </span>
                     </td>
-                    <td>
-                        <span class="badge {% if project.status == 'pending' %}bg-warning
-                                         {% elif project.status == 'approved' %}bg-success
-                                         {% elif project.status == 'rejected' %}bg-danger
-                                         {% elif project.status == 'in_progress' %}bg-info
-                                         {% else %}bg-secondary{% endif %}">
+                    <td class="text-center">
+                        <span class="status-badge status-{{ project.status|lower }}">
                             {{ project.get_status_display }}
                         </span>
                     </td>
@@ -87,7 +80,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center">No projects found.</td>
+                    <td colspan="8" class="text-center">No projects found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -96,19 +89,9 @@
 </div>
 
 <style>
-    .badge {
-        font-size: 0.875rem;
-        padding: 0.35em 0.65em;
-    }
-    
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
-    }
-
-    .bg-dark-red {
-        background-color: #8B0000;
-        color: white;
     }
 </style>
 {% endblock %} 

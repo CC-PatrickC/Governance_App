@@ -35,7 +35,7 @@
                     <p><strong>Submitted by:</strong> {{ project.submitted_by.username }}</p>
                     <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                     <p><strong>Project Type:</strong> 
-                        <span class="badge bg-info">
+                        <span class="type-badge type-{{ project.project_type|lower }}">
                             {{ project.get_project_type_display }}
                         </span>
                         {% if user.is_staff %}
@@ -45,19 +45,12 @@
                         {% endif %}
                     </p>
                     <p><strong>Priority:</strong> 
-                        <span class="badge {% if project.priority == 'Top' %}bg-dark-red
-                                         {% elif project.priority == 'High' %}bg-danger
-                                         {% elif project.priority == 'Normal' %}bg-warning
-                                         {% else %}bg-success{% endif %}">
+                        <span class="priority-badge priority-{{ project.priority|lower }}">
                             {{ project.priority }}
                         </span>
                     </p>
                     <p><strong>Status:</strong> 
-                        <span class="badge {% if project.status == 'pending' %}bg-warning
-                                         {% elif project.status == 'approved' %}bg-success
-                                         {% elif project.status == 'rejected' %}bg-danger
-                                         {% elif project.status == 'in_progress' %}bg-info
-                                         {% else %}bg-secondary{% endif %}">
+                        <span class="status-badge status-{{ project.status|lower }}">
                             {{ project.get_status_display }}
                         </span>
                     </p>
