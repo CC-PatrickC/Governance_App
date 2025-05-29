@@ -8,6 +8,7 @@ urlpatterns = [
     path('triage/', views.project_triage, name='project_triage'),
     path('scoring/', views.project_scoring_list, name='project_scoring_list'),
     path('final-scoring/', views.project_final_scoring_list, name='project_final_scoring_list'),
+    path('cabinet-dashboard/', views.cabinet_dashboard, name='cabinet_dashboard'),
     path('new/', views.project_create, name='project_create'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
     path('<int:pk>/edit/', views.project_update, name='project_update'),

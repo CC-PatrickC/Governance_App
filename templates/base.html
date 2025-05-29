@@ -1,7 +1,7 @@
 {% load static %}
 {% load project_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,8 +10,74 @@
     <link rel="stylesheet" href="{% static 'projects/css/style.css' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            /* Light mode variables */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --nav-bg: #f8f9fa;
+            --nav-text: #212529;
+            --nav-hover: #e9ecef;
+        }
+
+        [data-bs-theme="dark"] {
+            /* Dark mode variables */
+            --bg-primary: #212529;
+            --bg-secondary: #343a40;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #495057;
+            --card-bg: #2c3034;
+            --nav-bg: #343a40;
+            --nav-text: #f8f9fa;
+            --nav-hover: #495057;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .navbar {
+            background-color: var(--nav-bg) !important;
+        }
+
+        .navbar .nav-link {
+            color: var(--nav-text) !important;
+        }
+
+        .navbar .nav-link:hover {
+            background-color: var(--nav-hover);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+
+        .card-header {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--nav-hover);
+        }
+
         .navbar-brand {
             font-weight: bold;
+            color: var(--text-primary) !important;
         }
         .content {
             padding: 20px;
@@ -21,11 +87,28 @@
         }
         .nav-link.active {
             font-weight: bold;
-            color: #fff !important;
+            color: var(--text-primary) !important;
             pointer-events: none;
             cursor: default;
         }
+
+        /* Override Bootstrap's default dark navbar styles */
+        .navbar-dark .navbar-brand,
+        .navbar-dark .nav-link {
+            color: var(--nav-text) !important;
+        }
+
+        [data-bs-theme="light"] .navbar-dark .navbar-brand,
+        [data-bs-theme="light"] .navbar-dark .nav-link {
+            color: var(--text-primary) !important;
+        }
+
+        [data-bs-theme="light"] .navbar-dark .nav-link.active {
+            color: var(--text-primary) !important;
+            background-color: var(--nav-hover);
+        }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -55,14 +138,33 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_final_scoring_list' %}active{% endif %}" href="{% url 'projects:project_final_scoring_list' %}">Final Scoring</a>
                     </li>
                     {% endif %}
+                    {% if user.is_staff or user|has_group:'Cabinet Group' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'cabinet_dashboard' %}active{% endif %}" href="{% url 'projects:cabinet_dashboard' %}">Dashboard</a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <button class="theme-toggle nav-link" id="themeToggle">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <span class="nav-link">Welcome, {{ user.username }}</span>
+                        <span class="nav-link">Welcome, 
+                            {% if user.first_name and user.last_name %}
+                                {{ user.get_full_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav-link">Logout</button>
+                        </form>
                     </li>
                     {% else %}
                     <li class="nav-item">
@@ -79,6 +181,32 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const icon = themeToggle.querySelector('i');
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            html.setAttribute('data-bs-theme', savedTheme);
+            updateIcon(savedTheme);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateIcon(newTheme);
+        });
+
+        function updateIcon(theme) {
+            icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

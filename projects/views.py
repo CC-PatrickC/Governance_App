@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
-from .models import Project, ProjectFile, ProjectScore
+from .models import Project, ProjectFile, ProjectScore, TriageNote
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -17,15 +17,22 @@ def is_triage_user(user):
 def is_scoring_user(user):
     return user.is_staff or user.groups.filter(name='Scoring Group').exists()
 
+def is_cabinet_user(user):
+    return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+
+@login_required
 def project_list(request):
     search_query = request.GET.get('search', '')
-    filter_type = request.GET.get('filter', '')
-    projects = Project.objects.all().select_related('submitted_by')
+    filter_type = request.GET.get('filter', 'all')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    department_filter = request.GET.get('department', '')
+
+    # Base queryset
+    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
     
-    # Filter for user's projects if requested
-    if filter_type == 'my_projects' and request.user.is_authenticated:
-        projects = projects.filter(submitted_by=request.user)
-    
+    # Apply search filter
     if search_query:
         projects = projects.filter(
             models.Q(title__icontains=search_query) |
@@ -34,18 +41,73 @@ def project_list(request):
             models.Q(submitted_by__username__icontains=search_query)
         )
     
-    return render(request, 'projects/project_list.html', {
-        'projects': projects, 
+    # Apply my projects filter
+    if filter_type == 'my_projects':
+        projects = projects.filter(submitted_by=request.user)
+    
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
         'search_query': search_query,
-        'filter_type': filter_type
-    })
+        'filter_type': filter_type,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/project_list.html', context)
 
 @login_required
 @user_passes_test(is_triage_user)
 def project_triage(request):
     search_query = request.GET.get('search', '')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    department_filter = request.GET.get('department', '')
+
+    # Base queryset
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
     
+    # Apply search filter
     if search_query:
         projects = projects.filter(
             models.Q(title__icontains=search_query) |
@@ -54,7 +116,54 @@ def project_triage(request):
             models.Q(submitted_by__username__icontains=search_query)
         )
     
-    return render(request, 'projects/triage.html', {'projects': projects, 'search_query': search_query})
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/triage.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -153,6 +262,7 @@ def project_create(request):
     
     return render(request, 'projects/project_form.html', {'form': form})
 
+@login_required
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
     return render(request, 'projects/project_detail.html', {'project': project})
@@ -178,6 +288,16 @@ def project_update(request, pk):
             if not title:
                 raise ValueError("Title is required")
             
+            # Check if triage notes have changed
+            new_triage_notes = request.POST.get('triage_notes', '')
+            if new_triage_notes != project.triage_notes:
+                # Create a new triage note
+                TriageNote.objects.create(
+                    project=project,
+                    notes=new_triage_notes,
+                    created_by=request.user
+                )
+            
             project.title = title
             project.description = request.POST.get('description', '')
             project.project_type = request.POST.get('project_type')
@@ -185,7 +305,7 @@ def project_update(request, pk):
             project.status = request.POST.get('status')
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
-            project.triage_notes = request.POST.get('triage_notes', '')
+            project.triage_notes = new_triage_notes
             project.contact_person = request.POST.get('contact_person', '')
             
             # Save the project
@@ -274,8 +394,15 @@ def delete_attachment(request, project_pk, file_pk):
 @user_passes_test(is_scoring_user)
 def project_scoring_list(request):
     search_query = request.GET.get('search', '')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    department_filter = request.GET.get('department', '')
+
+    # Base queryset
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
     
+    # Apply search filter
     if search_query:
         projects = projects.filter(
             models.Q(title__icontains=search_query) |
@@ -284,7 +411,54 @@ def project_scoring_list(request):
             models.Q(submitted_by__username__icontains=search_query)
         )
     
-    return render(request, 'projects/project_scoring_list.html', {'projects': projects, 'search_query': search_query})
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/project_scoring_list.html', context)
 
 @login_required
 @user_passes_test(is_scoring_user)
@@ -438,3 +612,34 @@ def project_final_scoring_details(request, pk):
         'project': project,
         'scores': scores
     })
+
+@login_required
+@user_passes_test(is_cabinet_user)
+def cabinet_dashboard(request):
+    # Get all projects for statistics
+    projects = Project.objects.all()
+    
+    # Calculate statistics
+    total_projects = projects.count()
+    projects_by_status = projects.values('status').annotate(count=models.Count('id'))
+    projects_by_priority = projects.values('priority').annotate(count=models.Count('id'))
+    projects_by_type = projects.values('project_type').annotate(count=models.Count('id'))
+    projects_by_department = projects.values('department').annotate(count=models.Count('id'))
+    
+    # Get recent projects
+    recent_projects = projects.order_by('-submission_date')[:5]
+    
+    # Get high priority projects
+    high_priority_projects = projects.filter(priority__in=['Top', 'High']).order_by('-submission_date')
+    
+    context = {
+        'total_projects': total_projects,
+        'projects_by_status': projects_by_status,
+        'projects_by_priority': projects_by_priority,
+        'projects_by_type': projects_by_type,
+        'projects_by_department': projects_by_department,
+        'recent_projects': recent_projects,
+        'high_priority_projects': high_priority_projects,
+    }
+    
+    return render(request, 'projects/cabinet_dashboard.html', context)

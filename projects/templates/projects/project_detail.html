@@ -1,19 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}{{ project.title }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ project.title }}</h2>
         <div>
-            {% if user.is_staff %}
-            <a href="{% url 'projects:project_update' project.id %}" class="btn btn-primary">
-                <i class="fas fa-edit"></i> Edit Project
+            <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Projects
             </a>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                <i class="fas fa-trash"></i> Delete Project
-            </button>
-            {% endif %}
         </div>
     </div>
 
@@ -32,7 +29,13 @@
             <h5 class="card-title">Project Details</h5>
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Submitted by:</strong> {{ project.submitted_by.username }}</p>
+                    <p><strong>Submitted by:</strong> 
+                        {% if project.submitted_by.first_name and project.submitted_by.last_name %}
+                            {{ project.submitted_by.get_full_name }}
+                        {% else %}
+                            {{ project.submitted_by.username }}
+                        {% endif %}
+                    </p>
                     <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                     <p><strong>Project Type:</strong> 
                         <span class="type-badge type-{{ project.project_type|lower }}">
@@ -58,16 +61,93 @@
                 <div class="col-md-6">
                     <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                     <p><strong>Notes:</strong> {{ project.notes|default:"No notes" }}</p>
-                    <p><strong>Contact Person:</strong> {{ project.contact_person|default:"Not specified" }}</p>
+                    <p><strong>Contact Person:</strong> 
+                        {% if project.contact_person.first_name and project.contact_person.last_name %}
+                            {{ project.contact_person.get_full_name }}
+                        {% else %}
+                            {{ project.contact_person|default:"Not specified" }}
+                        {% endif %}
+                    </p>
                 </div>
             </div>
-        </div>
-    </div>
+            
+            <div class="mt-4">
+                <h5 class="card-title">Description</h5>
+                <p class="card-text">{{ project.description }}</p>
+            </div>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Description</h5>
-            <p class="card-text">{{ project.description }}</p>
+            <div class="mt-3">
+                <p><strong>Triage Notes:</strong></p>
+                <div class="p-3 rounded bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>
+                            {% if project.triaged_by.first_name and project.triaged_by.last_name %}
+                                {{ project.triaged_by.get_full_name }}
+                            {% else %}
+                                {{ project.triaged_by.username }}
+                            {% endif %}
+                        </strong>
+                        <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
+                    </div>
+                    <div class="triage-notes-content">
+                        {{ project.triage_notes|default:"No triage notes"|linebreaks }}
+                    </div>
+                </div>
+            </div>
+
+            {% if project.triage_note_history.exists %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Triage Note History:</strong></h6>
+                <div class="list-group">
+                    {% for note in project.triage_note_history.all %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> 
+                                {% if note.created_by.first_name and note.created_by.last_name %}
+                                    {{ note.created_by.get_full_name }}
+                                {% else %}
+                                    {{ note.created_by.username }}
+                                {% endif %}
+                                <i class="fas fa-clock ms-2"></i> 
+                                <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
+                                    {{ note.created_at|date:"F j, Y, g:i a" }}
+                                </span>
+                            </small>
+                        </div>
+                        <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if project.scoring_notes %}
+            <div class="mt-4">
+                <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
+                <div class="list-group">
+                    {% for note in project.scoring_notes.all %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> 
+                                {% if note.created_by.first_name and note.created_by.last_name %}
+                                    {{ note.created_by.get_full_name }}
+                                {% else %}
+                                    {{ note.created_by.username }}
+                                {% endif %}
+                                <i class="fas fa-clock ms-2"></i> 
+                                <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
+                                    {{ note.created_at|date:"F j, Y, g:i a" }}
+                                </span>
+                            </small>
+                        </div>
+                        <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -143,16 +223,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    .badge {
-        font-size: 0.875rem;
-        padding: 0.35em 0.65em;
-    }
-    
-    .bg-dark-red {
-        background-color: #8B0000;
-        color: white;
-    }
-</style>
 {% endblock %} 

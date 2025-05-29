@@ -15,6 +15,8 @@
 - [x] Set up Django project
 - [x] Create initial models
 - [x] Add filtering and sorting to project lists
+- [x] Change the color of status, priorty, ect
+- [x] Various dark / grey modes
 
 ## Pending Tasks
 - [x] Implement search functionality
@@ -23,25 +25,27 @@
 - [ ] Create documentation for users and administrators
 - [x] Create a new project
 - [x] Add scoring criteria
-- [ ] Submit project for review
+- [ ] Submit project for testing/review
 - [x] Filter to only show end-users projects
 - [x] Make the nav bar bold and and not selected 
-- [ ] Add POC on Triage detail page to include name, email, and phone number.
+- [x] Add POC on Triage detail page to include name, email, and phone number.
 - [x] Project List page - Make the Type column the same size and font as the priorty and status
 - [x] Add an X to the search bar to clear the input
-- [ ] Fix to the triage notes to include all updates and place then in decending order by date and time
+- [x] Fix to the triage notes to include all updates and place then in decending order by date and time
+- [x] Made the all the type, priorty, and status columns the same throughout the app
+- [x] Make the Project List entries more narrow. Matching the rest of the app's list pages.
 
 ### Scoring Page
 - [x] Add validation for scoring values (ensure they're within acceptable ranges)
-- [ ] Implement scoring history to track changes over time
-- [ ] Add comments/feedback section for each scoring criterion
+- [x] Implement scoring history to track changes over time
+- [x] Add comments/feedback section for each scoring criterion
 - [x] Implement scoring guidelines display
-- [ ] Add export functionality for scoring reports
-- [ ] Create scoring dashboard with statistics and trends
-- [ ] Add more project details in the details section
+- [?] Add export functionality for scoring reports
+- [x] Add more project details in the details section
 - [x] Implement weighted scoring questions
 - [?] Create a popup dialog for score changes that requires a reason
 - [?] Add score change history with reasons for each change
+- [ ] Add ability to request additional information before scoring.
 
 ### Final Scoring Page
 - [x] Create a dedicated final scoring review page
@@ -49,13 +53,36 @@
 - [ ] Implement final approval workflow with multiple approvers
 - [ ] Add ability to request additional information before final approval
 - [ ] Create a scoring summary report for final review
-- [ ] Add comparison with similar projects for reference
 - [ ] Implement final score justification requirements
 - [ ] Add budget impact assessment section
 - [ ] Create timeline estimation based on final score
 - [ ] Add resource allocation recommendations
 - [ ] Implement final decision tracking (approved, rejected, deferred)
 - [ ] Add notification system for final scoring decisions
+- [ ] Add export functionality (CSV, PDF)
+
+### Dashboard Page
+- [x] Create a dashboard page to show all project information
+- [ ] Implement project statistics overview (total projects, by status, by priority)
+- [ ] Add project timeline visualization showing projects by month/quarter
+- [ ] Create department-wise project distribution chart
+- [ ] Implement project type distribution pie chart
+- [ ] Add recent activity feed showing latest project updates
+- [ ] Create priority-based project heat map
+- [ ] Add project completion rate metrics
+- [ ] Implement average scoring trends visualization
+- [ ] Create resource allocation overview
+- [ ] Add quick filters for dashboard data
+- [ ] Implement export functionality for dashboard reports
+- [ ] Add customizable dashboard widgets
+- [ ] Create project health indicators
+- [ ] Implement real-time dashboard updates
+- [ ] Add drill-down functionality for detailed views
+- [ ] Create department performance metrics
+- [ ] Add project risk assessment visualization
+- [ ] Implement budget tracking dashboard
+- [ ] Create user-specific dashboard views
+- [ ] Create scoring dashboard with statistics and trends
 
 ## Future Enhancements
 - [ ] Add API endpoints for integration with other systems
@@ -63,25 +90,29 @@
 - [ ] Add support for project templates
 - [ ] Implement project dependencies tracking
 - [ ] Add support for project budgets and resource allocation
-- [ ] Create a mobile app version
 - [ ] Implement advanced reporting features
 - [ ] Add support for multiple languages
-- [ ] Various dark modes Dark / Grey
 - [ ] Color blind mode 
-- [ ] Change the color of status, priorty, ect
 - [ ] Implement AI to help review and summary
-- [ ] Add a Tile list 
-- [ ] Implement user profile management
-- [ ] Add export functionality (CSV, PDF)
-- [ ] Add audit logging for all actions
-- [ ] Add Single Sign-on
-- [ ] Connect to AD to auto populate the Department / Name
 - [ ] Add email notifications for project status changes
 - [ ] Feedback page
 - [ ] Filters on the project list page
 - [ ] Create a dashboard with tile list and filters
 - [ ] Add data visualization for project metrics with a dashboard
 - [ ] Optimize database queries
-- [ ] Improve mobile responsiveness
 - [ ] Automated system to update the status as the request is going through the process
 - [ ] Archive page for requests
+- [ ] Workflow with notifications and reminders
+- [ ] Create a Card/Tile View for Project List, Scoring, Tirage, and Final Scoring Page
+- [ ] Create seperate groups for each Project Type
+
+## Future User Enhancements
+- [ ] Implement user profile management
+- [ ] Add audit logging for all actions
+- [ ] Add Single Sign-on
+- [ ] Connect to AD to auto populate the Department / Name
+- [ ] Create seperate groups for each Project Type
+
+## Mobile App creation
+- [ ] Create a mobile app version
+- [ ] Improve mobile responsiveness
