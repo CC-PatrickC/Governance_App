@@ -1,9 +1,11 @@
-.priority-badge {
-    display: inline-block;
-    padding: 0.35em 0.65em;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: 0.25rem;
+.priority-badge,
+.status-badge,
+.type-badge {
+    display: inline-block !important;
+    padding: 0.35em 0.65em !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    border-radius: 0.25rem !important;
 }
 
 .priority-low {
@@ -24,14 +26,6 @@
 .priority-top {
     background-color: #800b0b;
     color: white;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 0.35em 0.65em;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: 0.25rem;
 }
 
 .status-pending {
@@ -59,35 +53,27 @@
     color: #374151;
 }
 
-.type-badge {
-    display: inline-block;
-    padding: 0.35em 0.65em;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: 0.25rem;
-}
-
 .type-not_yet_decided {
-    background-color: #e2e8f0;
-    color: #4a5568;
+    background-color: #e2e8f0 !important;
+    color: #4a5568 !important;
 }
 
 .type-process_improvement {
-    background-color: #0466C8;
-    color: white;
+    background-color: #0466C8 !important;
+    color: white !important;
 }
 
 .type-it_governance {
-    background-color: #0353A4;
-    color: white;
+    background-color: #0353A4 !important;
+    color: white !important;
 }
 
 .type-erp_governance {
-    background-color: #023E7D;
-    color: white;
+    background-color: #023E7D !important;
+    color: white !important;
 }
 
 .type-data_governance {
-    background-color: #002855;
-    color: white;
+    background-color: #002855 !important;
+    color: white !important;
 } 

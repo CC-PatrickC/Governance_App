@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="mb-3">Project Information</h6>
+                            <h6 class="section-header mb-3">Project Information</h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Project Type:</strong> 
                                 <span class="type-badge type-{{ project.project_type|lower }}">
@@ -68,7 +68,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <h6 class="mb-3">Contact Information</h6>
+                            <h6 class="section-header mb-3">Contact Information</h6>
                             <p><strong>Submitted By:</strong> 
                                 {% if project.submitted_by.first_name and project.submitted_by.last_name %}
                                     {{ project.submitted_by.get_full_name }}
@@ -80,7 +80,7 @@
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="mb-3">Timeline</h6>
+                            <h6 class="section-header mb-3">Timeline</h6>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                             <p><strong>Last Updated:</strong> {{ project.updated_at|date:"F j, Y" }}</p>
                             {% if project.triage_date %}
@@ -96,7 +96,13 @@
                         <p><strong>Triage Notes:</strong></p>
                         <div class="p-3 rounded bg-light">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                                <strong>
+                                    {% if project.triaged_by.first_name and project.triaged_by.last_name %}
+                                        {{ project.triaged_by.get_full_name }}
+                                    {% else %}
+                                        {{ project.triaged_by.username }}
+                                    {% endif %}
+                                </strong>
                                 <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
                             </div>
                             <div class="triage-notes-content">
@@ -113,7 +119,12 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">
-                                        <i class="fas fa-user"></i> {{ note.created_by.username }} 
+                                        <i class="fas fa-user"></i> 
+                                        {% if note.created_by.first_name and note.created_by.last_name %}
+                                            {{ note.created_by.get_full_name }}
+                                        {% else %}
+                                            {{ note.created_by.username }}
+                                        {% endif %}
                                         <i class="fas fa-clock ms-2"></i> 
                                         <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
                                             {{ note.created_at|date:"F j, Y, g:i a" }}
@@ -337,6 +348,22 @@
     .triage-notes-content {
         border-left: 3px solid #0d6efd;
         padding-left: 15px;
+    }
+
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2c3e50;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
     }
 </style>
 

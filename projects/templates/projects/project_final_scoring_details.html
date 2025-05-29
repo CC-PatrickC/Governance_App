@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="mb-3">Project Information</h6>
+                            <h6 class="section-header mb-3">Project Information</h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Project Type:</strong> 
                                 <span class="type-badge type-{{ project.project_type|lower }}">
@@ -68,7 +68,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <h6 class="mb-3">Contact Information</h6>
+                            <h6 class="section-header mb-3">Contact Information</h6>
                             <p><strong>Submitted By:</strong> 
                                 {% if project.submitted_by.first_name and project.submitted_by.last_name %}
                                     {{ project.submitted_by.get_full_name }}
@@ -80,7 +80,7 @@
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="mb-3">Timeline</h6>
+                            <h6 class="section-header mb-3">Timeline</h6>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                             <p><strong>Last Updated:</strong> {{ project.updated_at|date:"F j, Y" }}</p>
                             {% if project.triage_date %}
@@ -92,20 +92,24 @@
                     <h5 class="card-title mt-4 fw-bold">Description</h5>
                     <p class="card-text">{{ project.description }}</p>
                     
-                    {% if project.triage_notes %}
-                    <div class="mt-4">
-                        <h6 class="mb-3"><strong>Triage Notes:</strong></h6>
+                    <div class="mt-3">
+                        <p><strong>Triage Notes:</strong></p>
                         <div class="p-3 rounded bg-light">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>{{ project.triaged_by.username|default:"System" }}</strong>
+                                <strong>
+                                    {% if project.triaged_by.first_name and project.triaged_by.last_name %}
+                                        {{ project.triaged_by.get_full_name }}
+                                    {% else %}
+                                        {{ project.triaged_by.username }}
+                                    {% endif %}
+                                </strong>
                                 <small class="text-muted">Triage Date: {{ project.triage_date|date:"F j, Y"|default:"Not specified" }}</small>
                             </div>
                             <div class="triage-notes-content">
-                                {{ project.triage_notes|linebreaks }}
+                                {{ project.triage_notes|default:"No triage notes"|linebreaks }}
                             </div>
                         </div>
                     </div>
-                    {% endif %}
 
                     {% if project.triage_note_history.exists %}
                     <div class="mt-4">
@@ -115,7 +119,12 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">
-                                        <i class="fas fa-user"></i> {{ note.created_by.username }} 
+                                        <i class="fas fa-user"></i> 
+                                        {% if note.created_by.first_name and note.created_by.last_name %}
+                                            {{ note.created_by.get_full_name }}
+                                        {% else %}
+                                            {{ note.created_by.username }}
+                                        {% endif %}
                                         <i class="fas fa-clock ms-2"></i> 
                                         <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
                                             {{ note.created_at|date:"F j, Y, g:i a" }}
@@ -129,28 +138,30 @@
                     </div>
                     {% endif %}
                     
-                    {% if scores %}
+                    {% if project.scoring_notes %}
                     <div class="mt-4">
                         <h6 class="mb-3"><strong>Scoring Notes:</strong></h6>
-                        {% for score in scores %}
-                            {% if score.scoring_notes %}
-                            <div class="p-3 rounded bg-light mb-3">
+                        <div class="list-group">
+                            {% for note in project.scoring_notes.all %}
+                            <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong>{{ score.scored_by.username }}</strong>
                                     <small class="text-muted">
-                                        Score: {{ score.final_score|floatformat:2 }}
-                                        <i class="fas fa-clock ms-2"></i>
-                                        <span class="local-time" data-utc="{{ score.created_at|date:'c' }}">
-                                            {{ score.created_at|date:"F j, Y, g:i a" }}
+                                        <i class="fas fa-user"></i> 
+                                        {% if note.created_by.first_name and note.created_by.last_name %}
+                                            {{ note.created_by.get_full_name }}
+                                        {% else %}
+                                            {{ note.created_by.username }}
+                                        {% endif %}
+                                        <i class="fas fa-clock ms-2"></i> 
+                                        <span class="local-time" data-utc="{{ note.created_at|date:'c' }}">
+                                            {{ note.created_at|date:"F j, Y, g:i a" }}
                                         </span>
                                     </small>
                                 </div>
-                                <div class="scoring-notes-content">
-                                    {{ score.scoring_notes|linebreaks }}
-                                </div>
+                                <p class="mb-0">{{ note.notes|linebreaks }}</p>
                             </div>
-                            {% endif %}
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -183,7 +194,13 @@
                         <tbody>
                             {% for score in scores %}
                             <tr>
-                                <td>{{ score.scored_by.username }}</td>
+                                <td>
+                                    {% if score.scored_by.first_name and score.scored_by.last_name %}
+                                        {{ score.scored_by.get_full_name }}
+                                    {% else %}
+                                        {{ score.scored_by.username }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ score.strategic_alignment|default:"-" }}</td>
                                 <td>{{ score.cost_benefit|default:"-" }}</td>
                                 <td>{{ score.user_impact|default:"-" }}</td>
@@ -208,6 +225,14 @@
     .badge {
         font-size: 0.875rem;
         padding: 0.35em 0.65em;
+    }
+    
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2c3e50;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
     }
     
     .bg-dark-red {
