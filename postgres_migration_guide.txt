@@ -1,0 +1,131 @@
+PostgreSQL Migration Guide
+=========================
+
+This guide will help you migrate your Django application from SQLite to PostgreSQL.
+
+1. Install PostgreSQL
+-------------------
+1. Download PostgreSQL for Windows from: https://www.postgresql.org/download/windows/
+2. Run the installer
+3. During installation:
+   - Note down the password you set for the postgres user
+   - Keep the default port (5432)
+   - Install all offered components
+
+2. Update Requirements
+--------------------
+Add the following to your requirements.txt:
+```
+psycopg2-binary>=2.9.9
+```
+
+3. Install New Requirements
+-------------------------
+Run the following command in your project directory:
+```
+pip install -r requirements.txt
+```
+
+4. Create PostgreSQL Database
+---------------------------
+1. Open pgAdmin (installed with PostgreSQL)
+2. Connect to your PostgreSQL server
+3. Right-click on "Databases" and select "Create" > "Database"
+4. Name it "gov_project_db"
+5. Click "Save"
+
+5. Update Django Settings
+-----------------------
+In your settings.py file, replace the DATABASES configuration with:
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gov_project_db',
+        'USER': 'postgres',
+        'PASSWORD': 'your_password',  # Replace with your actual password
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'connect_timeout': 10,
+        }
+    }
+}
+```
+
+6. Migrate Your Data
+------------------
+1. Run migrations to create the database schema:
+   ```
+   python manage.py migrate
+   ```
+
+2. If you need to migrate existing data from SQLite:
+   a. Create a backup of your SQLite database
+   b. Use Django's dumpdata and loaddata commands:
+      ```
+      python manage.py dumpdata > data.json
+      python manage.py loaddata data.json
+      ```
+
+7. Verify Installation
+--------------------
+1. Start your Django development server:
+   ```
+   python manage.py runserver
+   ```
+2. Try to:
+   - Log in to the admin interface
+   - Create a new project
+   - View existing projects
+
+8. Troubleshooting
+----------------
+If you encounter any issues:
+
+1. Database Connection Issues:
+   - Verify PostgreSQL is running
+   - Check your password in settings.py
+   - Ensure the database exists
+   - Check port number matches
+
+2. Migration Issues:
+   - Make sure all migrations are up to date
+   - Check for any conflicting migrations
+   - Verify database user has proper permissions
+
+3. Performance Issues:
+   - Check PostgreSQL logs
+   - Verify indexes are created
+   - Monitor database connections
+
+9. PostgreSQL Benefits
+--------------------
+1. Better performance for larger datasets
+2. More robust data integrity
+3. Advanced features:
+   - Full-text search
+   - JSON support
+   - Better indexing
+   - Concurrent access
+   - Better scalability
+
+10. Maintenance
+-------------
+Regular maintenance tasks:
+
+1. Backup your database regularly
+2. Monitor database size
+3. Check for long-running queries
+4. Update PostgreSQL when new versions are released
+
+Need Help?
+---------
+If you encounter any issues during the migration:
+1. Check the PostgreSQL documentation
+2. Review Django's database documentation
+3. Check the error logs
+4. Contact your system administrator
+
+Remember to keep your database credentials secure and never commit them to version control! 

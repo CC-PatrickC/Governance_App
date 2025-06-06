@@ -17,6 +17,7 @@
 - [x] Add filtering and sorting to project lists
 - [x] Change the color of status, priorty, ect
 - [x] Various dark / grey modes
+- [x] Filters on the project list page
 
 ## Pending Tasks
 - [x] Implement search functionality
@@ -59,7 +60,7 @@
 - [ ] Add resource allocation recommendations
 - [ ] Implement final decision tracking (approved, rejected, deferred)
 - [ ] Add notification system for final scoring decisions
-- [ ] Add export functionality (CSV, PDF)
+- [ ] Add export functionality (PDF)
 
 ### Dashboard Page
 - [x] Create a dashboard page to show all project information
@@ -94,10 +95,7 @@
 - [ ] Add support for multiple languages
 - [ ] Color blind mode 
 - [ ] Implement AI to help review and summary
-- [ ] Add email notifications for project status changes
 - [ ] Feedback page
-- [ ] Filters on the project list page
-- [ ] Create a dashboard with tile list and filters
 - [ ] Add data visualization for project metrics with a dashboard
 - [ ] Optimize database queries
 - [ ] Automated system to update the status as the request is going through the process
@@ -112,6 +110,7 @@
 - [ ] Add Single Sign-on
 - [ ] Connect to AD to auto populate the Department / Name
 - [ ] Create seperate groups for each Project Type
+- [ ] Add email notifications for project status changes
 
 ## Mobile App creation
 - [ ] Create a mobile app version

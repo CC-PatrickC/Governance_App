@@ -61,4 +61,21 @@ INSTALLED_APPS = [
 # Session Settings
 SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_COOKIE_SECURE = True  # Only send cookie over HTTPS
-CSRF_COOKIE_SECURE = True  # Only send cookie over HTTPS 
+CSRF_COOKIE_SECURE = True  # Only send cookie over HTTPS
+
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gov_project_db',
+        'USER': 'postgres',
+        'PASSWORD': 'your_password',  # Replace with your actual password
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'connect_timeout': 10,
+        }
+    }
+} 
