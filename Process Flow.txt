@@ -1,0 +1,99 @@
+# Project Intake System - Process Flow
+
+## 1. Project Creation
+- End user submits new project request
+- System captures:
+  * Project details
+  * Point of Contact (POC) information
+  * Department information
+  * Supporting documents/files
+  * Initial project description
+
+## 2. Triage Process
+- Project enters triage phase
+- Triage team receives notification of project entering triage phase
+- Triage team reviews:
+  * Project scope
+  * Initial requirements
+  * Resource needs
+  * Priority assessment
+- Updates project status
+- Adds triage notes
+- Assigns initial priority level
+
+## 3. Scoring Phase
+- Project moves to scoring phase
+- Scoring team receives notification of project entering triage phase
+- Scoring team evaluates:
+  * Technical feasibility
+  * Resource requirements
+  * Budget impact
+  * Timeline estimates
+  * Risk assessment
+- Implements weighted scoring criteria
+- Records scoring history
+- Adds comments/feedback
+- Updates project status
+
+## 4. Final Scoring Review
+- Project enters final review phase
+- Final scoring team receives notification of project entering triage phase
+- Multiple approvers review:
+  * All previous scores
+  * Project justification
+  * Budget impact
+  * Resource allocation
+  * Timeline estimates
+- Makes final decision:
+  * Approved
+  * Rejected
+  * Deferred
+- Project gets moved to Archive page after X amount of days
+
+## 5. Project Status Tracking
+- System tracks project through:
+  * New
+  * In Triage
+  * In Scoring
+  * In Final Review
+  * Approved
+  * Rejected
+  * Deferred
+  * Archived
+
+## 6. Notifications and Updates
+- System sends notifications for:
+  * Status changes
+  * Score updates
+  * Final decisions
+  * Required actions
+  * Additional information requests
+
+## 7. Documentation and Reporting
+- System maintains:
+  * Project history
+  * Score change history
+  * Decision records
+  * Supporting documentation
+  * Exportable reports
+
+## 8. User Roles and Permissions
+- End Users:
+  * Create projects
+  * View own projects
+  * Submit updates
+- Triage Team:
+  * Review projects
+  * Update triage information
+  * Set priorities
+- Scoring Team:
+  * Evaluate projects
+  * Update scores
+  * Add comments
+- Approvers:
+  * Review final scores
+  * Make final decisions
+- Administrators:
+  * Manage users
+  * Configure system
+  * Generate reports 
