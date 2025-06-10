@@ -115,3 +115,10 @@
 ## Mobile App creation
 - [ ] Create a mobile app version
 - [ ] Improve mobile responsiveness
+
+## Notification system
+- [ ] Notify requestor of status changes. IE Request Received, Under Review, 
+- [ ] Notify Triage team of new project sumbission
+- [ ] Notify Triage team of any more information requests
+- [ ] Notify scoring team of when a request is ready for scoring
+- [ ] Notify scoring team of when their request for more information has be fulfilled
