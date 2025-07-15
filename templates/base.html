@@ -90,6 +90,16 @@
             color: var(--text-primary) !important;
             pointer-events: none;
             cursor: default;
+            text-decoration: none;
+            background-color: var(--nav-hover);
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .nav-link.active:hover {
+            background-color: var(--nav-hover);
+            color: var(--text-primary) !important;
+            text-decoration: none;
         }
 
         /* Override Bootstrap's default dark navbar styles */
@@ -106,6 +116,15 @@
         [data-bs-theme="light"] .navbar-dark .nav-link.active {
             color: var(--text-primary) !important;
             background-color: var(--nav-hover);
+            pointer-events: none;
+            cursor: default;
+        }
+        
+        [data-bs-theme="dark"] .navbar-dark .nav-link.active {
+            color: var(--text-primary) !important;
+            background-color: var(--nav-hover);
+            pointer-events: none;
+            cursor: default;
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -122,9 +141,11 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_list' %}active{% endif %}" href="{% url 'projects:project_list' %}">Projects</a>
                     </li>
+                    {% if user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_create' %}active{% endif %}" href="{% url 'projects:project_create' %}">New Project</a>
                     </li>
+                    {% endif %}
                     {% if user.is_staff or user|has_group:'Triage Group' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_triage' %}active{% endif %}" href="{% url 'projects:project_triage' %}">Triage</a>
@@ -140,7 +161,7 @@
                     {% endif %}
                     {% if user.is_staff or user|has_group:'Cabinet Group' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'cabinet_dashboard' %}active{% endif %}" href="{% url 'projects:cabinet_dashboard' %}">Dashboard</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'projects:dashboard' %}">Dashboard</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -197,7 +218,6 @@
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
             html.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateIcon(newTheme);

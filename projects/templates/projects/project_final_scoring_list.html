@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_cc.html" %}
 {% load static %}
 {% load project_tags %}
 
@@ -62,17 +62,17 @@
                     <td>{{ project.title }}</td>
                     <td>{{ project.description|truncatechars:100 }}</td>
                     <td class="text-center">
-                        <span class="type-badge type-{{ project.project_type|lower }}">
+                        <span>
                             {{ project.get_project_type_display }}
                         </span>
                     </td>
                     <td class="text-center">
-                        <span class="priority-badge priority-{{ project.priority|lower }}">
+                        <span>
                             {{ project.priority }}
                         </span>
                     </td>
                     <td class="text-center">
-                        <span class="status-badge status-{{ project.status|lower }}">
+                        <span>
                             {{ project.get_status_display }}
                         </span>
                     </td>

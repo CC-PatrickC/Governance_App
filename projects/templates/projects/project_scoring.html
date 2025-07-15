@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_cc.html" %}
 {% load static %}
 {% load project_tags %}
 
@@ -30,11 +30,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Project Details</h5>
-                    <span class="badge {% if project.status == 'approved' %}bg-success
-                                     {% elif project.status == 'rejected' %}bg-danger
-                                     {% elif project.status == 'in_progress' %}bg-primary
-                                     {% elif project.status == 'completed' %}bg-secondary
-                                     {% else %}bg-warning{% endif %}">
+                    <span class="badge">
                         {{ project.get_status_display }}
                     </span>
                 </div>
@@ -44,12 +40,12 @@
                             <h6 class="section-header mb-3"><strong>Project Information</strong></h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Project Type:</strong> 
-                                <span class="type-badge type-{{ project.project_type|lower }}">
+                                <span>
                                     {{ project.get_project_type_display }}
                                 </span>
                             </p>
                             <p><strong>Priority:</strong> 
-                                <span class="priority-badge priority-{{ project.priority|lower }}">
+                                <span>
                                     {{ project.priority }}
                                 </span>
                             </p>
@@ -92,29 +88,11 @@
                     <h5 class="card-title mt-4 fw-bold">Description</h5>
                     <p class="card-text">{{ project.description }}</p>
 
+                    {% if project.triage_note_history.exists %}
                     <div class="mt-4">
                         <h6 class="mb-3"><strong>Triage Note History:</strong></h6>
                         <div class="list-group">
-                            {% if project.triage_notes %}
-                            <div class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-user"></i> 
-                                        {% if project.triaged_by.first_name and project.triaged_by.last_name %}
-                                            {{ project.triaged_by.get_full_name }}
-                                        {% else %}
-                                            {{ project.triaged_by.username }}
-                                        {% endif %}
-                                        <i class="fas fa-clock ms-2"></i> 
-                                        <span class="mountain-time" data-utc="{{ project.triage_date|date:'c' }}">
-                                            {{ project.triage_date|date:"F j, Y, g:i a" }} MT
-                                        </span>
-                                    </small>
-                                </div>
-                                <p class="mb-0">{{ project.triage_notes|linebreaks }}</p>
-                            </div>
-                            {% endif %}
-                            {% for note in project.triage_note_history.all %}
+                            {% for note in project.triage_note_history.all|dictsortreversed:"created_at" %}
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">
@@ -125,9 +103,7 @@
                                             {{ note.created_by.username }}
                                         {% endif %}
                                         <i class="fas fa-clock ms-2"></i> 
-                                        <span class="mountain-time" data-utc="{{ note.created_at|date:'c' }}">
-                                            {{ note.created_at|date:"F j, Y, g:i a" }} MT
-                                        </span>
+                                        {{ note.created_at|date:"F j, Y, g:i a" }}
                                     </small>
                                 </div>
                                 <p class="mb-0">{{ note.notes|linebreaks }}</p>
@@ -135,6 +111,7 @@
                             {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 

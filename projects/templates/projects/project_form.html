@@ -1,34 +1,231 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load crispy_forms_tags %}
 
 {% block title %}Project Intake{% endblock %}
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="mb-0">Project Intake Form</h2>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                <div class="messages">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+{% block extra_css %}
+<style>
+    /* CC Theme Form Styles */
+    .cc-form-section {
+        margin-bottom: 40px;
+    }
 
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Submit Project</button>
+    .cc-form-header h3 {
+        color: #000000;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
+    .cc-form-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+    }
+
+    .cc-form-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-form-card-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+    }
+
+    .cc-form-card-body {
+        padding: 1.5rem;
+    }
+
+    /* CC Theme Form Controls */
+    .cc-form-control {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        background: white;
+        color: #495057;
+        transition: border-color 0.15s ease-in-out;
+        width: 100%;
+    }
+
+    .cc-form-control:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.1);
+    }
+
+    /* CC Theme Button Styles */
+    .cc-btn-primary {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-btn-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .cc-btn-secondary {
+        background: #6c757d;
+        border: 1px solid #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-btn-secondary:hover {
+        background: #5a6268;
+        border-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    /* CC Theme Alert Styles */
+    .cc-alert {
+        border-radius: 8px;
+        border: none;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .cc-alert-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .cc-alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-alert-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-alert-info {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    /* Override Crispy Forms styling */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.1);
+    }
+
+    .form-select {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-select:focus {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .cc-form-card-body {
+            padding: 1rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Main Content Area -->
+<div class="container">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>New Project</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'projects:project_list' %}" class="cc-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Projects
+            </a>
+        </div>
+    </div>
+
+    <!-- Project Form Section -->
+    <div class="cc-form-section">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="cc-form-card">
+                    <div class="cc-form-card-header">
+                        <h3 class="mb-0">Project Intake Form</h3>
                     </div>
-                </form>
+                    <div class="cc-form-card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{% url 'projects:project_list' %}" class="cc-btn-secondary">Cancel</a>
+                                <button type="submit" class="cc-btn-primary">Submit Project</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
