@@ -1,9 +1,53 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load static %}
 
 {% block title %}{{ project.title }}{% endblock %}
 
 {% block content %}
+<style>
+    .stage-badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        display: inline-block;
+    }
+    
+    .stage-pending_review {
+        background-color: #e2e8f0;
+        color: #1a202c;
+    }
+    
+    .stage-under_review_triage {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .stage-under_review_scoring {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .stage-under_review_final_scoring {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    .stage-complete {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    
+    .stage-archived {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+</style>
+
 <div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ project.title }}</h2>
@@ -38,7 +82,7 @@
                     </p>
                     <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                     <p><strong>Project Type:</strong> 
-                        <span class="type-badge type-{{ project.project_type|lower }}">
+                        <span>
                             {{ project.get_project_type_display }}
                         </span>
                         {% if user.is_staff %}
@@ -48,18 +92,23 @@
                         {% endif %}
                     </p>
                     <p><strong>Priority:</strong> 
-                        <span class="priority-badge priority-{{ project.priority|lower }}">
+                        <span>
                             {{ project.priority }}
                         </span>
                     </p>
                     <p><strong>Status:</strong> 
-                        <span class="status-badge status-{{ project.status|lower }}">
+                        <span>
                             {{ project.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>Stage:</strong> 
+                        <span>
+                            {{ project.get_stage_display }}
                         </span>
                     </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                    <p><strong>Department:</strong> {{ project.department|default:"-" }}</p>
                     <p><strong>Notes:</strong> {{ project.notes|default:"No notes" }}</p>
                     <p><strong>Contact Person:</strong> 
                         {% if project.contact_person.first_name and project.contact_person.last_name %}

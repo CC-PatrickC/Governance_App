@@ -1,0 +1,119 @@
+{% load static %}
+
+<form id="project-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+        <label for="title" class="form-label">Project Title *</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="description" class="form-label">Description *</label>
+        <textarea class="form-control" id="description" name="description" rows="4" required>{{ project.description }}</textarea>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="project_type" class="form-label">Project Type *</label>
+            <select class="form-select" id="project_type" name="project_type" required>
+                {% for value, label in project.PROJECT_TYPE_CHOICES %}
+                <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="priority" class="form-label">Priority *</label>
+            <select class="form-select" id="priority" name="priority" required>
+                <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
+                <option value="High" {% if project.priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Normal" {% if project.priority == 'Normal' %}selected{% endif %}>Normal</option>
+                <option value="Low" {% if project.priority == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="status" class="form-label">Status *</label>
+            <select class="form-select" id="status" name="status" required>
+                {% for value, label in project.STATUS_CHOICES %}
+                <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="department" class="form-label">Department</label>
+        <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="contact_person" class="form-label">Contact Person</label>
+        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}" required>
+        <small class="form-text text-muted">The primary contact person for this project.</small>
+    </div>
+
+    <div class="form-group">
+        <label for="triage_notes">Triage Notes</label>
+        <textarea class="form-control" id="triage_notes" name="triage_notes" rows="3">{{ project.triage_notes }}</textarea>
+    </div>
+
+    {% if project.triage_note_history.exists %}
+    <div class="mt-4">
+        <h5>Triage Note History</h5>
+        <div class="list-group">
+            {% for note in project.triage_note_history.all %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> 
+                        {% if note.created_by.first_name and note.created_by.last_name %}
+                            {{ note.created_by.get_full_name }}
+                        {% else %}
+                            {{ note.created_by.username }}
+                        {% endif %}
+                        <i class="fas fa-clock ms-2"></i> {{ note.created_at|date:"F j, Y, g:i a" }}
+                    </small>
+                </div>
+                <p class="mb-0">{{ note.notes|linebreaks }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if project.files.all %}
+    <div class="mb-3">
+        <label class="form-label">Current Attachments</label>
+        <div class="list-group">
+            {% for file in project.files.all %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none">
+                    <i class="fas fa-file me-2"></i> {{ file.file.name|cut:"project_files/" }}
+                </a>
+                <div>
+                    <small class="text-muted me-3">Uploaded: {{ file.uploaded_at|date:"M d, Y" }}</small>
+                    <form method="post" action="{% url 'projects:delete_attachment' project.pk file.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+        <label for="files" class="form-label">Add New Attachments</label>
+        <input type="file" class="form-control" id="files" name="files" multiple>
+        <small class="form-text text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+    </div>
+</form> 

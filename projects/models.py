@@ -7,8 +7,18 @@ class Project(models.Model):
         ('pending', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('in_progress', 'In Progress'),
+        ('under_review', 'Under Review'),
         ('completed', 'Completed'),
+        ('archived', 'Archived'),
+        ('on_hold', 'On Hold'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    STAGE_CHOICES = [
+        ('Pending_Review', 'Pending Review'),
+        ('Under_Review_Triage', 'Under Review - Triage'),
+        ('Under_Review_Scoring', 'Under Review - Scoring'),
+        ('Under_Review_Final_Scoring', 'Under Review - Final Scoring'),
     ]
 
     PRIORITY_CHOICES = [
@@ -37,7 +47,8 @@ class Project(models.Model):
     project_type = models.CharField(max_length=20, choices=PROJECT_TYPE_CHOICES, default='not_yet_decided', help_text="Type of project submission")
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     submission_date = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)

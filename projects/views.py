@@ -10,6 +10,9 @@ from .forms import ProjectForm
 import json
 from django.utils import timezone
 from django.db import models
+import logging
+
+logger = logging.getLogger('projects')
 
 def is_triage_user(user):
     return user.is_staff or user.groups.filter(name='Triage Group').exists()
@@ -20,7 +23,6 @@ def is_scoring_user(user):
 def is_cabinet_user(user):
     return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
 
-@login_required
 def project_list(request):
     search_query = request.GET.get('search', '')
     filter_type = request.GET.get('filter', 'all')
@@ -41,8 +43,8 @@ def project_list(request):
             models.Q(submitted_by__username__icontains=search_query)
         )
     
-    # Apply my projects filter
-    if filter_type == 'my_projects':
+    # Apply my projects filter (only if user is authenticated)
+    if filter_type == 'my_projects' and request.user.is_authenticated:
         projects = projects.filter(submitted_by=request.user)
     
     # Apply type filter
@@ -102,6 +104,7 @@ def project_triage(request):
     type_filter = request.GET.get('type', '')
     priority_filter = request.GET.get('priority', '')
     status_filter = request.GET.get('status', '')
+    stage_filter = request.GET.get('stage', '')
     department_filter = request.GET.get('department', '')
 
     # Base queryset
@@ -128,6 +131,10 @@ def project_triage(request):
     if status_filter:
         projects = projects.filter(status=status_filter)
 
+    # Apply stage filter
+    if stage_filter:
+        projects = projects.filter(stage=stage_filter)
+
     # Apply department filter
     if department_filter:
         projects = projects.filter(department=department_filter)
@@ -147,6 +154,10 @@ def project_triage(request):
     available_statuses = filtered_projects.values_list('status', flat=True).distinct()
     status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
 
+    # Get available stages
+    available_stages = filtered_projects.values_list('stage', flat=True).distinct()
+    stage_choices = [(s[0], s[1]) for s in Project.STAGE_CHOICES if s[0] in available_stages]
+
     # Get available departments
     departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
 
@@ -156,41 +167,71 @@ def project_triage(request):
         'type_filter': type_filter,
         'priority_filter': priority_filter,
         'status_filter': status_filter,
+        'stage_filter': stage_filter,
         'department_filter': department_filter,
         'project_types': project_types,
         'priorities': priorities,
         'status_choices': status_choices,
+        'stage_choices': stage_choices,
         'departments': departments,
     }
     
     return render(request, 'projects/triage.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
-@require_POST
-@csrf_exempt
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='Triage Group').exists())
 def project_update_ajax(request, pk):
+    logger.info(f"=== Project Update Request ===")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"User: {request.user} (Staff: {request.user.is_staff}, Groups: {request.user.groups.all()})")
+    logger.info(f"Project ID: {pk}")
+    
+    if request.method != 'POST':
+        logger.info("Not a POST request, rendering form")
+        return render(request, 'projects/project_edit.html', {'project': get_object_or_404(Project, pk=pk)})
+        
     try:
         project = get_object_or_404(Project, pk=pk)
+        logger.info(f"\nProject details before update:")
+        logger.info(f"Title: {project.title}")
+        logger.info(f"Status: {project.status}")
+        logger.info(f"Description: {project.description}")
         
         # Debug print
-        print(f"Updating project {pk}")
-        print(f"POST data: {request.POST}")
-        print(f"FILES data: {request.FILES}")
+        logger.info(f"\nForm data received:")
+        logger.info(f"POST data: {dict(request.POST)}")
+        logger.info(f"FILES data: {dict(request.FILES)}")
         
         # Update project fields
         title = request.POST.get('title')
         if not title:
+            logger.error("Error: Title is missing")
             raise ValueError("Title is required")
         
-        print(f"Title: {title}")
-        print(f"Current project title: {project.title}")
+        # Debug status update
+        new_status = request.POST.get('status')
+        logger.info(f"\nStatus update:")
+        logger.info(f"New status from form: {new_status}")
+        logger.info(f"Current project status: {project.status}")
+        logger.info(f"Valid status choices: {dict(Project.STATUS_CHOICES)}")
         
+        # Validate status
+        valid_statuses = dict(Project.STATUS_CHOICES).keys()
+        if not new_status or new_status not in valid_statuses:
+            logger.warning(f"Warning: Invalid status '{new_status}', defaulting to 'pending'")
+            new_status = 'pending'
+        
+        # Update project fields
         project.title = title
         project.description = request.POST.get('description', '')
         project.project_type = request.POST.get('project_type')
         project.priority = request.POST.get('priority')
-        project.status = request.POST.get('status')
+        
+        # Explicitly update status
+        logger.info(f"\nSetting status to: {new_status}")
+        project.status = new_status
+        logger.info(f"Status after setting: {project.status}")
+        
         project.department = request.POST.get('department', '')
         project.notes = request.POST.get('notes', '')
         
@@ -203,54 +244,57 @@ def project_update_ajax(request, pk):
         project.contact_person = request.POST.get('contact_person', '')
         project.contact_email = request.POST.get('contact_email', '')
         
-        # Handle submitted_by field
-        submitted_by_username = request.POST.get('submitted_by')
-        if submitted_by_username:
-            try:
-                # Try to find the user by username
-                user = User.objects.get(username=submitted_by_username)
-                project.submitted_by = user
-            except User.DoesNotExist:
-                # If user doesn't exist, keep the current submitted_by
-                pass
-        
-        print("About to save project...")
+        logger.info("\nAbout to save project...")
+        logger.info(f"Project status before save: {project.status}")
         try:
             # Save the project
             project.save()
-            print(f"Project {pk} updated successfully")
-            print(f"Contact person: {project.contact_person}")  # Debug log for contact person
+            logger.info(f"\nProject {pk} updated successfully")
+            logger.info(f"Project status after save: {project.status}")
+            
+            # Verify the status was saved
+            project.refresh_from_db()
+            logger.info(f"Project status after refresh: {project.status}")
+            
         except Exception as e:
-            print(f"Error saving project: {str(e)}")
-            print(f"Project fields before save: {project.__dict__}")
+            logger.error(f"\nError saving project:")
+            logger.error(f"Error type: {type(e)}")
+            logger.error(f"Error message: {str(e)}")
+            logger.error(f"Project fields before save: {project.__dict__}")
             raise
         
         # Handle file uploads
         files = request.FILES.getlist('files')
         if files:
-            print(f"Processing {len(files)} files")
+            logger.info(f"\nProcessing {len(files)} files")
             if len(files) > 5:
-                return JsonResponse({'success': False, 'error': 'You can upload a maximum of 5 files.'})
+                messages.error(request, 'You can upload a maximum of 5 files.')
+                return render(request, 'projects/project_edit.html', {'project': project})
             
             for file in files:
                 ProjectFile.objects.create(project=project, file=file)
         
-        return JsonResponse({'success': True})
+        messages.success(request, 'Project updated successfully!')
+        return redirect('projects:project_triage')
     except ValueError as e:
-        print(f"Validation error: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"\nValidation error: {str(e)}")
+        messages.error(request, str(e))
+        return render(request, 'projects/project_edit.html', {'project': project})
     except Exception as e:
-        print(f"Error updating project {pk}: {str(e)}")
-        print(f"Error type: {type(e)}")
-        print(f"Error args: {e.args}")
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"\nError updating project {pk}:")
+        logger.error(f"Error type: {type(e)}")
+        logger.error(f"Error message: {str(e)}")
+        logger.error(f"Error args: {e.args}")
+        messages.error(request, f'Error updating project: {str(e)}')
+        return render(request, 'projects/project_edit.html', {'project': project})
 
+@login_required
 def project_create(request):
     if request.method == 'POST':
         form = ProjectForm(request.POST)
         if form.is_valid():
             project = form.save(commit=False)
-            project.submitted_by = request.user if request.user.is_authenticated else None
+            project.submitted_by = request.user
             project.status = 'pending'
             project.priority = 'Normal'
             project.save()
@@ -271,73 +315,101 @@ def project_detail(request, pk):
 @user_passes_test(is_triage_user)
 def project_update(request, pk):
     project = get_object_or_404(Project, pk=pk)
-    print(f"Project update view called for project {pk}")
+    
+    print(f"\n=== Project Update Debug ===")
     print(f"Request method: {request.method}")
-    print(f"Request path: {request.path}")
-    print(f"Request POST data: {request.POST}")
-    print(f"Request FILES data: {request.FILES}")
+    print(f"User: {request.user}")
+    print(f"User groups: {[g.name for g in request.user.groups.all()]}")
     
     if request.method == 'POST':
-        print("POST request received")  # Debug log
-        print(f"POST data: {request.POST}")  # Debug log
-        print(f"FILES data: {request.FILES}")  # Debug log
-        
         try:
-            # Update project fields
+            print(f"\nPOST data: {request.POST}")
+            print(f"FILES data: {request.FILES}")
+            
+            # Get form data
             title = request.POST.get('title')
             if not title:
                 raise ValueError("Title is required")
             
-            # Check if triage notes have changed
+            # Get and validate status
+            new_status = request.POST.get('status')
+            print(f"\nStatus update:")
+            print(f"New status: {new_status}")
+            print(f"Current status: {project.status}")
+            print(f"Valid statuses: {dict(Project.STATUS_CHOICES)}")
+            
+            if not new_status:
+                raise ValueError("Status is required")
+            
+            valid_statuses = dict(Project.STATUS_CHOICES).keys()
+            if new_status not in valid_statuses:
+                raise ValueError(f"Invalid status: {new_status}")
+            
+            # Get triage notes
             new_triage_notes = request.POST.get('triage_notes', '')
+            
+            # Update project fields
+            project.title = title
+            project.description = request.POST.get('description', '')
+            project.project_type = request.POST.get('project_type')
+            project.priority = request.POST.get('priority')
+            project.status = new_status
+            project.department = request.POST.get('department', '')
+            project.notes = request.POST.get('notes', '')
+            project.contact_person = request.POST.get('contact_person', '')
+            
+            # Only create a new TriageNote if the notes have changed
             if new_triage_notes != project.triage_notes:
-                # Create a new triage note
+                project.triage_notes = new_triage_notes
                 TriageNote.objects.create(
                     project=project,
                     notes=new_triage_notes,
                     created_by=request.user
                 )
             
-            project.title = title
-            project.description = request.POST.get('description', '')
-            project.project_type = request.POST.get('project_type')
-            project.priority = request.POST.get('priority')
-            project.status = request.POST.get('status')
-            project.department = request.POST.get('department', '')
-            project.notes = request.POST.get('notes', '')
-            project.triage_notes = new_triage_notes
-            project.contact_person = request.POST.get('contact_person', '')
+            print(f"\nAbout to save project...")
+            print(f"Project status before save: {project.status}")
             
             # Save the project
             project.save()
-            print("Project saved successfully")  # Debug log
-            print(f"Contact person: {project.contact_person}")  # Debug log for contact person
+            
+            print(f"Project saved successfully")
+            print(f"Project status after save: {project.status}")
+            
+            # Verify the status was saved
+            project.refresh_from_db()
+            print(f"Project status after refresh: {project.status}")
             
             # Handle file uploads
             files = request.FILES.getlist('files')
             if files:
-                print(f"Processing {len(files)} files")  # Debug log
                 if len(files) > 5:
                     messages.error(request, 'You can upload a maximum of 5 files.')
                     return render(request, 'projects/project_edit.html', {'project': project})
                 
                 for file in files:
                     ProjectFile.objects.create(project=project, file=file)
-                messages.success(request, 'Files uploaded successfully!')
             
             messages.success(request, 'Project updated successfully!')
             return redirect('projects:project_triage')
             
         except ValueError as e:
-            print(f"Validation error: {str(e)}")  # Debug log
-            messages.error(request, f'Error updating project: {str(e)}')
-            return render(request, 'projects/project_edit.html', {'project': project})
+            print(f"\nValidation error: {str(e)}")
+            messages.error(request, str(e))
         except Exception as e:
-            print(f"Error saving project: {str(e)}")  # Debug log
+            print(f"\nError updating project: {str(e)}")
+            print(f"Error type: {type(e)}")
+            print(f"Error args: {e.args}")
             messages.error(request, f'Error updating project: {str(e)}')
-            return render(request, 'projects/project_edit.html', {'project': project})
     
     return render(request, 'projects/project_edit.html', {'project': project})
+
+@login_required
+@user_passes_test(is_triage_user)
+def project_update_form_ajax(request, pk):
+    """AJAX endpoint to get just the edit form content"""
+    project = get_object_or_404(Project, pk=pk)
+    return render(request, 'projects/project_edit_form.html', {'project': project})
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -620,11 +692,20 @@ def cabinet_dashboard(request):
     projects = Project.objects.all()
     
     # Calculate statistics
-    total_projects = projects.count()
-    projects_by_status = projects.values('status').annotate(count=models.Count('id'))
-    projects_by_priority = projects.values('priority').annotate(count=models.Count('id'))
-    projects_by_type = projects.values('project_type').annotate(count=models.Count('id'))
-    projects_by_department = projects.values('department').annotate(count=models.Count('id'))
+    stage_counts = {
+        'Triage': projects.filter(status='Pending').count(),
+        'Scoring': projects.filter(status='In Progress').count(),
+        'Final Scoring': projects.filter(status='Final Review').count(),
+        'Complete': projects.filter(status__in=['Approved', 'Rejected']).count()
+    }
+    
+    status_counts = {
+        'Pending': projects.filter(status='Pending').count(),
+        'In Progress': projects.filter(status='In Progress').count(),
+        'Final Review': projects.filter(status='Final Review').count(),
+        'Approved': projects.filter(status='Approved').count(),
+        'Rejected': projects.filter(status='Rejected').count()
+    }
     
     # Get recent projects
     recent_projects = projects.order_by('-submission_date')[:5]
@@ -633,13 +714,101 @@ def cabinet_dashboard(request):
     high_priority_projects = projects.filter(priority__in=['Top', 'High']).order_by('-submission_date')
     
     context = {
-        'total_projects': total_projects,
-        'projects_by_status': projects_by_status,
-        'projects_by_priority': projects_by_priority,
-        'projects_by_type': projects_by_type,
-        'projects_by_department': projects_by_department,
+        'stage_counts': stage_counts,
+        'status_counts': status_counts,
         'recent_projects': recent_projects,
         'high_priority_projects': high_priority_projects,
     }
     
-    return render(request, 'projects/cabinet_dashboard.html', context)
+    return render(request, 'projects/dashboard.html', context)
+
+@login_required
+@user_passes_test(is_triage_user)
+def project_update_status(request, pk):
+    if request.method == 'POST':
+        project = get_object_or_404(Project, pk=pk)
+        new_status = request.POST.get('status')
+        
+        if new_status in dict(Project.STATUS_CHOICES):
+            project.status = new_status
+            project.save()
+            messages.success(request, 'Project status updated successfully!')
+        else:
+            messages.error(request, 'Invalid status selected.')
+    
+    return redirect('projects:project_update', pk=pk)
+
+@login_required
+def cc_theme_home(request):
+    search_query = request.GET.get('search', '')
+    filter_type = request.GET.get('filter', 'all')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    department_filter = request.GET.get('department', '')
+
+    # Base queryset
+    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
+    
+    # Apply search filter
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    # Apply my projects filter
+    if filter_type == 'my_projects':
+        projects = projects.filter(submitted_by=request.user)
+    
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'filter_type': filter_type,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/cc_theme_home.html', context)

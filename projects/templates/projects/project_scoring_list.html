@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_cc.html" %}
 {% load static %}
 
 {% block title %}Project Scoring{% endblock %}
@@ -8,14 +8,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Project Scoring</h2>
         <div class="d-flex gap-2">
-            <button id="refreshButton" class="btn btn-secondary" onclick="refreshProjects()">
+            <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
         </div>
     </div>
 
     {% if messages %}
-    <div class="messages">
+    <div class="messages mb-4">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">
             {{ message }}
@@ -24,154 +24,162 @@
     </div>
     {% endif %}
 
-    <div class="row mb-4">
-        <div class="col-12">
-            <form id="searchForm" class="d-flex" method="get">
-                <div class="input-group">
-                    <input type="text" class="form-control" name="search" placeholder="Search projects..." value="{{ search_query }}" id="searchInput">
-                    {% if search_query %}
-                    <button type="button" class="btn btn-outline-secondary" onclick="clearSearch()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    {% endif %}
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
+    <!-- Search Section -->
+    <div class="cc-search-section mb-4">
+        <form id="searchForm" class="cc-search-form">
+            <input type="text" 
+                   name="search" 
+                   class="cc-search-input" 
+                   placeholder="Search projects..." 
+                   value="{{ search_query|default:'' }}"
+                   id="searchInput">
+            <button type="submit" class="cc-search-btn">
+                ⌕
+            </button>
+        </form>
     </div>
 
-    <div class="row mb-3">
-        <div class="col">
-            <div class="btn-group" role="group">
+    <!-- Filters Section -->
+    <div class="cc-filters-section">
+        <div class="cc-filters-header">
+            <h3>Filter Projects</h3>
+        </div>
+        <form method="get" class="cc-filters-form">
+            {% if search_query %}
+            <input type="hidden" name="search" value="{{ search_query }}">
+            {% endif %}
+            <div class="cc-filters-grid">
                 <!-- Project Type Filter -->
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-tag"></i> Type
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item {% if not type_filter %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if department_filter %}department={{ department_filter }}{% endif %}">All Types</a></li>
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Project Type</label>
+                    <select name="type" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Types</option>
                         {% if project_types %}
                             {% for value, label in project_types %}
-                            <li><a class="dropdown-item {% if type_filter == value %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}type={{ value }}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}">{{ label }}</a></li>
+                            <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        {% else %}
-                            <li><span class="dropdown-item text-muted">No types available</span></li>
                         {% endif %}
-                    </ul>
+                    </select>
                 </div>
 
                 <!-- Priority Filter -->
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-flag"></i> Priority
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item {% if not priority_filter %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if department_filter %}department={{ department_filter }}{% endif %}">All Priorities</a></li>
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Priority</label>
+                    <select name="priority" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Priorities</option>
                         {% if priorities %}
                             {% for priority in priorities %}
-                            <li><a class="dropdown-item {% if priority_filter == priority %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}priority={{ priority }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if department_filter %}&department={{ department_filter }}{% endif %}">{{ priority }}</a></li>
+                            <option value="{{ priority }}" {% if priority_filter == priority %}selected{% endif %}>{{ priority }}</option>
                             {% endfor %}
-                        {% else %}
-                            <li><span class="dropdown-item text-muted">No priorities available</span></li>
                         {% endif %}
-                    </ul>
+                    </select>
                 </div>
 
                 <!-- Status Filter -->
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-tasks"></i> Status
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item {% if not status_filter %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}{% if department_filter %}department={{ department_filter }}{% endif %}">All Statuses</a></li>
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Status</label>
+                    <select name="status" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
                         {% if status_choices %}
                             {% for value, label in status_choices %}
-                            <li><a class="dropdown-item {% if status_filter == value %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}status={{ value }}{% if department_filter %}&department={{ department_filter }}{% endif %}">{{ label }}</a></li>
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        {% else %}
-                            <li><span class="dropdown-item text-muted">No statuses available</span></li>
                         {% endif %}
-                    </ul>
+                    </select>
                 </div>
 
                 <!-- Department Filter -->
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-building"></i> Department
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item {% if not department_filter %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}{% endif %}">All Departments</a></li>
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Department</label>
+                    <select name="department" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
                         {% if departments %}
                             {% for dept in departments %}
-                            <li><a class="dropdown-item {% if department_filter == dept %}active{% endif %}" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}department={{ dept }}">{{ dept }}</a></li>
+                            <option value="{{ dept }}" {% if department_filter == dept %}selected{% endif %}>{{ dept }}</option>
                             {% endfor %}
-                        {% else %}
-                            <li><span class="dropdown-item text-muted">No departments available</span></li>
                         {% endif %}
-                    </ul>
+                    </select>
                 </div>
-
-                <!-- Clear Filters -->
-                {% if type_filter or priority_filter or status_filter or department_filter %}
-                <a href="?{% if search_query %}search={{ search_query }}{% endif %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-times"></i> Clear Filters
-                </a>
-                {% endif %}
             </div>
-        </div>
+            
+            <!-- Clear Filters -->
+            {% if type_filter or priority_filter or status_filter or department_filter %}
+            <div class="cc-clear-filters">
+                <a href="?{% if search_query %}search={{ search_query }}{% endif %}" class="cc-clear-btn">Clear All Filters</a>
+            </div>
+            {% endif %}
+        </form>
     </div>
 
-    <div id="projectsTable" class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Project Name</th>
-                    <th>Description</th>
-                    <th class="text-center">Type</th>
-                    <th class="text-center">Priority</th>
-                    <th class="text-center">Status</th>
-                    <th>Department</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td>{{ project.formatted_id }}</td>
-                    <td>{{ project.title }}</td>
-                    <td>{{ project.description|truncatewords:20 }}</td>
-                    <td class="text-center">
-                        <span class="type-badge type-{{ project.project_type|lower }}">
-                            {{ project.get_project_type_display }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <span class="priority-badge priority-{{ project.priority|lower }}">
-                            {{ project.priority }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <span class="status-badge status-{{ project.status|lower }}">
-                            {{ project.get_status_display }}
-                        </span>
-                    </td>
-                    <td>{{ project.department|default:"-" }}</td>
-                    <td>
-                        {% if project.id %}
-                        <a href="{% url 'projects:project_scoring' project.id %}" class="btn btn-info btn-sm">Score</a>
+    <!-- Projects Section -->
+    <div class="cc-projects-section">
+        <div class="cc-projects-header">
+            <h3>Projects to Score ({{ projects|length }})</h3>
+        </div>
+        
+        {% if projects %}
+        <div class="cc-projects-grid">
+            {% for project in projects %}
+            <div class="cc-project-card" data-project-id="{{ project.id }}" data-project-title="{{ project.title|safe }}" data-project-description="{{ project.description|safe }}" data-project-type="{{ project.get_project_type_display|safe }}" data-project-priority="{{ project.priority|safe }}" data-project-status="{{ project.get_status_display|safe }}" data-project-stage="{{ project.get_stage_display|safe }}" data-project-department="{{ project.department|default:""|safe }}" data-project-notes="{{ project.notes|default:""|safe }}" data-project-contact-person="{% if project.contact_person %}{% if project.contact_person.first_name and project.contact_person.last_name %}{{ project.contact_person.get_full_name|safe }}{% else %}{{ project.contact_person|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-formatted-id="{{ project.formatted_id|safe }}" data-project-submitted-by="{% if project.submitted_by %}{% if project.submitted_by.first_name and project.submitted_by.last_name %}{{ project.submitted_by.get_full_name|safe }}{% else %}{{ project.submitted_by.username|safe }}{% endif %}{% else %}Unknown{% endif %}" data-project-submission-date="{{ project.submission_date|date:'F j, Y'|safe }}" data-project-triage-notes="{{ project.triage_notes|default:""|safe }}" data-project-triaged-by="{% if project.triaged_by %}{% if project.triaged_by.first_name and project.triaged_by.last_name %}{{ project.triaged_by.get_full_name|safe }}{% else %}{{ project.triaged_by.username|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-triage-date="{{ project.triage_date|date:'F j, Y'|default:'Not specified'|safe }}" style="cursor: pointer;">
+                <div class="cc-project-header">
+                    <div class="cc-project-title">{{ project.title }}</div>
+                    <div class="cc-project-id">{{ project.formatted_id }}</div>
+                </div>
+                <div class="cc-project-body">
+                    <div class="cc-project-description">
+                        {{ project.description|truncatechars:120 }}
+                    </div>
+                    <div class="cc-project-meta">
+                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        {% if project.department %}
+                        <span class="cc-meta-item">{{ project.department }}</span>
                         {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">No projects found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+
+                    <div class="cc-project-meta-requested" style="font-size:0.85em; color:#333; margin-top:8px; font-style:italic;">
+                        Requested by: 
+                        {% if project.submitted_by %}
+                            {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                        on {{ project.submission_date|date:'M d, Y' }}
+                    </div>
+
+                    <div class="cc-project-actions">
+                        <a href="{% url 'projects:project_scoring' project.id %}" class="cc-action-btn cc-action-primary">Score Project</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <h4>No projects found</h4>
+            <p>Try adjusting your search criteria or filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Scoring Details Modal -->
+<div class="modal fade" id="scoringDetailsModal" tabindex="-1" aria-labelledby="scoringDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header cc-modal-header">
+                <h5 class="modal-title" id="scoringDetailsModalLabel">Project Scoring Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="scoringDetailsModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer cc-modal-footer">
+                <button type="button" class="cc-btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="scoreProjectBtn" class="cc-btn-primary">Score Project</a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -231,47 +239,88 @@ document.getElementById('searchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     performSearch();
 });
+
+// Handle card clicks to show scoring details modal
+document.addEventListener('DOMContentLoaded', function() {
+    const projectCards = document.querySelectorAll('.cc-project-card');
+    
+    projectCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Don't trigger modal if clicking on action buttons
+            if (e.target.closest('.cc-project-actions')) {
+                return;
+            }
+            
+            const projectId = this.getAttribute('data-project-id');
+            const projectTitle = this.getAttribute('data-project-title');
+            const projectDescription = this.getAttribute('data-project-description');
+            const projectType = this.getAttribute('data-project-type');
+            const projectPriority = this.getAttribute('data-project-priority');
+            const projectStatus = this.getAttribute('data-project-status');
+            const projectDepartment = this.getAttribute('data-project-department');
+            const projectSubmittedBy = this.getAttribute('data-project-submitted-by');
+            const projectSubmissionDate = this.getAttribute('data-project-submission-date');
+            const projectTriageNotes = this.getAttribute('data-project-triage-notes');
+            const projectTriagedBy = this.getAttribute('data-project-triaged-by');
+            const projectTriageDate = this.getAttribute('data-project-triage-date');
+            
+            // Update modal content
+            const modalBody = document.getElementById('scoringDetailsModalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="section-header mb-3"><strong>Project Information</strong></h6>
+                        <p><strong>Project ID:</strong> ${projectId}</p>
+                        <p><strong>Title:</strong> ${projectTitle}</p>
+                        <p><strong>Type:</strong> ${projectType}</p>
+                        <p><strong>Priority:</strong> ${projectPriority}</p>
+                        <p><strong>Status:</strong> ${projectStatus}</p>
+                        <p><strong>Department:</strong> ${projectDepartment || 'Not specified'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="section-header mb-3"><strong>Submission Details</strong></h6>
+                        <p><strong>Submitted By:</strong> ${projectSubmittedBy}</p>
+                        <p><strong>Submission Date:</strong> ${projectSubmissionDate}</p>
+                        <p><strong>Triaged By:</strong> ${projectTriagedBy}</p>
+                        <p><strong>Triage Date:</strong> ${projectTriageDate}</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="section-header mb-3"><strong>Description</strong></h6>
+                        <p>${projectDescription}</p>
+                    </div>
+                </div>
+                ${projectTriageNotes ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="section-header mb-3"><strong>Triage Notes</strong></h6>
+                        <p>${projectTriageNotes}</p>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Update score project button href
+            const scoreProjectBtn = document.getElementById('scoreProjectBtn');
+            scoreProjectBtn.href = `/projects/${projectId}/scoring/`;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('scoringDetailsModal'));
+            modal.show();
+        });
+    });
+});
 </script>
 
 <style>
-    .description-cell {
-        max-width: 300px;
-        word-wrap: break-word;
-        text-align: left !important;
-        padding-left: 0 !important;
-        vertical-align: middle !important;
-    }
-
-    .description-content, .full-description {
-        white-space: pre-wrap;
-        text-align: left !important;
-        display: block;
-        width: 100%;
-        margin: 0 !important;
-        padding: 0 !important;
-        vertical-align: middle;
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
     }
     
-    .description-text {
-        text-align: left !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        display: block;
-        width: 100%;
-        line-height: 1.5;
-    }
-
-    .description-content p, .full-description p {
-        text-align: left !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Ensure table cells have consistent vertical alignment */
-    .table td {
-        vertical-align: middle !important;
-    }
-
     /* Add animation for refresh icon */
     .fa-spin {
         animation: fa-spin 1s infinite linear;

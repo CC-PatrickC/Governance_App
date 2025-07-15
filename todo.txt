@@ -1,3 +1,5 @@
+python manage.py runserver
+
 # Project Intake System - Todo List
 
 ## Completed Tasks
@@ -84,6 +86,7 @@
 - [ ] Implement budget tracking dashboard
 - [ ] Create user-specific dashboard views
 - [ ] Create scoring dashboard with statistics and trends
+- [ ] Add data visualization for project metrics with a dashboard
 
 ## Future Enhancements
 - [ ] Add API endpoints for integration with other systems
@@ -96,13 +99,13 @@
 - [ ] Color blind mode 
 - [ ] Implement AI to help review and summary
 - [ ] Feedback page
-- [ ] Add data visualization for project metrics with a dashboard
 - [ ] Optimize database queries
 - [ ] Automated system to update the status as the request is going through the process
 - [ ] Archive page for requests
 - [ ] Workflow with notifications and reminders
 - [ ] Create a Card/Tile View for Project List, Scoring, Tirage, and Final Scoring Page
 - [ ] Create seperate groups for each Project Type
+- [ ] Look into Alpine.js
 
 ## Future User Enhancements
 - [ ] Implement user profile management
@@ -117,8 +120,9 @@
 - [ ] Improve mobile responsiveness
 
 ## Notification system
-- [ ] Notify requestor of status changes. IE Request Received, Under Review, 
+- [ ] Notify requestor of status changes. IE Request Received, Under Review, ect
 - [ ] Notify Triage team of new project sumbission
 - [ ] Notify Triage team of any more information requests
 - [ ] Notify scoring team of when a request is ready for scoring
 - [ ] Notify scoring team of when their request for more information has be fulfilled
+- [ ] Notification page/icon

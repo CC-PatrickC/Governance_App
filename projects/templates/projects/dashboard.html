@@ -1,43 +1,32 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load static %}
 
-{% block title %}Cabinet Dashboard{% endblock %}
+{% block title %}Governance Data Dashboard{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <h1 class="mb-4">Cabinet Dashboard</h1>
+    <h1 class="mb-4">Governance Data Dashboard</h1>
     
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
+        <div class="col-md-6">
+            <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Total Projects</h5>
-                    <h2 class="card-text">{{ total_projects }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">High Priority Projects</h5>
-                    <h2 class="card-text">{{ high_priority_projects.count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Departments</h5>
-                    <h2 class="card-text">{{ projects_by_department.count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Project Types</h5>
-                    <h2 class="card-text">{{ projects_by_type.count }}</h2>
+                    <h5 class="card-title">Status</h5>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ status_counts.pending }}</h3>
+                            <p>Pending</p>
+                        </div>
+                        <div>
+                            <h3>{{ status_counts.in_progress }}</h3>
+                            <p>In Progress</p>
+                        </div>
+                        <div>
+                            <h3>{{ status_counts.completed }}</h3>
+                            <p>Completed</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

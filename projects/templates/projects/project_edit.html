@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load static %}
 
 {% block content %}
@@ -11,10 +11,11 @@
     </div>
 
     {% if messages %}
-    <div class="messages">
+    <div class="messages mb-4">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
     </div>
@@ -22,7 +23,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form id="main-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
+            <form id="project-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 
                 <div class="mb-3">
@@ -60,10 +61,11 @@
                     <div class="col-md-4 mb-3">
                         <label for="status" class="form-label">Status *</label>
                         <select class="form-select" id="status" name="status" required>
-                            <option value="pending" {% if project.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in_progress" {% if project.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="approved" {% if project.status == 'approved' %}selected{% endif %}>Approved</option>
-                            <option value="rejected" {% if project.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            {% for value, label in project.STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
@@ -139,10 +141,17 @@
                 </div>
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="submit" class="btn btn-primary" onclick="document.getElementById('main-form').submit();">Save Changes</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple logging to verify JavaScript is loaded
+console.log('JavaScript loaded for project edit page');
+</script>
 {% endblock %} 
