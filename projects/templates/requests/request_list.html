@@ -1,0 +1,492 @@
+{% extends 'base_cc.html' %}
+
+{% block title %}Requests{% endblock %}
+
+{% block content %}
+<style>
+    .stage-badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        display: inline-block;
+    }
+    
+    .stage-pending_review {
+        background-color: #e2e8f0;
+        color: #1a202c;
+    }
+    
+    .stage-under_review_triage {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .stage-under_review_scoring {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .stage-under_review_final_scoring {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    .stage-complete {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    
+    .stage-archived {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+
+    /* CC Theme Card Styles */
+    .cc-requests-section {
+        margin-bottom: 40px;
+    }
+
+    .cc-requests-header h3 {
+        color: #000000;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
+    .cc-requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
+    }
+
+    .cc-request-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-request-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-request-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: white;
+        padding: 16px 20px;
+    }
+
+    .cc-request-id {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-request-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: black;
+    }
+
+    .cc-request-body {
+        padding: 20px;
+    }
+
+    .cc-request-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .cc-request-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-request-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .cc-action-btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-action-primary {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+    }
+
+    .cc-action-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+    /* CC Filter Styles */
+    .cc-filters-section {
+        background: #f8f9fa;
+        border-radius: 0 0 8px 8px;
+        padding: 12px;
+        margin-bottom: 32px;
+        border: 1px solid #e9ecef;
+        position: sticky;
+        top: 80px;
+        z-index: 999;
+    }
+
+    .cc-filters-form {
+        margin: 0;
+    }
+
+    .cc-filters-header h3 {
+        color: #000000;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .cc-filters-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: end;
+    }
+
+    .cc-filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .cc-filter-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 4px;
+    }
+
+    .cc-filter-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        background-color: white;
+    }
+
+    .cc-filter-select:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
+
+    .cc-filter-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+    }
+
+    .cc-filter-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-filter-btn-primary {
+        background: #D09B2C;
+        color: white;
+    }
+
+    .cc-filter-btn-primary:hover {
+        background: #B8860B;
+    }
+
+    .cc-filter-btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .cc-filter-btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .cc-filter-btn-outline {
+        background: transparent;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .cc-filter-btn-outline:hover {
+        background: #6c757d;
+        color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .cc-requests-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .cc-filters-row {
+            flex-direction: column;
+        }
+        
+        .cc-filter-group {
+            min-width: auto;
+        }
+    }
+</style>
+
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>All Requests</h2>
+        <div>
+            <a href="{% url 'requests:request_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Request
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filters Section -->
+    <div class="cc-filters-section">
+        <form method="get" class="cc-filters-form">
+            <div class="cc-filters-header">
+                <h3>Filter Requests</h3>
+            </div>
+            <div class="cc-filters-row">
+                <div class="cc-filter-group">
+                    <label for="search" class="cc-filter-label">Search</label>
+                    <input type="text" name="search" id="search" class="cc-search-input" 
+                           value="{{ search_query }}" placeholder="Search requests...">
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="type" class="cc-filter-label">Request Type</label>
+                    <select name="type" id="type" class="cc-filter-select">
+                        <option value="">All Types</option>
+                        {% for value, label in request_types %}
+                        <option value="{{ value }}" {% if value == type_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="priority" class="cc-filter-label">Priority</label>
+                    <select name="priority" id="priority" class="cc-filter-select">
+                        <option value="">All Priorities</option>
+                        {% for priority in priorities %}
+                        <option value="{{ priority }}" {% if priority == priority_filter %}selected{% endif %}>{{ priority }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="status" class="cc-filter-label">Status</label>
+                    <select name="status" id="status" class="cc-filter-select">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="department" class="cc-filter-label">Department</label>
+                    <select name="department" id="department" class="cc-filter-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if dept == department_filter %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-buttons">
+                    <button type="submit" class="cc-filter-btn cc-filter-btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'requests:request_list' %}" class="cc-filter-btn cc-filter-btn-outline">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Requests Section -->
+    <div class="cc-requests-section">
+        <div class="cc-requests-header">
+            <h3>Requests ({{ requests.count }})</h3>
+        </div>
+        
+        {% if requests %}
+        <div class="cc-requests-grid">
+            {% for request in requests %}
+            <div class="cc-request-card" onclick="openRequestModal({{ request.id }})" style="cursor: pointer;">
+                <div class="cc-request-header">
+                    <div class="cc-request-id">{{ request.formatted_id }}</div>
+                    <div class="cc-request-title">{{ request.title }}</div>
+                </div>
+                <div class="cc-request-body">
+                    <div class="cc-request-description">
+                        {{ request.description|truncatewords:20 }}
+                    </div>
+                    <div class="cc-request-meta">
+                        <span class="cc-meta-item">{{ request.get_request_type_display }}</span>
+                        <span class="cc-meta-item cc-priority-{{ request.priority|lower }}">{{ request.priority }}</span>
+                        <span class="cc-meta-item">{{ request.get_status_display }}</span>
+                        {% if request.department %}
+                        <span class="cc-meta-item">{{ request.department }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="cc-request-actions">
+                        <a href="{% url 'requests:request_detail' request.id %}" class="cc-action-btn cc-action-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <h4>No requests found</h4>
+            <p>No requests match your current filters. Try adjusting your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Request Detail Modal -->
+<div class="modal fade" id="requestModal" tabindex="-1" aria-labelledby="requestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestModalLabel">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="requestModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="requestDetailLink" class="btn btn-primary">View Full Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openRequestModal(requestId) {
+    // Set the detail link
+    document.getElementById('requestDetailLink').href = `/requests/${requestId}/`;
+    
+    // Load request details via AJAX
+    fetch(`/requests/${requestId}/`)
+        .then(response => response.text())
+        .then(html => {
+            // Extract the main content from the response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.card-body');
+            
+            if (content) {
+                document.getElementById('requestModalBody').innerHTML = content.innerHTML;
+            } else {
+                document.getElementById('requestModalBody').innerHTML = '<p>Unable to load request details.</p>';
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('requestModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading request details:', error);
+            document.getElementById('requestModalBody').innerHTML = '<p>Error loading request details.</p>';
+            const modal = new bootstrap.Modal(document.getElementById('requestModal'));
+            modal.show();
+        });
+}
+</script>
+{% endblock %} 

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load static %}
 
 {% block title %}{{ project.title }}{% endblock %}
@@ -31,7 +31,7 @@
                 <div class="col-md-6">
                     <p><strong>Submitted by:</strong> {{ project.submitted_by.username }}</p>
                     <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                    <p><strong>Project Type:</strong> 
+                    <p><strong>Request Type:</strong> 
                         <span class="type-badge type-{{ project.project_type|lower }}">
                             {{ project.get_project_type_display }}
                         </span>
@@ -120,14 +120,14 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="changeTypeModalLabel">Change Project Type</h5>
+                <h5 class="modal-title" id="changeTypeModalLabel">Change Request Type</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'projects:project_update' project.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="project_type" class="form-label">Project Type</label>
+                        <label for="project_type" class="form-label">Request Type</label>
                         <select class="form-select" id="project_type" name="project_type" required>
                             {% for choice in project.PROJECT_TYPE_CHOICES %}
                             <option value="{{ choice.0 }}" {% if choice.0 == project.project_type %}selected{% endif %}>

@@ -1,6 +1,6 @@
 {% extends 'base_cc.html' %}
 
-{% block title %}Projects{% endblock %}
+{% block title %}Requests{% endblock %}
 
 {% block content %}
 <style>
@@ -114,8 +114,22 @@
     .cc-project-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 16px;
         margin-bottom: 20px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .cc-meta-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .cc-meta-item {
@@ -141,6 +155,21 @@
         background: #d1ecf1;
         color: #0c5460;
     }
+
+    .cc-department-section {
+        margin-top: 12px;
+    }
+
+    .cc-department-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+
 
     .cc-project-actions {
         display: flex;
@@ -255,6 +284,86 @@
         text-decoration: none;
     }
 
+    /* CC Search Styles */
+    .cc-search-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 12px 48px 12px 16px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 3px rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-input::placeholder {
+        color: #6c757d;
+    }
+
+    .cc-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-btn:hover {
+        color: #D09B2C;
+        background: rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-clear-search {
+        color: #D09B2C;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-clear-search:hover {
+        color: #B8860B;
+        background: rgba(208, 155, 44, 0.1);
+        text-decoration: none;
+    }
+
     /* CC Button Styles */
     .cc-btn-primary {
         background: #D09B2C;
@@ -309,23 +418,40 @@
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Project List</h2>
+        <h2>Request List</h2>
         <div class="d-flex gap-2">
             <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                Refresh
             </button>
-            {% if user.is_authenticated %}
-            <a href="{% url 'projects:project_create' %}" class="cc-btn-primary">New Project</a>
-            {% endif %}
         </div>
     </div>
 
-
+    <!-- Search Section -->
+    <div class="cc-search-section mb-4">
+        <form method="get" class="cc-search-form">
+            <div class="cc-search-container">
+                <input type="text" 
+                       name="search" 
+                       class="cc-search-input" 
+                       placeholder="Search requests by title, description, department, or contact..." 
+                       value="{{ search_query|default:'' }}">
+                <button type="submit" class="cc-search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            {% if search_query %}
+            <div class="cc-search-results-info">
+                <small class="text-muted">Search results for: "{{ search_query }}"</small>
+                <a href="?{% if type_filter %}type={{ type_filter }}{% endif %}{% if priority_filter %}{% if type_filter %}&{% endif %}priority={{ priority_filter }}{% endif %}{% if status_filter %}{% if type_filter or priority_filter or status_filter %}&{% endif %}status={{ status_filter }}{% endif %}{% if department_filter %}{% if type_filter or priority_filter or status_filter %}&{% endif %}department={{ department_filter }}{% endif %}" class="cc-clear-search">Clear search</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
 
     <!-- Filters Section -->
     <div class="cc-filters-section">
         <div class="cc-filters-header">
-            <h3>Filter Projects</h3>
+            <h3>Filter Requests</h3>
         </div>
         <form method="get" class="cc-filters-form">
             {% if search_query %}
@@ -334,7 +460,7 @@
             <div class="cc-filters-grid">
                 <!-- Project Type Filter -->
                 <div class="cc-filter-group">
-                    <label class="cc-filter-label">Project Type</label>
+                    <label class="cc-filter-label">Request Type</label>
                     <select name="type" class="cc-filter-select" onchange="this.form.submit()">
                         <option value="">All Types</option>
                         {% if project_types %}
@@ -397,7 +523,7 @@
     <!-- Projects Section -->
     <div class="cc-projects-section">
         <div class="cc-projects-header">
-            <h3>Projects ({{ projects|length }})</h3>
+            <h3>Requests ({{ projects|length }})</h3>
         </div>
         
         {% if projects %}
@@ -413,13 +539,26 @@
                         {{ project.description|truncatechars:120 }}
                     </div>
                     <div class="cc-project-meta">
-                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                        {% if project.department %}
-                        <span class="cc-meta-item">{{ project.department }}</span>
-                        {% endif %}
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Request Type</div>
+                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Priority</div>
+                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Status</div>
+                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        </div>
                     </div>
+                    
+                    {% if project.department %}
+                    <div class="cc-department-section">
+                        <div class="cc-department-title">Department</div>
+                        <span class="cc-meta-item">{{ project.department }}</span>
+                    </div>
+                    {% endif %}
 
                     <div class="cc-project-meta-requested" style="font-size:0.85em; color:#333; margin-top:8px; font-style:italic;">
                         Requested by: 
@@ -432,7 +571,7 @@
                     </div>
 
                     <div class="cc-project-actions">
-                        <a href="{% url 'projects:project_detail' project.id %}" class="cc-action-btn cc-action-primary">View Details</a>
+                        <!-- View Details button removed -->
                     </div>
                 </div>
             </div>
@@ -440,7 +579,7 @@
         </div>
         {% else %}
         <div class="cc-empty-state">
-            <h4>No projects found</h4>
+            <h4>No requests found</h4>
             <p>Try adjusting your search criteria or filters.</p>
         </div>
         {% endif %}
@@ -448,51 +587,15 @@
 </div>
 
 <!-- Project Details Modal -->
-<div class="modal fade" id="projectModal" tabindex="-1" aria-labelledby="projectModalLabel" aria-hidden="true">
+<div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
-                <h5 class="modal-title" id="projectModalLabel"></h5>
+                <h5 class="modal-title" id="projectDetailsModalLabel">Project Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Project Details</h5>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Submitted by:</strong> <span id="modalProjectSubmittedBy"></span></p>
-                                <p><strong>Submission Date:</strong> <span id="modalProjectSubmissionDate"></span></p>
-                                <p><strong>Project Type:</strong> <span id="modalProjectType"></span></p>
-                                <p><strong>Priority:</strong> <span id="modalProjectPriority"></span></p>
-                                <p><strong>Status:</strong> <span id="modalProjectStatus"></span></p>
-                                <p><strong>Stage:</strong> <span id="modalProjectStage"></span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Department:</strong> <span id="modalProjectDepartment"></span></p>
-                                <p><strong>Notes:</strong> <span id="modalProjectNotes"></span></p>
-                                <p><strong>Contact Person:</strong> <span id="modalProjectContactPerson"></span></p>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <h5 class="card-title">Description</h5>
-                            <p class="card-text" id="modalProjectDescription"></p>
-                        </div>
-
-                        <div class="mt-3" id="modalTriageNotesSection" style="display: none;">
-                            <p><strong>Triage Notes:</strong></p>
-                            <div class="p-3 rounded bg-light">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong id="modalTriagedBy"></strong>
-                                    <small class="text-muted">Triage Date: <span id="modalTriageDate"></span></small>
-                                </div>
-                                <div class="triage-notes-content" id="modalTriageNotesContent">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Project details will be loaded here -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -503,7 +606,118 @@
     </div>
 </div>
 
+<style>
+    /* Modal Styles */
+    .modal-xl {
+        max-width: 90%;
+    }
+    
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 2rem;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    /* Request Details Section Styling */
+    .request-details-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .detail-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .detail-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #D09B2C;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .detail-content p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .detail-content strong {
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .detail-content .text-muted {
+        color: #6c757d !important;
+    }
+    
+    /* Project Title Styling */
+    .project-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 6px;
+        border-left: 4px solid #D09B2C;
+        display: inline-block;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
 <script>
+let currentProjectId = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Add click event listeners to project cards
     const projectCards = document.querySelectorAll('.cc-project-card');
@@ -515,60 +729,132 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const projectId = this.getAttribute('data-project-id');
-            const projectTitle = this.getAttribute('data-project-title');
-            const projectDescription = this.getAttribute('data-project-description');
-            const projectType = this.getAttribute('data-project-type');
-            const projectPriority = this.getAttribute('data-project-priority');
-            const projectStatus = this.getAttribute('data-project-status');
-            const projectStage = this.getAttribute('data-project-stage');
-            const projectDepartment = this.getAttribute('data-project-department');
-            const projectNotes = this.getAttribute('data-project-notes');
-            const projectContactPerson = this.getAttribute('data-project-contact-person');
-            const projectFormattedId = this.getAttribute('data-project-formatted-id');
-            const projectSubmittedBy = this.getAttribute('data-project-submitted-by');
-            const projectSubmissionDate = this.getAttribute('data-project-submission-date');
-            const projectTriageNotes = this.getAttribute('data-project-triage-notes');
-            const projectTriagedBy = this.getAttribute('data-project-triaged-by');
-            const projectTriageDate = this.getAttribute('data-project-triage-date');
+            currentProjectId = projectId;
             
-            openProjectModal(projectId, projectTitle, projectDescription, projectType, projectPriority, projectStatus, projectStage, projectDepartment, projectNotes, projectContactPerson, projectFormattedId, projectSubmittedBy, projectSubmissionDate, projectTriageNotes, projectTriagedBy, projectTriageDate);
+            // Open modal and load project details
+            const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+            modal.show();
+            
+            loadProjectDetails(projectId);
         });
     });
 });
 
-function openProjectModal(projectId, title, description, type, priority, status, stage, department, notes, contactPerson, formattedId, submittedBy, submissionDate, triageNotes, triagedBy, triageDate) {
-    // Set modal title and populate modal content
-    document.getElementById('projectModalLabel').textContent = title;
-    document.getElementById('modalProjectSubmittedBy').textContent = submittedBy;
-    document.getElementById('modalProjectSubmissionDate').textContent = submissionDate;
-    document.getElementById('modalProjectType').textContent = type;
-    document.getElementById('modalProjectPriority').textContent = priority;
-    document.getElementById('modalProjectStatus').textContent = status;
-    document.getElementById('modalProjectStage').textContent = stage;
-    document.getElementById('modalProjectDepartment').textContent = department || 'Not specified';
-    document.getElementById('modalProjectNotes').textContent = notes || 'No notes';
-    document.getElementById('modalProjectContactPerson').textContent = contactPerson;
-    document.getElementById('modalProjectDescription').textContent = description;
+// Function to load project details via AJAX
+function loadProjectDetails(projectId) {
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     
-    // Handle triage notes section
-    const triageNotesSection = document.getElementById('modalTriageNotesSection');
-    if (triageNotes && triageNotes.trim() !== '') {
-        document.getElementById('modalTriagedBy').textContent = triagedBy;
-        document.getElementById('modalTriageDate').textContent = triageDate;
-        document.getElementById('modalTriageNotesContent').innerHTML = triageNotes.replace(/\n/g, '<br>');
-        triageNotesSection.style.display = 'block';
-    } else {
-        triageNotesSection.style.display = 'none';
-    }
+    // Show loading spinner
+    modalBody.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details...</p>
+        </div>
+    `;
+    
+    const url = `/${projectId}/scoring-details-modal/`;
+    console.log('Fetching from URL:', url);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken,
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            displayProjectDetails(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div class="text-center text-danger">
+                    <h5>Error loading project details</h5>
+                    <p>Please try again or contact support if the problem persists.</p>
+                    <p class="small">Error: ${error.message}</p>
+                    <p class="small">URL: ${url}</p>
+                </div>
+            `;
+        });
+}
+
+// Function to display project details
+function displayProjectDetails(data) {
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const project = data.project;
+    
+    modalBody.innerHTML = `
+        <div class="project-title mb-3">${project.title}</div>
+        
+        <div class="request-details-section">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Request Information</div>
+                        <div class="detail-content">
+                            <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                            <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                            <p><strong>Status:</strong> ${project.status}</p>
+                            <p><strong>Priority:</strong> ${project.priority}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Contact Information</div>
+                        <div class="detail-content">
+                            <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                            <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                            <p><strong>Budget:</strong> ${project.budget_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Timeline</div>
+                        <div class="detail-content">
+                            <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                            <p><strong>Start Date:</strong> ${project.start_date_formatted || 'N/A'}</p>
+                            <p><strong>End Date:</strong> ${project.end_date_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="detail-card">
+                        <div class="detail-title">Description</div>
+                        <div class="detail-content">
+                            <p>${project.description || 'No description available.'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
     
     // Update action buttons
-    document.getElementById('modalViewDetailsBtn').href = `/projects/${projectId}/`;
-    document.getElementById('modalEditBtn').href = `/projects/${projectId}/edit/`;
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('projectModal'));
-    modal.show();
+    document.getElementById('modalViewDetailsBtn').href = `/projects/${currentProjectId}/`;
+    document.getElementById('modalEditBtn').href = `/projects/${currentProjectId}/edit/`;
 }
+
 function refreshProjects() {
     const button = document.getElementById('refreshButton');
     const icon = button.querySelector('i');
@@ -638,13 +924,19 @@ function performSearch() {
 }
 
 // Add event listener to search input with debounce
-document.getElementById('searchInput').addEventListener('input', debounce(performSearch, 500));
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('input', debounce(performSearch, 500));
+}
 
 // Prevent form submission on enter
-document.getElementById('searchForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    performSearch();
-});
+const searchForm = document.getElementById('searchForm');
+if (searchForm) {
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+}
 </script>
 
 <style>

@@ -1,5 +1,6 @@
 {% extends 'base_cc.html' %}
 {% load static %}
+{% load project_tags %}
 
 {% block title %}Governance Data Dashboard{% endblock %}
 
@@ -12,19 +13,64 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Status</h5>
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3>{{ status_counts.pending }}</h3>
-                            <p>Pending</p>
+                    <h5 class="card-title">Requests by Status</h5>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ status_counts.pending }}</h3>
+                                <p class="mb-0">Pending</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3>{{ status_counts.in_progress }}</h3>
-                            <p>In Progress</p>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ status_counts.in_progress }}</h3>
+                                <p class="mb-0">In Progress</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3>{{ status_counts.completed }}</h3>
-                            <p>Completed</p>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ status_counts.approved }}</h3>
+                                <p class="mb-0">Approved</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-danger">{{ status_counts.rejected }}</h3>
+                                <p class="mb-0">Rejected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Requests by Stage</h5>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ stage_counts.Pending_Review }}</h3>
+                                <p class="mb-0">Pending Review</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ stage_counts.Under_Review_Triage }}</h3>
+                                <p class="mb-0">Under Review - Triage</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ stage_counts.Under_Review_Scoring }}</h3>
+                                <p class="mb-0">Under Review - Scoring</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ stage_counts.Under_Review_Final_Scoring }}</h3>
+                                <p class="mb-0">Under Review - Final Scoring</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -34,19 +80,62 @@
 
     <!-- Charts Row -->
     <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Projects by Status</h5>
-                    <canvas id="statusChart"></canvas>
+                    <h5 class="card-title">Requests by Priority</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-danger">{{ priority_counts.Top }}</h3>
+                                <p class="mb-0">Top Priority</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ priority_counts.High }}</h3>
+                                <p class="mb-0">High Priority</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ priority_counts.Normal }}</h3>
+                                <p class="mb-0">Normal Priority</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-secondary">{{ priority_counts.Low }}</h3>
+                                <p class="mb-0">Low Priority</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+    </div>
+
+    <!-- Top Priority Requests -->
+    <div class="row mb-4">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Projects by Priority</h5>
-                    <canvas id="priorityChart"></canvas>
+                    <h5 class="card-title">Top Priority Requests</h5>
+                    <div class="list-group">
+                        {% for project in top_priority_projects %}
+                        <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ project.title }}</h6>
+                                <small>{{ project.submission_date|date:"M d, Y" }}</small>
+                            </div>
+                            <p class="mb-1">{{ project.department }}</p>
+                            <small>
+                                <span class="badge bg-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                <span class="badge bg-{{ project.status|lower }}">{{ project.status }}</span>
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -57,7 +146,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Recent Projects</h5>
+                    <h5 class="card-title">Recent Requests</h5>
                     <div class="list-group">
                         {% for project in recent_projects %}
                         <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
@@ -79,7 +168,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">High Priority Projects</h5>
+                    <h5 class="card-title">High Priority Requests</h5>
                     <div class="list-group">
                         {% for project in high_priority_projects %}
                         <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
@@ -102,52 +191,5 @@
 </div>
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Status Chart
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    new Chart(statusCtx, {
-        type: 'pie',
-        data: {
-            labels: [{% for status in projects_by_status %}'{{ status.status }}',{% endfor %}],
-            datasets: [{
-                data: [{% for status in projects_by_status %}{{ status.count }},{% endfor %}],
-                backgroundColor: [
-                    '#fef3c7', // pending
-                    '#dcfce7', // approved
-                    '#fee2e2', // rejected
-                    '#dbeafe', // in progress
-                    '#e5e7eb'  // completed
-                ]
-            }]
-        }
-    });
-
-    // Priority Chart
-    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
-    new Chart(priorityCtx, {
-        type: 'bar',
-        data: {
-            labels: [{% for priority in projects_by_priority %}'{{ priority.priority }}',{% endfor %}],
-            datasets: [{
-                label: 'Number of Projects',
-                data: [{% for priority in projects_by_priority %}{{ priority.count }},{% endfor %}],
-                backgroundColor: [
-                    '#e2e8f0', // low
-                    '#bee3f8', // normal
-                    '#feb2b2', // high
-                    '#800b0b'  // top
-                ]
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-</script>
 {% endblock %}
 {% endblock %} 

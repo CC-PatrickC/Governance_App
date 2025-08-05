@@ -1,7 +1,7 @@
 {% extends 'base_cc.html' %}
 {% load static %}
 
-{% block title %}Requests to Score{% endblock %}
+{% block title %}Test Scoring Page{% endblock %}
 
 {% block extra_head %}
 {% csrf_token %}
@@ -27,11 +27,8 @@
 
     .cc-projects-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: 1.5rem;
-        justify-content: center;
-        max-width: 1200px;
-        margin: 0 auto;
     }
 
     .cc-project-card {
@@ -84,22 +81,8 @@
     .cc-project-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .cc-meta-section {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .cc-meta-title {
-        font-size: 8px;
-        font-weight: 600;
-        color: #000000;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .cc-meta-item {
@@ -126,29 +109,6 @@
         color: #0c5460;
     }
 
-    .cc-department-section {
-        margin-top: 12px;
-    }
-
-    .cc-department-title {
-        font-size: 8px;
-        font-weight: 600;
-        color: #000000;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 4px;
-    }
-
-    .cc-project-department {
-        margin-top: 8px;
-        padding: 4px 0;
-    }
-    
-    .cc-department-value {
-        font-size: 0.875rem;
-        color: #495057;
-    }
-
     .cc-project-meta-requested {
         font-size: 0.85em;
         color: #6c757d;
@@ -160,89 +120,6 @@
         text-align: center;
         padding: 3rem;
         color: #6c757d;
-    }
-
-    .cc-search-section {
-        background: white;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .cc-search-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .cc-search-input {
-        width: 100%;
-        padding: 12px 48px 12px 16px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        color: #495057;
-        background: white;
-        transition: all 0.15s ease-in-out;
-    }
-
-    .cc-search-input:focus {
-        outline: none;
-        border-color: #D09B2C;
-        box-shadow: 0 0 0 3px rgba(208, 155, 44, 0.1);
-    }
-
-    .cc-search-input::placeholder {
-        color: #6c757d;
-    }
-
-    .cc-search-btn {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #6c757d;
-        padding: 8px;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: all 0.15s ease-in-out;
-    }
-
-    .cc-search-btn:hover {
-        color: #D09B2C;
-        background: rgba(208, 155, 44, 0.1);
-    }
-
-    .cc-search-results-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid #e9ecef;
-    }
-
-    .cc-clear-search {
-        color: #D09B2C;
-        text-decoration: none;
-        font-size: 0.875rem;
-        font-weight: 500;
-        padding: 4px 8px;
-        border-radius: 4px;
-        transition: all 0.15s ease-in-out;
-    }
-
-    .cc-clear-search:hover {
-        color: #B8860B;
-        background: rgba(208, 155, 44, 0.1);
-        text-decoration: none;
     }
 
     .cc-empty-state h4 {
@@ -429,34 +306,6 @@
         padding: 0.75rem 0.5rem;
         font-size: 0.85rem;
     }
-    
-    /* Triage Notes Styling */
-    .triage-note-item {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 6px;
-        transition: all 0.2s ease-in-out;
-    }
-    
-    .triage-note-item:hover {
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        border-color: #D09B2C;
-    }
-    
-    .triage-note-item strong {
-        color: #D09B2C;
-        font-weight: 600;
-    }
-    
-    .triage-note-item small {
-        font-size: 0.75rem;
-    }
-    
-    .triage-note-item p {
-        margin-bottom: 0;
-        line-height: 1.4;
-        color: #495057;
-    }
 </style>
 {% endblock %}
 
@@ -464,38 +313,21 @@
 <div class="container-fluid py-4">
     <div class="cc-projects-section">
         <div class="cc-projects-header">
-            <h3>Requests to Score ({{ projects|length }})</h3>
+            <h3>TEST PAGE - Requests to Score ({{ projects|length }})</h3>
+            <p class="text-warning"><strong>⚠️ This is a test page - feel free to experiment here!</strong></p>
             {% if user.is_authenticated %}
                 {% if user.is_staff %}
                     <p class="text-muted mb-0"><small>You have access to all request types as an administrator.</small></p>
-                {% elif allowed_project_types %}
-                    <p class="text-muted mb-0"><small>You are viewing: {{ allowed_project_types|join:", " }} projects only.</small></p>
+                {% elif user.groups.all %}
+                    {% for group in user.groups.all %}
+                        {% if group.name == 'IT Governance Scoring' %}
+                            <p class="text-muted mb-0"><small>You are viewing IT Governance projects only.</small></p>
+                        {% endif %}
+                    {% endfor %}
                 {% else %}
                     <p class="text-muted mb-0"><small>You have access to all request types.</small></p>
                 {% endif %}
             {% endif %}
-        </div>
-        
-        <!-- Search Bar -->
-        <div class="cc-search-section mb-4">
-            <form method="get" class="cc-search-form">
-                <div class="cc-search-container">
-                    <input type="text" 
-                           name="search" 
-                           class="cc-search-input" 
-                           placeholder="Search requests by title, description, department, or contact..." 
-                           value="{{ search_query|default:'' }}">
-                    <button type="submit" class="cc-search-btn">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-                {% if search_query %}
-                <div class="cc-search-results-info">
-                    <small class="text-muted">Search results for: "{{ search_query }}"</small>
-                    <a href="{% url 'projects:project_scoring_list' %}" class="cc-clear-search">Clear search</a>
-                </div>
-                {% endif %}
-            </form>
         </div>
         
         {% if projects %}
@@ -511,26 +343,13 @@
                         {{ project.description|truncatechars:120 }}
                     </div>
                     <div class="cc-project-meta">
-                        <div class="cc-meta-section">
-                            <div class="cc-meta-title">Request Type</div>
-                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                        </div>
-                        <div class="cc-meta-section">
-                            <div class="cc-meta-title">Priority</div>
-                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                        </div>
-                        <div class="cc-meta-section">
-                            <div class="cc-meta-title">Status</div>
-                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                        </div>
-                    </div>
-                    
-                    {% if project.department %}
-                    <div class="cc-department-section">
-                        <div class="cc-department-title">Department</div>
+                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        {% if project.department %}
                         <span class="cc-meta-item">{{ project.department }}</span>
+                        {% endif %}
                     </div>
-                    {% endif %}
 
                     <div class="cc-project-meta-requested">
                         Requested by: 
@@ -572,6 +391,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="goToScoringPage">Go to Scoring Page</button>
             </div>
         </div>
     </div>
@@ -680,28 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="detail-title">Description</div>
                             <div class="detail-content">
                                 <p>${project.description || 'No description available.'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="detail-card">
-                            <div class="detail-title">Triage Notes</div>
-                            <div class="detail-content">
-                                ${data.triage_notes_history && data.triage_notes_history.length > 0 ? 
-                                    data.triage_notes_history.map(note => `
-                                        <div class="triage-note-item mb-3 p-3 border rounded bg-light">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <strong>${note.created_by}</strong>
-                                                <small class="text-muted">${note.created_at}</small>
-                                            </div>
-                                            <p class="mb-0">${note.notes}</p>
-                                        </div>
-                                    `).join('') : 
-                                    '<p class="text-muted">No triage notes available.</p>'
-                                }
                             </div>
                         </div>
                     </div>
@@ -861,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <input type="hidden" name="final_score" id="final_score" value="${data.user_score ? data.user_score.final_score || 0 : 0}">
                         <div class="d-flex justify-content-between align-items-center">
-                            <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-2"></i>Save Scoring
                             </button>
                             <div id="saveStatus" class="text-muted"></div>
@@ -1039,12 +837,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle "Go to Scoring Page" button
-    // document.getElementById('goToScoringPage').addEventListener('click', function() {
-    //     if (currentProjectId) {
-    //         const url = `{% url 'projects:project_scoring' 999 %}`.replace('999', currentProjectId);
-    //         window.location.href = url;
-    //     }
-    // });
+    document.getElementById('goToScoringPage').addEventListener('click', function() {
+        if (currentProjectId) {
+            const url = `{% url 'projects:project_scoring' 999 %}`.replace('999', currentProjectId);
+            window.location.href = url;
+        }
+    });
 });
 </script>
-{% endblock %} 
+{% endblock %}

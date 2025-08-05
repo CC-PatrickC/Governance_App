@@ -151,7 +151,7 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_triage' %}active{% endif %}" href="{% url 'projects:project_triage' %}">Triage</a>
                     </li>
                     {% endif %}
-                    {% if user.is_staff or user|has_group:'Scoring Group' %}
+                    {% if user.is_staff or not user|has_group:'Cabinet Group' and not user|has_group:'Triage Group' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'project_scoring_list' %}active{% endif %}" href="{% url 'projects:project_scoring_list' %}">Scoring</a>
                     </li>
