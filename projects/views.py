@@ -854,7 +854,6 @@ def project_final_scoring(request, pk):
 @login_required
 @user_passes_test(is_scoring_user)
 @require_POST
-@csrf_exempt
 def update_final_priority(request, pk):
     print(f"DEBUG: update_final_priority called with pk={pk}")
     print(f"DEBUG: User: {request.user.username}")
@@ -995,6 +994,7 @@ def project_scoring_details_modal(request, pk):
             'project_type': project.project_type,
             'project_type_display': project.get_project_type_display(),
             'status': project.status,
+            'status_display': project.get_status_display(),
             'submission_date': project.submission_date.isoformat() if project.submission_date else None,
             'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else None,
             'start_date': project.start_date.isoformat() if project.start_date else None,
@@ -1037,13 +1037,12 @@ def cabinet_dashboard(request):
         'Under_Review_Final_Scoring': projects.filter(stage='Under_Review_Final_Scoring').count(),
     }
     
-    # Calculate statistics by status
-    status_counts = {
-        'pending': projects.filter(status='pending').count(),
-        'in_progress': projects.filter(status='under_review').count(),
-        'approved': projects.filter(status='approved').count(),
-        'rejected': projects.filter(status='rejected').count()
-    }
+    # Calculate statistics by status using STATUS_CHOICES from model
+    status_counts = {}
+    for status_code, status_label in Project.STATUS_CHOICES:
+        count = projects.filter(status=status_code).count()
+        if count > 0:  # Only include statuses that have projects
+            status_counts[status_label] = count
     
     # Get projects by stage for display
     projects_by_stage = {
@@ -1054,7 +1053,7 @@ def cabinet_dashboard(request):
     }
     
     # Get recent projects
-    recent_projects = projects.order_by('-submission_date')[:5]
+    recent_projects = projects.order_by('-submission_date')
     
     # Get high priority projects
     high_priority_projects = projects.filter(priority__in=['Top', 'High']).order_by('-submission_date')[:5]
@@ -1083,6 +1082,18 @@ def cabinet_dashboard(request):
         'Low': projects.filter(priority='Low').count(),
     }
     
+    # Calculate requests per department (all requests, not just active)
+    department_counts = {}
+    for project in projects:
+        if project.department:
+            if project.department in department_counts:
+                department_counts[project.department] += 1
+            else:
+                department_counts[project.department] = 1
+    
+    # Sort departments by count (descending)
+    department_counts = dict(sorted(department_counts.items(), key=lambda x: x[1], reverse=True))
+    
     context = {
         'stage_counts': stage_counts,
         'status_counts': status_counts,
@@ -1093,6 +1104,7 @@ def cabinet_dashboard(request):
         'projects_by_status': projects_by_status,
         'projects_by_priority': projects_by_priority,
         'priority_counts': priority_counts,
+        'department_counts': department_counts,
     }
     
     return render(request, 'projects/dashboard.html', context)

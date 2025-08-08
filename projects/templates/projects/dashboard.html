@@ -8,182 +8,86 @@
 <div class="container-fluid py-4">
     <h1 class="mb-4">Governance Data Dashboard</h1>
     
-    <!-- Statistics Cards -->
+    <!-- Latest 5 Requests -->
     <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Requests by Status</h5>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-primary">{{ status_counts.pending }}</h3>
-                                <p class="mb-0">Pending</p>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0" id="requestsTitle">Latest Requests - 5</h5>
+                        <select id="requestCount" class="form-select form-select-sm" style="width: auto;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                    {% if recent_projects %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                    <tr>
+                                        <th>Project #</th>
+                                        <th>Title</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requestsTableBody">
+                                    {% for project in recent_projects %}
+                                    <tr>
+                                        <td>{{ project.formatted_id }}</td>
+                                        <td>{{ project.title }}</td>
+                                        <td>{{ project.department }}</td>
+                                        <td>{{ project.get_status_display }}</td>
+                                        <td>{{ project.submission_date|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-info">{{ status_counts.in_progress }}</h3>
-                                <p class="mb-0">In Progress</p>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-success">{{ status_counts.approved }}</h3>
-                                <p class="mb-0">Approved</p>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-danger">{{ status_counts.rejected }}</h3>
-                                <p class="mb-0">Rejected</p>
-                            </div>
-                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Requests per Department Bar Graph -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Requests per Department</h5>
+                    <div style="height: 400px;">
+                        <canvas id="departmentChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        
+        <!-- Status Distribution Pie Chart -->
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Requests by Stage</h5>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-warning">{{ stage_counts.Pending_Review }}</h3>
-                                <p class="mb-0">Pending Review</p>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-info">{{ stage_counts.Under_Review_Triage }}</h3>
-                                <p class="mb-0">Under Review - Triage</p>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-primary">{{ stage_counts.Under_Review_Scoring }}</h3>
-                                <p class="mb-0">Under Review - Scoring</p>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-success">{{ stage_counts.Under_Review_Final_Scoring }}</h3>
-                                <p class="mb-0">Under Review - Final Scoring</p>
-                            </div>
-                        </div>
+                    <h5 class="card-title">Request Status Distribution</h5>
+                    <div style="height: 400px;">
+                        <canvas id="statusChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Requests by Priority</h5>
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-danger">{{ priority_counts.Top }}</h3>
-                                <p class="mb-0">Top Priority</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-warning">{{ priority_counts.High }}</h3>
-                                <p class="mb-0">High Priority</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-info">{{ priority_counts.Normal }}</h3>
-                                <p class="mb-0">Normal Priority</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="text-center">
-                                <h3 class="text-secondary">{{ priority_counts.Low }}</h3>
-                                <p class="mb-0">Low Priority</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top Priority Requests -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Top Priority Requests</h5>
-                    <div class="list-group">
-                        {% for project in top_priority_projects %}
-                        <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ project.title }}</h6>
-                                <small>{{ project.submission_date|date:"M d, Y" }}</small>
-                            </div>
-                            <p class="mb-1">{{ project.department }}</p>
-                            <small>
-                                <span class="badge bg-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                <span class="badge bg-{{ project.status|lower }}">{{ project.status }}</span>
-                            </small>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Projects and High Priority Projects -->
+    <!-- Main Content Area - Ready for items to be added one by one -->
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Recent Requests</h5>
-                    <div class="list-group">
-                        {% for project in recent_projects %}
-                        <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ project.title }}</h6>
-                                <small>{{ project.submission_date|date:"M d, Y" }}</small>
-                            </div>
-                            <p class="mb-1">{{ project.department }}</p>
-                            <small>
-                                <span class="badge bg-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                <span class="badge bg-{{ project.status|lower }}">{{ project.status }}</span>
-                            </small>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">High Priority Requests</h5>
-                    <div class="list-group">
-                        {% for project in high_priority_projects %}
-                        <a href="{% url 'projects:project_detail' project.pk %}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ project.title }}</h6>
-                                <small>{{ project.submission_date|date:"M d, Y" }}</small>
-                            </div>
-                            <p class="mb-1">{{ project.department }}</p>
-                            <small>
-                                <span class="badge bg-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                <span class="badge bg-{{ project.status|lower }}">{{ project.status }}</span>
-                            </small>
-                        </a>
-                        {% endfor %}
-                    </div>
+                    <h5 class="card-title">Dashboard Content</h5>
+                    <p class="text-muted">Main dashboard content will be added here.</p>
+                    <!-- Content will be added here -->
                 </div>
             </div>
         </div>
@@ -191,5 +95,218 @@
 </div>
 
 {% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const requestCountSelect = document.getElementById('requestCount');
+    const tableBody = document.getElementById('requestsTableBody');
+    const requestsTitle = document.getElementById('requestsTitle');
+    
+    if (requestCountSelect && tableBody) {
+        requestCountSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            const rows = tableBody.querySelectorAll('tr');
+            
+            // Show/hide rows based on selection
+            rows.forEach((row, index) => {
+                if (selectedValue === 'all' || index < parseInt(selectedValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update title based on selection
+            if (selectedValue === 'all') {
+                requestsTitle.textContent = 'Latest Requests - All';
+            } else {
+                requestsTitle.textContent = `Latest Requests - ${selectedValue}`;
+            }
+        });
+    }
+    
+    // Department Chart
+    console.log('Starting chart creation...');
+    
+    try {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js not loaded');
+        }
+        
+        // Get the canvas element
+        const canvas = document.getElementById('departmentChart');
+        if (!canvas) {
+            throw new Error('Canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            console.log('Destroying existing chart');
+            existingChart.destroy();
+        }
+        
+        // Department data from Django
+        const departmentData = {{ department_counts|safe }};
+        console.log('Department data:', departmentData);
+        
+        const departments = Object.keys(departmentData);
+        const counts = Object.values(departmentData);
+        
+        console.log('Departments:', departments);
+        console.log('Counts:', counts);
+        
+        if (departments.length === 0) {
+            throw new Error('No department data available');
+        }
+        
+        // Create the chart
+        const ctx = canvas.getContext('2d');
+        console.log('Canvas context:', ctx);
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: departments,
+                datasets: [{
+                    label: 'Active Requests',
+                    data: counts,
+                    backgroundColor: '#D09B2C',
+                    borderColor: '#D09B2C',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        console.log('Chart created successfully:', chart);
+        
+    } catch (error) {
+        console.error('Chart creation error:', error);
+        const chartContainer = document.getElementById('departmentChart');
+        if (chartContainer && chartContainer.parentElement) {
+            chartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find chart container to show error message');
+        }
+    }
+    
+    // Status Pie Chart
+    console.log('Starting status pie chart creation...');
+    
+    try {
+        // Get the canvas element for status chart
+        const statusCanvas = document.getElementById('statusChart');
+        if (!statusCanvas) {
+            throw new Error('Status chart canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingStatusChart = Chart.getChart(statusCanvas);
+        if (existingStatusChart) {
+            console.log('Destroying existing status chart');
+            existingStatusChart.destroy();
+        }
+        
+        // Status data from Django
+        const statusData = {{ status_counts|safe }};
+        console.log('Status data:', statusData);
+        
+        const statuses = Object.keys(statusData);
+        const statusCounts = Object.values(statusData);
+        
+        // Add count to each status label
+        const statusLabelsWithCount = statuses.map((status, index) => {
+            return `${status} (${statusCounts[index]})`;
+        });
+        
+        console.log('Statuses:', statuses);
+        console.log('Status counts:', statusCounts);
+        console.log('Status labels with count:', statusLabelsWithCount);
+        
+        if (statuses.length === 0) {
+            throw new Error('No status data available');
+        }
+        
+        // Create the pie chart
+        const statusCtx = statusCanvas.getContext('2d');
+        console.log('Status canvas context:', statusCtx);
+        
+        // Define colors for different statuses
+        const statusColors = [
+            '#D09B2C', // CC Gold
+            '#28a745', // Green
+            '#dc3545', // Red
+            '#ffc107', // Yellow
+            '#17a2b8', // Blue
+            '#6c757d'  // Gray
+        ];
+        
+        const statusChart = new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: statusLabelsWithCount,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: statusColors.slice(0, statuses.length),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Status chart created successfully:', statusChart);
+        
+    } catch (error) {
+        console.error('Status chart creation error:', error);
+        const statusChartContainer = document.getElementById('statusChart');
+        if (statusChartContainer && statusChartContainer.parentElement) {
+            statusChartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading status chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find status chart container to show error message');
+        }
+    }
+});
+</script>
 {% endblock %}
 {% endblock %} 

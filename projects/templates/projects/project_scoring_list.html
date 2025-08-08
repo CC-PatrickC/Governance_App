@@ -554,12 +554,12 @@
     </div>
 </div>
 
-<!-- Project Details Modal -->
+<!-- Request Details Modal -->
 <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="projectDetailsModalLabel">Project Details</h5>
+                <h5 class="modal-title" id="projectDetailsModalLabel">Request Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="detail-content">
                                 <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                                 <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                                <p><strong>Status:</strong> ${project.status}</p>
+                                                                 <p><strong>Status:</strong> ${project.status_display || project.status}</p>
                                 <p><strong>Priority:</strong> ${project.priority}</p>
                             </div>
                         </div>
@@ -711,7 +711,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Scoring Form Section -->
             <div class="scoring-form-section mt-4">
                 <div class="detail-card">
-                    <div class="detail-title">Score This Project</div>
+                    <div class="detail-title">Score This Request</div>
                     <form id="scoringForm">
                         <div class="table-responsive">
                             <table class="table table-bordered">

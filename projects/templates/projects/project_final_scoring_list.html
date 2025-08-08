@@ -597,6 +597,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`Updating project ${projectId} to priority ${priority}`);
         
+        // Check if user is still authenticated
+        if (!csrfToken) {
+            alert('Authentication error. Please refresh the page and try again.');
+            return;
+        }
+        
         // Save the priority via AJAX
         fetch(`/${projectId}/update-final-priority/`, {
             method: 'POST',
@@ -610,6 +616,9 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             console.log('Response status:', response.status);
+            if (response.status === 302 || response.status === 401) {
+                throw new Error('Authentication required');
+            }
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -630,7 +639,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error updating priority. Please try again. Error: ' + error.message);
+            if (error.message.includes('JSON.parse') || error.message.includes('Authentication required')) {
+                alert('Authentication error. Please refresh the page and try again.');
+            } else {
+                alert('Error updating priority. Please try again. Error: ' + error.message);
+            }
         });
     }
 });
