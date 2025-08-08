@@ -1055,6 +1055,11 @@ def cabinet_dashboard(request):
     # Get recent projects
     recent_projects = projects.order_by('-submission_date')
     
+    # Get projects sorted by priority (Top, High, Normal, Low)
+    priority_sorted_projects = projects.extra(
+        select={'priority_order': "CASE WHEN priority = 'Top' THEN 1 WHEN priority = 'High' THEN 2 WHEN priority = 'Normal' THEN 3 WHEN priority = 'Low' THEN 4 ELSE 5 END"}
+    ).order_by('priority_order', '-submission_date')
+    
     # Get high priority projects
     high_priority_projects = projects.filter(priority__in=['Top', 'High']).order_by('-submission_date')[:5]
     
@@ -1094,17 +1099,43 @@ def cabinet_dashboard(request):
     # Sort departments by count (descending)
     department_counts = dict(sorted(department_counts.items(), key=lambda x: x[1], reverse=True))
     
+    # Calculate daily request data for the last 12 months
+    from datetime import datetime, timedelta
+    from django.db.models import Count
+    from django.utils import timezone
+    
+    # Get the date range (12 months back from today)
+    end_date = timezone.now().date()
+    start_date = end_date - timedelta(days=365)
+    
+    # Get daily counts for the last 12 months
+    daily_counts = projects.filter(
+        submission_date__gte=start_date,
+        submission_date__lte=end_date
+    ).extra(
+        select={'date': 'DATE(submission_date)'}
+    ).values('date').annotate(count=Count('id')).order_by('date')
+    
+    # Convert to a format suitable for Chart.js
+    daily_data = {}
+    for entry in daily_counts:
+        # The date is already a string from the SQL DATE() function
+        date_str = entry['date']
+        daily_data[date_str] = entry['count']
+    
     context = {
         'stage_counts': stage_counts,
         'status_counts': status_counts,
         'projects_by_stage': projects_by_stage,
         'recent_projects': recent_projects,
+        'priority_sorted_projects': priority_sorted_projects,
         'high_priority_projects': high_priority_projects,
         'top_priority_projects': top_priority_projects,
         'projects_by_status': projects_by_status,
         'projects_by_priority': projects_by_priority,
         'priority_counts': priority_counts,
         'department_counts': department_counts,
+        'daily_data': daily_data,
     }
     
     return render(request, 'projects/dashboard.html', context)

@@ -13,16 +13,7 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0" id="requestsTitle">Latest Requests - 5</h5>
-                        <select id="requestCount" class="form-select form-select-sm" style="width: auto;">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="all">All</option>
-                        </select>
-                    </div>
+                    <h5 class="card-title mb-3">Latest Requests</h5>
                     {% if recent_projects %}
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-hover">
@@ -80,6 +71,90 @@
         </div>
     </div>
 
+    <!-- Priority Projects Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Priority Requests</h5>
+                    {% if priority_sorted_projects %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                    <tr>
+                                        <th>Project #</th>
+                                        <th>Title</th>
+                                        <th>Department</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="priorityTableBody">
+                                    {% for project in priority_sorted_projects %}
+                                    <tr>
+                                        <td>{{ project.formatted_id }}</td>
+                                        <td>{{ project.title }}</td>
+                                        <td>{{ project.department }}</td>
+                                        <td>{{ project.priority }}</td>
+                                        <td>{{ project.get_status_display }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No priority requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Daily Requests Line Chart -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Requests per Day</h5>
+                        <div class="btn-group" role="group" aria-label="Time period filters">
+                            <button type="button" class="btn btn-sm" id="filter7days" style="border-color: #D09B2C; color: #D09B2C;">7 Days</button>
+                            <button type="button" class="btn btn-sm" id="filter30days" style="border-color: #D09B2C; color: #D09B2C;">30 Days</button>
+                            <button type="button" class="btn btn-sm active" id="filter12months" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">12 Months</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Overview Mini-Chart -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="prevPeriod" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div style="flex: 1; height: 60px; position: relative;">
+                                <canvas id="overviewChart"></canvas>
+                                <div id="selectionBar" style="position: absolute; top: 0; left: 0; width: 20%; height: 100%; background: rgba(208, 155, 44, 0.2); border: 2px solid #D09B2C; cursor: grab; display: none;"></div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="nextPeriod" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="height: 400px;">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empty space for future content -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Future Content</h5>
+                    <p class="text-muted">Additional dashboard content will be added here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content Area - Ready for items to be added one by one -->
     <div class="row">
         <div class="col-md-12">
@@ -97,32 +172,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const requestCountSelect = document.getElementById('requestCount');
-    const tableBody = document.getElementById('requestsTableBody');
-    const requestsTitle = document.getElementById('requestsTitle');
-    
-    if (requestCountSelect && tableBody) {
-        requestCountSelect.addEventListener('change', function() {
-            const selectedValue = this.value;
-            const rows = tableBody.querySelectorAll('tr');
-            
-            // Show/hide rows based on selection
-            rows.forEach((row, index) => {
-                if (selectedValue === 'all' || index < parseInt(selectedValue)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Update title based on selection
-            if (selectedValue === 'all') {
-                requestsTitle.textContent = 'Latest Requests - All';
-            } else {
-                requestsTitle.textContent = `Latest Requests - ${selectedValue}`;
-            }
-        });
-    }
     
     // Department Chart
     console.log('Starting chart creation...');
@@ -212,6 +261,402 @@ document.addEventListener('DOMContentLoaded', function() {
             chartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading chart: ${error.message}</p>`;
         } else {
             console.error('Could not find chart container to show error message');
+        }
+    }
+    
+    // Daily Requests Line Chart
+    console.log('Starting daily chart creation...');
+    
+    try {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js not loaded');
+        }
+        
+        // Get the canvas element
+        const dailyCanvas = document.getElementById('dailyChart');
+        if (!dailyCanvas) {
+            throw new Error('Daily chart canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingDailyChart = Chart.getChart(dailyCanvas);
+        if (existingDailyChart) {
+            console.log('Destroying existing daily chart');
+            existingDailyChart.destroy();
+        }
+        
+        // Daily data from Django
+        const dailyData = {{ daily_data|safe }};
+        console.log('Daily data:', dailyData);
+        
+        // Function to filter data based on days
+        function filterDataByDays(days) {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - days);
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            return filteredData;
+        }
+        
+        // Function to create chart with filtered data
+        function createDailyChart(data) {
+            const dates = Object.keys(data).sort();
+            const counts = dates.map(date => data[date] || 0);
+            
+            if (dates.length === 0) {
+                throw new Error('No data available for selected time period');
+            }
+            
+            // Create the line chart
+            const dailyCtx = dailyCanvas.getContext('2d');
+            console.log('Daily canvas context:', dailyCtx);
+            
+            const dailyChart = new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Requests',
+                        data: counts,
+                        borderColor: '#D09B2C',
+                        backgroundColor: 'rgba(208, 155, 44, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            console.log('Daily chart created successfully:', dailyChart);
+            return dailyChart;
+        }
+        
+        // Initialize with 12 months data
+        let currentDailyChart = createDailyChart(dailyData);
+        let currentTimePeriod = 365; // Track current time period
+        let currentFilteredData = dailyData; // Track current filtered data
+        let overviewChart = null; // Track overview chart
+        let currentOverviewStartDate = new Date(); // Track current overview start date
+        currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 11); // Start 12 months back
+        let isDragging = false; // Track if selection bar is being dragged
+        let dragStartX = 0; // Track drag start position
+        let selectionBar = null; // Reference to selection bar element
+        
+        // Add event listeners for filter buttons
+        document.getElementById('filter7days').addEventListener('click', function() {
+            currentTimePeriod = 7;
+            currentFilteredData = filterDataByDays(7);
+            if (currentDailyChart) currentDailyChart.destroy();
+            currentDailyChart = createDailyChart(currentFilteredData);
+            
+            // Update button states with CC Gold styling
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = '';
+                btn.style.color = '#D09B2C';
+                btn.style.borderColor = '#D09B2C';
+            });
+            this.classList.add('active');
+            this.style.backgroundColor = '#D09B2C';
+            this.style.color = 'white';
+            this.style.borderColor = '#D09B2C';
+            
+            // Reset date slider
+            document.getElementById('dateRangeSlider').value = 100;
+            document.getElementById('dateSliderValue').textContent = 'All';
+        });
+        
+        document.getElementById('filter30days').addEventListener('click', function() {
+            currentTimePeriod = 30;
+            currentFilteredData = filterDataByDays(30);
+            if (currentDailyChart) currentDailyChart.destroy();
+            currentDailyChart = createDailyChart(currentFilteredData);
+            
+            // Update button states with CC Gold styling
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = '';
+                btn.style.color = '#D09B2C';
+                btn.style.borderColor = '#D09B2C';
+            });
+            this.classList.add('active');
+            this.style.backgroundColor = '#D09B2C';
+            this.style.color = 'white';
+            this.style.borderColor = '#D09B2C';
+            
+            // Reset date slider
+            document.getElementById('dateRangeSlider').value = 100;
+            document.getElementById('dateSliderValue').textContent = 'All';
+        });
+        
+        document.getElementById('filter12months').addEventListener('click', function() {
+            currentTimePeriod = 365;
+            currentFilteredData = dailyData;
+            if (currentDailyChart) currentDailyChart.destroy();
+            currentDailyChart = createDailyChart(currentFilteredData);
+            
+            // Update button states with CC Gold styling
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = '';
+                btn.style.color = '#D09B2C';
+                btn.style.borderColor = '#D09B2C';
+            });
+            this.classList.add('active');
+            this.style.backgroundColor = '#D09B2C';
+            this.style.color = 'white';
+            this.style.borderColor = '#D09B2C';
+            
+            // Reset date slider
+            document.getElementById('dateRangeSlider').value = 100;
+            document.getElementById('dateSliderValue').textContent = 'All';
+        });
+        
+        // Create overview chart
+        function createOverviewChart(startDate = null) {
+            const overviewCanvas = document.getElementById('overviewChart');
+            if (!overviewCanvas) return;
+            
+            // Destroy any existing chart on this canvas
+            const existingOverviewChart = Chart.getChart(overviewCanvas);
+            if (existingOverviewChart) {
+                console.log('Destroying existing overview chart');
+                existingOverviewChart.destroy();
+            }
+            
+            // Use provided start date or default to 12 months back
+            const chartStartDate = startDate || new Date();
+            if (!startDate) {
+                chartStartDate.setMonth(chartStartDate.getMonth() - 11);
+            }
+            
+            // Generate 12 months of labels
+            const monthLabels = [];
+            const monthCounts = [];
+            
+            for (let i = 0; i < 12; i++) {
+                const currentDate = new Date(chartStartDate);
+                currentDate.setMonth(chartStartDate.getMonth() + i);
+                
+                const month = currentDate.toLocaleDateString('en-US', { month: 'short' });
+                const year = currentDate.getFullYear().toString().slice(-2);
+                monthLabels.push(`${month} '${year}`);
+                
+                // Calculate total count for this month
+                const yearMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
+                let monthTotal = 0;
+                
+                Object.keys(dailyData).forEach(dateStr => {
+                    if (dateStr.startsWith(yearMonth)) {
+                        monthTotal += dailyData[dateStr] || 0;
+                    }
+                });
+                
+                monthCounts.push(monthTotal);
+            }
+            
+            const overviewCtx = overviewCanvas.getContext('2d');
+            overviewChart = new Chart(overviewCtx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Overview',
+                        data: monthCounts,
+                        borderColor: '#6c757d',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        borderWidth: 1,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                maxTicksLimit: 6
+                            }
+                        },
+                        y: {
+                            display: false
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize overview chart
+        try {
+            createOverviewChart(currentOverviewStartDate);
+            updateSelectionBar();
+        } catch (error) {
+            console.error('Overview chart creation error:', error);
+        }
+        
+        // Initialize selection bar
+        selectionBar = document.getElementById('selectionBar');
+        
+        // Function to update selection bar position
+        function updateSelectionBar() {
+            if (!selectionBar) return;
+            
+            // Calculate position based on current start date
+            const totalMonths = 60; // Show 5 years of data
+            const currentMonth = currentOverviewStartDate.getMonth() + (currentOverviewStartDate.getFullYear() - 2020) * 12;
+            const position = (currentMonth / totalMonths) * 100;
+            
+            selectionBar.style.left = `${Math.max(0, Math.min(100 - 20, position))}%`;
+            selectionBar.style.width = '20%'; // 12 months = 20% of 5 years
+            selectionBar.style.display = 'block';
+        }
+        
+        // Mouse event handlers for dragging
+        const overviewContainer = document.querySelector('#overviewChart').parentElement;
+        
+        selectionBar.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            selectionBar.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const containerRect = overviewContainer.getBoundingClientRect();
+            const mouseX = e.clientX - containerRect.left;
+            const containerWidth = containerRect.width;
+            const selectionWidth = containerWidth * 0.2; // 20% width
+            
+            // Calculate new position
+            let newLeft = (mouseX / containerWidth) * 100;
+            newLeft = Math.max(0, Math.min(100 - 20, newLeft)); // Keep within bounds
+            
+            // Update selection bar position
+            selectionBar.style.left = `${newLeft}%`;
+            
+            // Calculate corresponding date
+            const totalMonths = 60; // 5 years
+            const monthsFromStart = (newLeft / 100) * totalMonths;
+            const newStartDate = new Date(2020, 0, 1); // Start from 2020
+            newStartDate.setMonth(newStartDate.getMonth() + monthsFromStart);
+            
+            // Update if within valid range
+            const currentDate = new Date();
+            const maxStartDate = new Date();
+            maxStartDate.setMonth(currentDate.getMonth() - 11);
+            
+            if (newStartDate <= maxStartDate) {
+                currentOverviewStartDate = new Date(newStartDate);
+                try {
+                    createOverviewChart(currentOverviewStartDate);
+                } catch (error) {
+                    console.error('Overview chart update error:', error);
+                }
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                selectionBar.style.cursor = 'grab';
+            }
+        });
+        
+        // Navigation buttons
+        document.getElementById('prevPeriod').addEventListener('click', function() {
+            // Navigate to previous 12-month period
+            currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 12);
+            try {
+                createOverviewChart(currentOverviewStartDate);
+                updateSelectionBar();
+            } catch (error) {
+                console.error('Overview chart navigation error:', error);
+            }
+        });
+        
+        document.getElementById('nextPeriod').addEventListener('click', function() {
+            // Navigate to next 12-month period
+            currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() + 12);
+            
+            // Don't go beyond current date
+            const currentDate = new Date();
+            const maxStartDate = new Date();
+            maxStartDate.setMonth(currentDate.getMonth() - 11);
+            
+            if (currentOverviewStartDate > maxStartDate) {
+                currentOverviewStartDate = new Date(maxStartDate);
+            }
+            
+            try {
+                createOverviewChart(currentOverviewStartDate);
+                updateSelectionBar();
+            } catch (error) {
+                console.error('Overview chart navigation error:', error);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Daily chart creation error:', error);
+        const dailyChartContainer = document.getElementById('dailyChart');
+        if (dailyChartContainer && dailyChartContainer.parentElement) {
+            dailyChartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading daily chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find daily chart container to show error message');
         }
     }
     
