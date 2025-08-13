@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Edit Project</h2>
+        <h2>Edit Request</h2>
         <a href="{% url 'projects:project_triage' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Triage
         </a>
@@ -38,7 +38,7 @@
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label for="project_type" class="form-label">Project Type *</label>
+                        <label for="project_type" class="form-label">Request Type *</label>
                         <select class="form-select" id="project_type" name="project_type" required>
                             {% for value, label in project.PROJECT_TYPE_CHOICES %}
                             <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>

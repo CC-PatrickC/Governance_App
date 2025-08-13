@@ -1,7 +1,7 @@
 {% extends 'base_cc.html' %}
 {% load static %}
 
-{% block title %}Project Triage{% endblock %}
+{% block title %}Request Triage{% endblock %}
 
 {% block extra_head %}
 {% csrf_token %}
@@ -102,6 +102,8 @@
         text-decoration: none;
     }
 
+
+
     .cc-projects-section {
         margin-bottom: 2rem;
     }
@@ -172,8 +174,22 @@
     .cc-project-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .cc-meta-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .cc-meta-item {
@@ -199,6 +215,21 @@
         background: #d1ecf1;
         color: #0c5460;
     }
+
+    .cc-department-section {
+        margin-top: 12px;
+    }
+
+    .cc-department-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+
 
     .cc-project-meta-requested {
         font-size: 0.85em;
@@ -344,11 +375,11 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="cc-triage-header">
-            <h3>Project Triage</h3>
+            <h3>Request Triage</h3>
         </div>
         <div class="d-flex gap-2">
             <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                Refresh
             </button>
         </div>
     </div>
@@ -356,7 +387,7 @@
     <!-- Filters Section -->
     <div class="cc-filters-section">
         <div class="cc-filters-header">
-            <h3>Filter Projects</h3>
+            <h3>Filter Requests</h3>
         </div>
         <form method="get" class="cc-filters-form">
             {% if search_query %}
@@ -365,7 +396,7 @@
             <div class="cc-filters-grid">
                 <!-- Project Type Filter -->
                 <div class="cc-filter-group">
-                    <label class="cc-filter-label">Project Type</label>
+                    <label class="cc-filter-label">Request Type</label>
                     <select name="type" class="cc-filter-select" onchange="this.form.submit()">
                         <option value="">All Types</option>
                         {% if project_types %}
@@ -428,7 +459,7 @@
     <!-- Projects Section -->
     <div class="cc-projects-section">
         <div class="cc-projects-header">
-            <h3>Projects ({{ projects|length }})</h3>
+            <h3>Requests ({{ projects|length }})</h3>
         </div>
         
         {% if projects %}
@@ -444,13 +475,26 @@
                         {{ project.description|truncatechars:120 }}
                     </div>
                     <div class="cc-project-meta">
-                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                        {% if project.department %}
-                        <span class="cc-meta-item">{{ project.department }}</span>
-                        {% endif %}
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Request Type</div>
+                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Priority</div>
+                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Status</div>
+                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        </div>
                     </div>
+                    
+                    {% if project.department %}
+                    <div class="cc-department-section">
+                        <div class="cc-department-title">Department</div>
+                        <span class="cc-meta-item">{{ project.department }}</span>
+                    </div>
+                    {% endif %}
 
                     <div class="cc-project-meta-requested">
                         Requested by: 
@@ -468,7 +512,7 @@
         </div>
         {% else %}
         <div class="cc-empty-state">
-            <h4>No projects found</h4>
+            <h4>No requests found</h4>
             <p>Try adjusting your search criteria or filters.</p>
         </div>
         {% endif %}
@@ -480,7 +524,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
-                <h5 class="modal-title" id="editProjectModalLabel">Edit Project</h5>
+                <h5 class="modal-title" id="editProjectModalLabel">Edit Request</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -566,6 +610,11 @@ function openEditModal(projectId) {
                     e.preventDefault();
                     submitEditForm(form, projectId);
                 });
+                
+                // Add click handler to save button
+                saveBtn.addEventListener('click', function() {
+                    form.dispatchEvent(new Event('submit'));
+                });
             } else {
                 formContainer.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
             }
@@ -589,7 +638,8 @@ function submitEditForm(form, projectId) {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
     .then(response => response.json())
@@ -641,33 +691,15 @@ function submitEditForm(form, projectId) {
 
 function refreshProjects() {
     const button = document.getElementById('refreshButton');
-    const icon = button.querySelector('i');
     
-    // Add spinning animation
-    icon.classList.add('fa-spin');
+    // Disable button
     button.disabled = true;
     
     // Reload the page
     window.location.reload();
 }
 
-// Add animation for refresh icon
-const style = document.createElement('style');
-style.textContent = `
-    .fa-spin {
-        animation: fa-spin 1s infinite linear;
-    }
 
-    @keyframes fa-spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-`;
-document.head.appendChild(style);
 </script>
 
 {% endblock %} 

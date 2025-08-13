@@ -4,7 +4,7 @@
     {% csrf_token %}
     
     <div class="mb-3">
-        <label for="title" class="form-label">Project Title *</label>
+        <label for="title" class="form-label">Request Title *</label>
         <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
     </div>
     
@@ -14,8 +14,8 @@
     </div>
 
     <div class="row">
-        <div class="col-md-4 mb-3">
-            <label for="project_type" class="form-label">Project Type *</label>
+        <div class="col-md-6 mb-3">
+            <label for="project_type" class="form-label">Request Type *</label>
             <select class="form-select" id="project_type" name="project_type" required>
                 {% for value, label in project.PROJECT_TYPE_CHOICES %}
                 <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
@@ -25,7 +25,7 @@
             </select>
         </div>
 
-        <div class="col-md-4 mb-3">
+        <div class="col-md-6 mb-3">
             <label for="priority" class="form-label">Priority *</label>
             <select class="form-select" id="priority" name="priority" required>
                 <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
@@ -34,12 +34,25 @@
                 <option value="Low" {% if project.priority == 'Low' %}selected{% endif %}>Low</option>
             </select>
         </div>
+    </div>
 
-        <div class="col-md-4 mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
             <label for="status" class="form-label">Status *</label>
             <select class="form-select" id="status" name="status" required>
                 {% for value, label in project.STATUS_CHOICES %}
                 <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="stage" class="form-label">Stage *</label>
+            <select class="form-select" id="stage" name="stage" required>
+                {% for value, label in project.STAGE_CHOICES %}
+                <option value="{{ value }}" {% if project.stage == value %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -55,7 +68,7 @@
     <div class="mb-3">
         <label for="contact_person" class="form-label">Contact Person</label>
         <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}" required>
-        <small class="form-text text-muted">The primary contact person for this project.</small>
+        <small class="form-text text-muted">The primary contact person for this request.</small>
     </div>
 
     <div class="form-group">

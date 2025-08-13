@@ -35,4 +35,9 @@ def average_score(queryset, field_name):
 
 @register.filter
 def has_group(user, group_name):
-    return user.groups.filter(name=group_name).exists() 
+    return user.groups.filter(name=group_name).exists()
+
+@register.filter
+def get_item(dictionary, key):
+    """Get an item from a dictionary using a key"""
+    return dictionary.get(key) 

@@ -7,7 +7,9 @@ class Project(models.Model):
         ('pending', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('under_review', 'Under Review'),
+        ('under_review_triage', 'Under Review - Triage'),
+        ('under_review_scoring', 'Under Review - Scoring'),
+        ('under_review_final_scoring', 'Under Review - Final Scoring'),
         ('completed', 'Completed'),
         ('archived', 'Archived'),
         ('on_hold', 'On Hold'),
@@ -44,10 +46,16 @@ class Project(models.Model):
 
     title = models.CharField(max_length=200)
     description = models.TextField()
-    project_type = models.CharField(max_length=20, choices=PROJECT_TYPE_CHOICES, default='not_yet_decided', help_text="Type of project submission")
+    project_type = models.CharField(
+        max_length=20, 
+        choices=PROJECT_TYPE_CHOICES, 
+        default='not_yet_decided', 
+        verbose_name="Request Type",
+        help_text="Type of request submission"
+    )
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     submission_date = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
     stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)

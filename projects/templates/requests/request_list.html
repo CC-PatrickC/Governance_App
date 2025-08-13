@@ -1,0 +1,654 @@
+{% extends 'base_cc.html' %}
+
+{% block title %}Requests{% endblock %}
+
+{% block content %}
+<style>
+    .stage-badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        display: inline-block;
+    }
+    
+    .stage-pending_review {
+        background-color: #e2e8f0;
+        color: #1a202c;
+    }
+    
+    .stage-under_review_triage {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .stage-under_review_scoring {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .stage-under_review_final_scoring {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    .stage-complete {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    
+    .stage-archived {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+
+    /* CC Theme Card Styles */
+    .cc-requests-section {
+        margin-bottom: 40px;
+    }
+
+    .cc-requests-header h3 {
+        color: #000000;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
+    .cc-requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
+    }
+
+    .cc-request-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-request-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-request-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: white;
+        padding: 16px 20px;
+    }
+
+    .cc-request-id {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-request-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: black;
+    }
+
+    .cc-request-body {
+        padding: 20px;
+    }
+
+    .cc-request-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .cc-request-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-request-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .cc-action-btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-action-primary {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+    }
+
+    .cc-action-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+    /* CC Filter Styles */
+    .cc-filters-section {
+        background: #f8f9fa;
+        border-radius: 0 0 8px 8px;
+        padding: 12px;
+        margin-bottom: 32px;
+        border: 1px solid #e9ecef;
+        position: sticky;
+        top: 80px;
+        z-index: 999;
+    }
+
+    .cc-filters-form {
+        margin: 0;
+    }
+
+    .cc-filters-header h3 {
+        color: #000000;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .cc-filters-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: end;
+    }
+
+    .cc-filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .cc-filter-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 4px;
+    }
+
+    .cc-filter-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        background-color: white;
+    }
+
+    .cc-filter-select:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
+
+    .cc-filter-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+    }
+
+    .cc-filter-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-filter-btn-primary {
+        background: #D09B2C;
+        color: white;
+    }
+
+    .cc-filter-btn-primary:hover {
+        background: #B8860B;
+    }
+
+    .cc-filter-btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .cc-filter-btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .cc-filter-btn-outline {
+        background: transparent;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .cc-filter-btn-outline:hover {
+        background: #6c757d;
+        color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .cc-requests-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .cc-filters-row {
+            flex-direction: column;
+        }
+        
+        .cc-filter-group {
+            min-width: auto;
+        }
+    }
+
+    /* Custom Modal Width - Very Specific */
+    #requestModal .modal-dialog.modal-sm {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Override any other modal styles */
+    .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Force narrow modal for request page */
+    .request-modal-narrow .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Additional specificity */
+    body .modal-dialog.modal-sm {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Nuclear option - override ALL modal styles */
+    .modal-dialog,
+    .modal-dialog.modal-sm,
+    .modal-dialog.modal-md,
+    .modal-dialog.modal-lg,
+    .modal-dialog.modal-xl {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Target the specific modal */
+    #requestModal .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Force modal content to be narrow */
+    #requestModal .modal-content {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Override Bootstrap's responsive breakpoints */
+    @media (min-width: 576px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 768px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 1200px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    /* Custom Modal Styles */
+    .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        width: 300px;
+        max-width: 300px;
+        max-height: 80vh;
+        overflow: hidden;
+        z-index: 10000;
+    }
+    
+    .custom-modal-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-close:hover {
+        color: #333;
+    }
+    
+    .custom-modal-body {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-footer {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+</style>
+
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>All Requests</h2>
+        <div>
+            <a href="{% url 'requests:request_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Request
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filters Section -->
+    <div class="cc-filters-section">
+        <form method="get" class="cc-filters-form">
+            <div class="cc-filters-header">
+                <h3>Filter Requests</h3>
+            </div>
+            <div class="cc-filters-row">
+                <div class="cc-filter-group">
+                    <label for="search" class="cc-filter-label">Search</label>
+                    <input type="text" name="search" id="search" class="cc-search-input" 
+                           value="{{ search_query }}" placeholder="Search requests...">
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="type" class="cc-filter-label">Request Type</label>
+                    <select name="type" id="type" class="cc-filter-select">
+                        <option value="">All Types</option>
+                        {% for value, label in request_types %}
+                        <option value="{{ value }}" {% if value == type_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="priority" class="cc-filter-label">Priority</label>
+                    <select name="priority" id="priority" class="cc-filter-select">
+                        <option value="">All Priorities</option>
+                        {% for priority in priorities %}
+                        <option value="{{ priority }}" {% if priority == priority_filter %}selected{% endif %}>{{ priority }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="status" class="cc-filter-label">Status</label>
+                    <select name="status" id="status" class="cc-filter-select">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-group">
+                    <label for="department" class="cc-filter-label">Department</label>
+                    <select name="department" id="department" class="cc-filter-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if dept == department_filter %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="cc-filter-buttons">
+                    <button type="submit" class="cc-filter-btn cc-filter-btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'requests:request_list' %}" class="cc-filter-btn cc-filter-btn-outline">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Requests Section -->
+    <div class="cc-requests-section">
+        <div class="cc-requests-header">
+            <h3>Requests ({{ requests.count }})</h3>
+        </div>
+        
+        {% if requests %}
+        <div class="cc-requests-grid">
+            {% for request in requests %}
+            <div class="cc-request-card" onclick="openRequestModal({{ request.id }})" style="cursor: pointer;">
+                <div class="cc-request-header">
+                    <div class="cc-request-id">{{ request.formatted_id }}</div>
+                    <div class="cc-request-title">{{ request.title }}</div>
+                </div>
+                <div class="cc-request-body">
+                    <div class="cc-request-description">
+                        {{ request.description|truncatewords:20 }}
+                    </div>
+                    <div class="cc-request-meta">
+                        <span class="cc-meta-item">{{ request.get_request_type_display }}</span>
+                        <span class="cc-meta-item cc-priority-{{ request.priority|lower }}">{{ request.priority }}</span>
+                        <span class="cc-meta-item">{{ request.get_status_display }}</span>
+                        {% if request.department %}
+                        <span class="cc-meta-item">{{ request.department }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="cc-request-actions">
+                        <a href="{% url 'requests:request_detail' request.id %}" class="cc-action-btn cc-action-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <h4>No requests found</h4>
+            <p>No requests match your current filters. Try adjusting your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Custom Request Detail Modal -->
+<div id="customRequestModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-overlay" onclick="closeCustomModal()"></div>
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title">Request Details</h5>
+            <button type="button" class="custom-modal-close" onclick="closeCustomModal()">&times;</button>
+        </div>
+        <div class="custom-modal-body" id="customRequestModalBody">
+            <!-- Content will be loaded here -->
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCustomModal()">Close</button>
+            <a href="#" id="customRequestDetailLink" class="btn btn-primary">View Full Details</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function openRequestModal(requestId) {
+    console.log('Opening custom modal for request:', requestId);
+    
+    // Set the detail link
+    document.getElementById('customRequestDetailLink').href = `/requests/${requestId}/`;
+    
+    // Load request details via AJAX
+    fetch(`/requests/${requestId}/`)
+        .then(response => response.text())
+        .then(html => {
+            // Extract the main content from the response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.card-body');
+            
+            if (content) {
+                document.getElementById('customRequestModalBody').innerHTML = content.innerHTML;
+            } else {
+                document.getElementById('customRequestModalBody').innerHTML = '<p>Unable to load request details.</p>';
+            }
+            
+            // Show the custom modal
+            document.getElementById('customRequestModal').style.display = 'flex';
+            console.log('Custom modal displayed at 300px width');
+        })
+        .catch(error => {
+            console.error('Error loading request details:', error);
+            document.getElementById('customRequestModalBody').innerHTML = '<p>Error loading request details.</p>';
+            document.getElementById('customRequestModal').style.display = 'flex';
+        });
+}
+
+function closeCustomModal() {
+    document.getElementById('customRequestModal').style.display = 'none';
+}
+</script>
+{% endblock %} 

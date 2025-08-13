@@ -1,7 +1,50 @@
 {% extends 'base_cc.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Project Intake{% endblock %}
+{% block title %}Request Intake{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Bootstrap Button Overrides */
+    .btn.btn-primary {
+        background: #D09B2C !important;
+        border: 1px solid #D09B2C !important;
+        color: white !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 4px !important;
+        text-decoration: none !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+
+    .btn.btn-primary:hover {
+        background: #B8860B !important;
+        border-color: #B8860B !important;
+        color: white !important;
+        text-decoration: none !important;
+    }
+
+    .btn.btn-secondary {
+        background: #6c757d !important;
+        border: 1px solid #6c757d !important;
+        color: white !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 4px !important;
+        text-decoration: none !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+
+    .btn.btn-secondary:hover {
+        background: #5a6268 !important;
+        border-color: #5a6268 !important;
+        color: white !important;
+        text-decoration: none !important;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- Main Content Area -->
@@ -18,10 +61,10 @@
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>New Project</h2>
+        <h2>New Request</h2>
         <div class="d-flex gap-2">
-            <a href="{% url 'projects:project_list' %}" class="cc-btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Projects
+            <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Requests
             </a>
         </div>
     </div>
@@ -32,15 +75,15 @@
             <div class="col-md-8">
                 <div class="cc-form-card">
                     <div class="cc-form-card-header">
-                        <h3 class="mb-0">Project Intake Form</h3>
+                        <h3 class="mb-0">Request Intake Form</h3>
                     </div>
                     <div class="cc-form-card-body">
                         <form method="post" id="projectForm" enctype="multipart/form-data">
                             {% csrf_token %}
                             {{ form|crispy }}
                             <div class="d-flex justify-content-between mt-4">
-                                <a href="{% url 'projects:project_list' %}" class="cc-btn-secondary">Cancel</a>
-                                <button type="submit" class="cc-btn-primary">Submit Project</button>
+                                <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-primary">Submit Request</button>
                             </div>
                         </form>
                     </div>

@@ -2,19 +2,20 @@
 {% load static %}
 {% load project_tags %}
 
-{% block title %}Final Project Scoring{% endblock %}
+{% block title %}Final Request Scoring{% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="width: 115%; padding-right: 15px;">
+{% csrf_token %}
+<div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Final Project Scoring</h2>
+        <h2>Final Request Scoring</h2>
         <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Projects
+            <i class="fas fa-arrow-left"></i> Back to Requests
         </a>
     </div>
 
     {% if messages %}
-    <div class="messages">
+    <div class="messages mb-4">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">
             {{ message }}
@@ -23,232 +24,681 @@
     </div>
     {% endif %}
 
-    <div class="mb-4">
-        <form method="get" class="d-flex">
-            <div class="input-group">
+    <!-- Search Section -->
+    <div class="cc-search-section mb-4">
+        <form method="get" class="cc-search-form">
+            <div class="cc-search-container">
                 <input type="text" 
                        name="search" 
-                       class="form-control" 
-                       placeholder="Search projects..." 
-                       value="{{ search_query|default:'' }}"
-                       aria-label="Search projects">
-                <button class="btn btn-outline-secondary" type="submit">
+                       class="cc-search-input" 
+                       placeholder="Search requests by title, description, department, or contact..." 
+                       value="{{ search_query|default:'' }}">
+                <button type="submit" class="cc-search-btn">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
+            {% if search_query %}
+            <div class="cc-search-results-info">
+                <small class="text-muted">Search results for: "{{ search_query }}"</small>
+                <a href="?" class="cc-clear-search">Clear search</a>
+            </div>
+            {% endif %}
         </form>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Project Name</th>
-                    <th>Description</th>
-                    <th>Type</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Department</th>
-                    <th>Final Average Score</th>
-                    <th>Final Priority</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td>{{ project.formatted_id }}</td>
-                    <td>{{ project.title }}</td>
-                    <td>{{ project.description|truncatechars:100 }}</td>
-                    <td class="text-center">
-                        <span>
-                            {{ project.get_project_type_display }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <span>
-                            {{ project.priority }}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <span>
-                            {{ project.get_status_display }}
-                        </span>
-                    </td>
-                    <td>{{ project.department|default:"-" }}</td>
-                    <td>
-                        {% if project.final_score %}
-                            {{ project.final_score|floatformat:2 }}
-                        {% else %}
-                            -
+    <!-- Requests Section -->
+    <div class="cc-projects-section">
+        <div class="cc-projects-header">
+            <h3>Requests for Final Scoring ({{ projects|length }})</h3>
+            {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <p class="text-muted mb-0"><small>You have access to all project types as an administrator.</small></p>
+                {% elif user.groups.all %}
+                    {% for group in user.groups.all %}
+                        {% if group.name == 'IT Governance Scoring' %}
+                            <p class="text-muted mb-0"><small>You are viewing IT Governance projects only.</small></p>
                         {% endif %}
-                    </td>
-                    <td>
-                        <input type="number" 
-                               class="form-control form-control-sm final-priority-input" 
-                               value="{{ project.final_priority|default:'' }}"
-                               min="1"
-                               data-project-id="{{ project.id }}"
-                               placeholder="Rank"
-                               style="width: 70px;">
-                    </td>
-                    <td>
-                        <a href="{% url 'projects:project_final_scoring_details' project.pk %}" class="btn btn-primary btn-sm">
-                            Details
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9" class="text-center">No projects found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0"><small>You have access to all project types.</small></p>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        {% if projects %}
+        <div class="cc-final-scoring-table-container">
+            <table class="cc-final-scoring-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Priority</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Final Score</th>
+                        <th>Final Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr class="cc-project-row" draggable="true" data-project-id="{{ project.id }}">
+                        <td class="cc-project-id-cell">
+                            <span class="cc-project-id">{{ project.formatted_id }}</span>
+                        </td>
+                        <td class="cc-project-title-cell">
+                            <div class="cc-project-title">{{ project.title }}</div>
+                            <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
+                            <div class="cc-project-requested">
+                                <small class="text-muted">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {{ project.submission_date|date:'M d, Y' }}
+                                </small>
+                            </div>
+                        </td>
+                        <td class="cc-project-type-cell">
+                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        </td>
+                        <td class="cc-project-priority-cell">
+                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        </td>
+                        <td class="cc-project-department-cell">
+                            {% if project.department %}
+                                {{ project.department }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="cc-project-status-cell">
+                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        </td>
+                        <td class="cc-project-score-cell">
+                            {% if project.final_score %}
+                                <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="cc-score-value text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="cc-project-final-priority-cell">
+                            <div class="cc-rank-display">
+                                <input type="number" 
+                                       class="cc-priority-input final-priority-input" 
+                                       value="{{ project.final_priority|default:'' }}"
+                                       min="1"
+                                       data-project-id="{{ project.id }}"
+                                       placeholder="Rank">
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <h4>No requests found</h4>
+            <p>Try adjusting your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Final Scoring Details Modal -->
+<div class="modal fade" id="finalScoringModal" tabindex="-1" aria-labelledby="finalScoringModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="finalScoringModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="finalScoringDetailLink" class="btn btn-primary">View Full Details</a>
+            </div>
+        </div>
     </div>
 </div>
 
 <style>
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
+    /* Final Scoring Table Styles */
+    .cc-final-scoring-table-container {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
-    
-    .final-priority-input {
+
+    .cc-final-scoring-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+    }
+
+    .cc-final-scoring-table th {
+        background: #D09B2C;
+        color: white;
+        font-weight: 600;
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 2px solid #B8860B;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-final-scoring-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f8f9fa;
+        vertical-align: top;
+    }
+
+    .cc-project-row:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+
+    .cc-project-id-cell {
+        width: 80px;
+        font-weight: 600;
+        color: #D09B2C;
+    }
+
+    .cc-project-title-cell {
+        width: 400px;
+    }
+
+    .cc-project-type-cell,
+    .cc-project-priority-cell,
+    .cc-project-department-cell,
+    .cc-project-status-cell {
+        width: 140px;
+    }
+
+    .cc-project-score-cell {
+        width: 120px;
         text-align: center;
     }
-    
-    /* Remove arrows from number input */
-    .final-priority-input::-webkit-outer-spin-button,
-    .final-priority-input::-webkit-inner-spin-button {
+
+    .cc-project-final-priority-cell {
+        width: 140px;
+    }
+
+    .cc-project-title {
+        font-weight: 600;
+        color: #000000;
+        margin-bottom: 4px;
+        font-size: 0.9rem;
+    }
+
+    .cc-project-description {
+        color: #6c757d;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        margin-bottom: 8px;
+    }
+
+    .cc-project-requested {
+        font-size: 0.75rem;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-score-value {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #D09B2C;
+    }
+
+    .cc-priority-input {
+        width: 60px;
+        padding: 6px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+
+    .cc-priority-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.2);
+    }
+
+    /* Remove number input arrows/spinners */
+    .cc-priority-input::-webkit-outer-spin-button,
+    .cc-priority-input::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
-    
-    .final-priority-input {
-        -moz-appearance: textfield; /* Firefox */
+
+    .cc-priority-input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    /* Rank Display */
+    .cc-rank-display {
+        text-align: center;
+    }
+
+    .cc-priority-input {
+        width: 60px;
+        padding: 6px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        text-align: center;
+        background: white;
+    }
+
+    .cc-priority-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.2);
+    }
+
+    /* Remove number input arrows/spinners */
+    .cc-priority-input::-webkit-outer-spin-button,
+    .cc-priority-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .cc-priority-input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    /* Drag and Drop Styles */
+    .cc-project-row {
+        cursor: grab;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .cc-project-row:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .cc-project-row:active {
+        cursor: grabbing;
+    }
+
+    .cc-project-row.dragging {
+        opacity: 0.5;
+        transform: rotate(2deg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .cc-project-row.drag-over {
+        border-top: 3px solid #D09B2C;
+        background-color: #fff3cd;
+    }
+
+    .cc-project-row.drag-over-top {
+        border-top: 3px solid #D09B2C;
+    }
+
+    .cc-project-row.drag-over-bottom {
+        border-bottom: 3px solid #D09B2C;
+    }
+
+    .cc-action-btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+        border: 1px solid transparent;
+        display: inline-block;
+    }
+
+    .cc-action-primary {
+        background: #D09B2C;
+        color: white;
+        border-color: #D09B2C;
+    }
+
+    .cc-action-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Search Section Styles */
+    .cc-search-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .cc-search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 12px 48px 12px 16px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 3px rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 8px;
+    }
+
+    .cc-search-btn:hover {
+        color: #D09B2C;
+    }
+
+    .cc-search-results-info {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cc-clear-search {
+        color: #D09B2C;
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+
+    .cc-clear-search:hover {
+        text-decoration: underline;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .cc-final-scoring-table {
+            font-size: 0.8rem;
+        }
+        
+        .cc-final-scoring-table th,
+        .cc-final-scoring-table td {
+            padding: 12px 8px;
+        }
+        
+        .cc-project-title-cell {
+            width: 250px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .cc-final-scoring-table-container {
+            overflow-x: auto;
+        }
+        
+        .cc-final-scoring-table {
+            min-width: 800px;
+        }
     }
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const priorityInputs = document.querySelectorAll('.final-priority-input');
-        
-        priorityInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                const projectId = this.dataset.projectId;
-                const newRank = parseInt(this.value) || 0;
-                
-                if (newRank <= 0) {
-                    alert('Please enter a valid rank (1 or higher)');
-                    this.value = '';
-                    return;
-                }
-                
-                // Get all projects with their current ranks
-                const projects = Array.from(priorityInputs).map(input => ({
-                    id: input.dataset.projectId,
-                    input: input,
-                    rank: parseInt(input.value) || 0
-                }));
-                
-                // Sort projects by current rank (excluding the one being changed)
-                const sortedProjects = projects
-                    .filter(p => p.id !== projectId)
-                    .sort((a, b) => a.rank - b.rank);
-                
-                // Find the position where the new rank should be inserted
-                let insertIndex = 0;
-                while (insertIndex < sortedProjects.length && sortedProjects[insertIndex].rank < newRank) {
-                    insertIndex++;
-                }
-                
-                // Update ranks for all affected projects
-                const updates = [];
-                
-                // First, update the project being changed
-                updates.push({
-                    id: projectId,
-                    rank: newRank
-                });
-                
-                // Then, update all projects that need to shift down
-                for (let i = insertIndex; i < sortedProjects.length; i++) {
-                    const project = sortedProjects[i];
-                    const newProjectRank = newRank + (i - insertIndex + 1);
-                    updates.push({
-                        id: project.id,
-                        rank: newProjectRank
-                    });
-                }
-                
-                // Send all updates to the server
-                Promise.all(updates.map(update => 
-                    fetch(`/${update.id}/update-final-priority/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')
-                        },
-                        body: JSON.stringify({
-                            final_priority: update.rank
-                        })
-                    }).then(response => response.json())
-                ))
-                .then(() => {
-                    // Update the UI to reflect the new ranks
-                    updates.forEach(update => {
-                        const input = document.querySelector(`.final-priority-input[data-project-id="${update.id}"]`);
-                        if (input) {
-                            input.value = update.rank;
-                        }
-                    });
-                    
-                    // Sort the table
-                    sortTableByRank();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error updating ranks. Please try again.');
-                });
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event listeners to project rows for modal
+    const projectRows = document.querySelectorAll('.cc-project-row');
+    projectRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't open modal if clicking on input fields or action buttons
+            if (e.target.closest('.cc-priority-input') || e.target.closest('.cc-action-btn')) {
+                return;
+            }
+            
+            const projectId = this.getAttribute('data-project-id');
+            if (projectId) {
+                openFinalScoringModal(projectId);
+            }
         });
+    });
+});
 
-        // Function to sort table by rank
-        function sortTableByRank() {
-            const tbody = document.querySelector('table tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
+function openFinalScoringModal(projectId) {
+    // Set the detail link
+    document.getElementById('finalScoringDetailLink').href = `/final-scoring/${projectId}/`;
+    
+    // Load project details via AJAX
+    fetch(`/${projectId}/final-scoring-details-modal/`)
+        .then(response => response.text())
+        .then(html => {
+            // Use the entire response as the modal content
+            document.getElementById('finalScoringModalBody').innerHTML = html;
             
-            rows.sort((a, b) => {
-                const rankA = parseInt(a.querySelector('.final-priority-input').value) || Infinity;
-                const rankB = parseInt(b.querySelector('.final-priority-input').value) || Infinity;
-                return rankA - rankB;
-            });
-            
-            // Clear and re-append sorted rows
-            tbody.innerHTML = '';
-            rows.forEach(row => tbody.appendChild(row));
-        }
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            document.getElementById('finalScoringModalBody').innerHTML = '<p>Error loading project details.</p>';
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        });
+}
 
-        // Initial sort
-        sortTableByRank();
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.querySelector('.cc-final-scoring-table');
+    const tbody = table.querySelector('tbody');
+    let draggedElement = null;
+    let draggedIndex = -1;
+
+    // Add drag event listeners to all rows
+    const rows = tbody.querySelectorAll('.cc-project-row');
+    rows.forEach((row, index) => {
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragenter', handleDragEnter);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
     });
 
-    // Helper function to get CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+    // Handle input field changes
+    const priorityInputs = document.querySelectorAll('.final-priority-input');
+    priorityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updatePriority(this.dataset.projectId, this.value);
+        });
+        
+        // Also handle Enter key press
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur(); // Trigger the change event
             }
-        }
-        return cookieValue;
+        });
+    });
+
+    function handleDragStart(e) {
+        draggedElement = this;
+        draggedIndex = Array.from(tbody.children).indexOf(this);
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.outerHTML);
     }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        // Remove all drag-over classes
+        rows.forEach(row => {
+            row.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+        });
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDragEnter(e) {
+        e.preventDefault();
+        if (this === draggedElement) return;
+        
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const mouseY = e.clientY;
+        
+        // Remove existing classes
+        this.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+        
+        if (mouseY < midY) {
+            this.classList.add('drag-over-top');
+        } else {
+            this.classList.add('drag-over-bottom');
+        }
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        if (this === draggedElement) return;
+        
+        const dropIndex = Array.from(tbody.children).indexOf(this);
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const mouseY = e.clientY;
+        
+        // Determine the target rank
+        let targetRank;
+        if (mouseY < midY) {
+            // Dropping above this row
+            targetRank = dropIndex + 1;
+        } else {
+            // Dropping below this row
+            targetRank = dropIndex + 2;
+        }
+        
+        // Get the project ID from the dragged element
+        const projectId = draggedElement.dataset.projectId;
+        
+        console.log(`Moving project ${projectId} to rank ${targetRank}`);
+        
+        // Update the priority via AJAX
+        updatePriority(projectId, targetRank);
+    }
+
+    function updatePriority(projectId, priority) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        console.log(`Updating project ${projectId} to priority ${priority}`);
+        
+        // Check if user is still authenticated
+        if (!csrfToken) {
+            alert('Authentication error. Please refresh the page and try again.');
+            return;
+        }
+        
+        // Save the priority via AJAX
+        fetch(`/${projectId}/update-final-priority/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                final_priority: priority
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (response.status === 302 || response.status === 401) {
+                throw new Error('Authentication required');
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                console.log(`Priority updated successfully for project ${projectId}`);
+                // Force a hard refresh to show updated sorting
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 1000);
+            } else {
+                console.error('Error updating priority:', data.error);
+                alert('Error updating priority: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.message.includes('JSON.parse') || error.message.includes('Authentication required')) {
+                alert('Authentication error. Please refresh the page and try again.');
+            } else {
+                alert('Error updating priority. Please try again. Error: ' + error.message);
+            }
+        });
+    }
+});
 </script>
 {% endblock %} 
