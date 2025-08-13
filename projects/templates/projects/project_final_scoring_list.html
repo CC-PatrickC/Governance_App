@@ -78,7 +78,6 @@
                         <th>Status</th>
                         <th>Final Score</th>
                         <th>Final Priority</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,9 +134,7 @@
                                        placeholder="Rank">
                             </div>
                         </td>
-                        <td class="cc-project-actions-cell">
-                            <a href="{% url 'projects:project_final_scoring_details' project.pk %}" class="cc-action-btn cc-action-primary">View Details</a>
-                        </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -149,6 +146,25 @@
             <p>Try adjusting your search criteria.</p>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Final Scoring Details Modal -->
+<div class="modal fade" id="finalScoringModal" tabindex="-1" aria-labelledby="finalScoringModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="finalScoringModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="finalScoringDetailLink" class="btn btn-primary">View Full Details</a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -188,6 +204,7 @@
 
     .cc-project-row:hover {
         background-color: #f8f9fa;
+        cursor: pointer;
     }
 
     .cc-project-id-cell {
@@ -197,28 +214,23 @@
     }
 
     .cc-project-title-cell {
-        width: 300px;
+        width: 400px;
     }
 
     .cc-project-type-cell,
     .cc-project-priority-cell,
     .cc-project-department-cell,
     .cc-project-status-cell {
-        width: 120px;
+        width: 140px;
     }
 
     .cc-project-score-cell {
-        width: 100px;
+        width: 120px;
         text-align: center;
     }
 
     .cc-project-final-priority-cell {
-        width: 120px;
-    }
-
-    .cc-project-actions-cell {
-        width: 120px;
-        text-align: center;
+        width: 140px;
     }
 
     .cc-project-title {
@@ -488,6 +500,47 @@
 </style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event listeners to project rows for modal
+    const projectRows = document.querySelectorAll('.cc-project-row');
+    projectRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't open modal if clicking on input fields or action buttons
+            if (e.target.closest('.cc-priority-input') || e.target.closest('.cc-action-btn')) {
+                return;
+            }
+            
+            const projectId = this.getAttribute('data-project-id');
+            if (projectId) {
+                openFinalScoringModal(projectId);
+            }
+        });
+    });
+});
+
+function openFinalScoringModal(projectId) {
+    // Set the detail link
+    document.getElementById('finalScoringDetailLink').href = `/final-scoring/${projectId}/`;
+    
+    // Load project details via AJAX
+    fetch(`/${projectId}/final-scoring-details-modal/`)
+        .then(response => response.text())
+        .then(html => {
+            // Use the entire response as the modal content
+            document.getElementById('finalScoringModalBody').innerHTML = html;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            document.getElementById('finalScoringModalBody').innerHTML = '<p>Error loading project details.</p>';
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const table = document.querySelector('.cc-final-scoring-table');
     const tbody = table.querySelector('tbody');

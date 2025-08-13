@@ -306,6 +306,164 @@
             min-width: auto;
         }
     }
+
+    /* Custom Modal Width - Very Specific */
+    #requestModal .modal-dialog.modal-sm {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Override any other modal styles */
+    .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Force narrow modal for request page */
+    .request-modal-narrow .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Additional specificity */
+    body .modal-dialog.modal-sm {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Nuclear option - override ALL modal styles */
+    .modal-dialog,
+    .modal-dialog.modal-sm,
+    .modal-dialog.modal-md,
+    .modal-dialog.modal-lg,
+    .modal-dialog.modal-xl {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Target the specific modal */
+    #requestModal .modal-dialog {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Force modal content to be narrow */
+    #requestModal .modal-content {
+        max-width: 300px !important;
+        width: 300px !important;
+    }
+    
+    /* Override Bootstrap's responsive breakpoints */
+    @media (min-width: 576px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 768px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    @media (min-width: 1200px) {
+        #requestModal .modal-dialog {
+            max-width: 300px !important;
+            width: 300px !important;
+        }
+    }
+    
+    /* Custom Modal Styles */
+    .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        width: 300px;
+        max-width: 300px;
+        max-height: 80vh;
+        overflow: hidden;
+        z-index: 10000;
+    }
+    
+    .custom-modal-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-close:hover {
+        color: #333;
+    }
+    
+    .custom-modal-body {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-footer {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
 </style>
 
 <div class="container-fluid" style="width: 115%; padding-right: 15px;">
@@ -438,29 +596,30 @@
     </div>
 </div>
 
-<!-- Request Detail Modal -->
-<div class="modal fade" id="requestModal" tabindex="-1" aria-labelledby="requestModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="requestModalLabel">Request Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="requestModalBody">
-                <!-- Content will be loaded here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="requestDetailLink" class="btn btn-primary">View Full Details</a>
-            </div>
+<!-- Custom Request Detail Modal -->
+<div id="customRequestModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-overlay" onclick="closeCustomModal()"></div>
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title">Request Details</h5>
+            <button type="button" class="custom-modal-close" onclick="closeCustomModal()">&times;</button>
+        </div>
+        <div class="custom-modal-body" id="customRequestModalBody">
+            <!-- Content will be loaded here -->
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCustomModal()">Close</button>
+            <a href="#" id="customRequestDetailLink" class="btn btn-primary">View Full Details</a>
         </div>
     </div>
 </div>
 
 <script>
 function openRequestModal(requestId) {
+    console.log('Opening custom modal for request:', requestId);
+    
     // Set the detail link
-    document.getElementById('requestDetailLink').href = `/requests/${requestId}/`;
+    document.getElementById('customRequestDetailLink').href = `/requests/${requestId}/`;
     
     // Load request details via AJAX
     fetch(`/requests/${requestId}/`)
@@ -472,21 +631,24 @@ function openRequestModal(requestId) {
             const content = doc.querySelector('.card-body');
             
             if (content) {
-                document.getElementById('requestModalBody').innerHTML = content.innerHTML;
+                document.getElementById('customRequestModalBody').innerHTML = content.innerHTML;
             } else {
-                document.getElementById('requestModalBody').innerHTML = '<p>Unable to load request details.</p>';
+                document.getElementById('customRequestModalBody').innerHTML = '<p>Unable to load request details.</p>';
             }
             
-            // Show the modal
-            const modal = new bootstrap.Modal(document.getElementById('requestModal'));
-            modal.show();
+            // Show the custom modal
+            document.getElementById('customRequestModal').style.display = 'flex';
+            console.log('Custom modal displayed at 300px width');
         })
         .catch(error => {
             console.error('Error loading request details:', error);
-            document.getElementById('requestModalBody').innerHTML = '<p>Error loading request details.</p>';
-            const modal = new bootstrap.Modal(document.getElementById('requestModal'));
-            modal.show();
+            document.getElementById('customRequestModalBody').innerHTML = '<p>Error loading request details.</p>';
+            document.getElementById('customRequestModal').style.display = 'flex';
         });
+}
+
+function closeCustomModal() {
+    document.getElementById('customRequestModal').style.display = 'none';
 }
 </script>
 {% endblock %} 

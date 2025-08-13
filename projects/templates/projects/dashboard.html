@@ -122,6 +122,14 @@
                         </div>
                     </div>
                     
+                    <!-- View Indicator -->
+                    <div id="viewIndicator" class="mb-2" style="display: none;">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="viewIndicatorText"></span>
+                        </small>
+                    </div>
+                    
                     <!-- Overview Mini-Chart -->
                     <div class="mb-3">
                         <div class="d-flex align-items-center">
@@ -361,13 +369,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return dailyChart;
         }
         
-        // Initialize with 12 months data
+        // Initialize with 18 months data
         let currentDailyChart = createDailyChart(dailyData);
         let currentTimePeriod = 365; // Track current time period
         let currentFilteredData = dailyData; // Track current filtered data
         let overviewChart = null; // Track overview chart
         let currentOverviewStartDate = new Date(); // Track current overview start date
-        currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 11); // Start 12 months back
+        currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 17); // Start 18 months back
         let isDragging = false; // Track if selection bar is being dragged
         let dragStartX = 0; // Track drag start position
         let selectionBar = null; // Reference to selection bar element
@@ -375,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listeners for filter buttons
         document.getElementById('filter7days').addEventListener('click', function() {
             currentTimePeriod = 7;
-            currentFilteredData = filterDataByDays(7);
+            currentFilteredData = filterDataByDays(7); // Show 7 days of data in main chart
             if (currentDailyChart) currentDailyChart.destroy();
             currentDailyChart = createDailyChart(currentFilteredData);
             
@@ -390,6 +398,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.backgroundColor = '#D09B2C';
             this.style.color = 'white';
             this.style.borderColor = '#D09B2C';
+            
+            // Show view indicator for 7-day view
+            const viewIndicator = document.getElementById('viewIndicator');
+            const viewIndicatorText = document.getElementById('viewIndicatorText');
+            viewIndicator.style.display = 'block';
+            viewIndicatorText.textContent = 'Showing 7 days of data with 30-day overview';
+            
+            // Update selection bar to show 7 days out of 30 days in mini chart
+            updateSelectionBarFor7Days();
             
             // Reset date slider
             document.getElementById('dateRangeSlider').value = 100;
@@ -414,6 +431,12 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.color = 'white';
             this.style.borderColor = '#D09B2C';
             
+            // Hide view indicator
+            document.getElementById('viewIndicator').style.display = 'none';
+            
+            // Reset selection bar to default 12-month view
+            updateSelectionBar();
+            
             // Reset date slider
             document.getElementById('dateRangeSlider').value = 100;
             document.getElementById('dateSliderValue').textContent = 'All';
@@ -437,6 +460,12 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.color = 'white';
             this.style.borderColor = '#D09B2C';
             
+            // Hide view indicator
+            document.getElementById('viewIndicator').style.display = 'none';
+            
+            // Reset selection bar to default 12-month view
+            updateSelectionBar();
+            
             // Reset date slider
             document.getElementById('dateRangeSlider').value = 100;
             document.getElementById('dateSliderValue').textContent = 'All';
@@ -454,17 +483,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 existingOverviewChart.destroy();
             }
             
-            // Use provided start date or default to 12 months back
+            // Use provided start date or default to 18 months back
             const chartStartDate = startDate || new Date();
             if (!startDate) {
-                chartStartDate.setMonth(chartStartDate.getMonth() - 11);
+                chartStartDate.setMonth(chartStartDate.getMonth() - 17);
             }
             
-            // Generate 12 months of labels
+            // Generate 18 months of labels
             const monthLabels = [];
             const monthCounts = [];
             
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 18; i++) {
                 const currentDate = new Date(chartStartDate);
                 currentDate.setMonth(chartStartDate.getMonth() + i);
                 
@@ -539,6 +568,88 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Function to create 30-day overview chart
+        function create30DayOverviewChart() {
+            const overviewCanvas = document.getElementById('overviewChart');
+            if (!overviewCanvas) return;
+            
+            // Destroy any existing chart on this canvas
+            const existingOverviewChart = Chart.getChart(overviewCanvas);
+            if (existingOverviewChart) {
+                console.log('Destroying existing overview chart');
+                existingOverviewChart.destroy();
+            }
+            
+            // Generate 30 days of labels
+            const dayLabels = [];
+            const dayCounts = [];
+            
+            for (let i = 29; i >= 0; i--) {
+                const currentDate = new Date();
+                currentDate.setDate(currentDate.getDate() - i);
+                
+                const day = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                dayLabels.push(day);
+                
+                // Calculate total count for this day
+                const dateStr = currentDate.toISOString().split('T')[0];
+                dayCounts.push(dailyData[dateStr] || 0);
+            }
+            
+            const overviewCtx = overviewCanvas.getContext('2d');
+            const thirtyDayOverviewChart = new Chart(overviewCtx, {
+                type: 'line',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: '30-Day Overview',
+                        data: dayCounts,
+                        borderColor: '#6c757d',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        borderWidth: 1,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                },
+                                maxTicksLimit: 6
+                            }
+                        },
+                        y: {
+                            display: false
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0
+                        }
+                    }
+                }
+            });
+        }
+        
         // Initialize overview chart
         try {
             createOverviewChart(currentOverviewStartDate);
@@ -555,12 +666,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!selectionBar) return;
             
             // Calculate position based on current start date
-            const totalMonths = 60; // Show 5 years of data
-            const currentMonth = currentOverviewStartDate.getMonth() + (currentOverviewStartDate.getFullYear() - 2020) * 12;
+            const totalMonths = 18; // Show 18 months of data
+            const currentMonth = 0; // Always start from the beginning since we're showing 18 months
             const position = (currentMonth / totalMonths) * 100;
             
-            selectionBar.style.left = `${Math.max(0, Math.min(100 - 20, position))}%`;
-            selectionBar.style.width = '20%'; // 12 months = 20% of 5 years
+            selectionBar.style.left = `${Math.max(0, Math.min(100 - 66.67, position))}%`;
+            selectionBar.style.width = '66.67%'; // 12 months = 66.67% of 18 months
+            selectionBar.style.display = 'block';
+        }
+        
+        // Function to update selection bar for 7-day view (showing 7 days out of 30 days)
+        function updateSelectionBarFor7Days() {
+            if (!selectionBar) return;
+            
+            // Create a 30-day overview mini-chart
+            create30DayOverviewChart();
+            
+            // For 7-day view, show 7 days out of 30 days = 23.33% width
+            selectionBar.style.left = '0%';
+            selectionBar.style.width = '23.33%'; // 7 days = 23.33% of 30 days
             selectionBar.style.display = 'block';
         }
         
@@ -580,25 +704,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const containerRect = overviewContainer.getBoundingClientRect();
             const mouseX = e.clientX - containerRect.left;
             const containerWidth = containerRect.width;
-            const selectionWidth = containerWidth * 0.2; // 20% width
+            const selectionWidth = containerWidth * 0.6667; // 66.67% width for 12 months
             
             // Calculate new position
             let newLeft = (mouseX / containerWidth) * 100;
-            newLeft = Math.max(0, Math.min(100 - 20, newLeft)); // Keep within bounds
+            newLeft = Math.max(0, Math.min(100 - 66.67, newLeft)); // Keep within bounds
             
             // Update selection bar position
             selectionBar.style.left = `${newLeft}%`;
             
             // Calculate corresponding date
-            const totalMonths = 60; // 5 years
+            const totalMonths = 18; // 18 months total
             const monthsFromStart = (newLeft / 100) * totalMonths;
-            const newStartDate = new Date(2020, 0, 1); // Start from 2020
+            const newStartDate = new Date(currentOverviewStartDate);
             newStartDate.setMonth(newStartDate.getMonth() + monthsFromStart);
             
             // Update if within valid range
             const currentDate = new Date();
             const maxStartDate = new Date();
-            maxStartDate.setMonth(currentDate.getMonth() - 11);
+            maxStartDate.setMonth(currentDate.getMonth() - 17);
             
             if (newStartDate <= maxStartDate) {
                 currentOverviewStartDate = new Date(newStartDate);
@@ -636,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Don't go beyond current date
             const currentDate = new Date();
             const maxStartDate = new Date();
-            maxStartDate.setMonth(currentDate.getMonth() - 11);
+            maxStartDate.setMonth(currentDate.getMonth() - 17);
             
             if (currentOverviewStartDate > maxStartDate) {
                 currentOverviewStartDate = new Date(maxStartDate);

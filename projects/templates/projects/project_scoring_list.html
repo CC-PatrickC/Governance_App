@@ -4,7 +4,6 @@
 {% block title %}Requests to Score{% endblock %}
 
 {% block extra_head %}
-{% csrf_token %}
 {% endblock %}
 
 {% block extra_css %}
@@ -262,9 +261,6 @@
     }
     
     /* Modal Styles */
-    .modal-xl {
-        max-width: 90%;
-    }
     
     .modal-content {
         border-radius: 12px;
@@ -461,6 +457,7 @@
 {% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="container-fluid py-4">
     <div class="cc-projects-section">
         <div class="cc-projects-header">
@@ -554,12 +551,12 @@
     </div>
 </div>
 
-<!-- Request Details Modal -->
+<!-- Project Details Modal -->
 <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="projectDetailsModalLabel">Request Details</h5>
+                <h5 class="modal-title" id="projectDetailsModalLabel">Project Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -647,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="detail-content">
                                 <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                                 <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                                                                 <p><strong>Status:</strong> ${project.status_display || project.status}</p>
+                                <p><strong>Status:</strong> ${project.status}</p>
                                 <p><strong>Priority:</strong> ${project.priority}</p>
                             </div>
                         </div>
@@ -711,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Scoring Form Section -->
             <div class="scoring-form-section mt-4">
                 <div class="detail-card">
-                    <div class="detail-title">Score This Request</div>
+                    <div class="detail-title">Score This Project</div>
                     <form id="scoringForm">
                         <div class="table-responsive">
                             <table class="table table-bordered">
@@ -892,8 +889,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
     
-    // Function to calculate weighted scores
-    function calculateWeightedScore(input) {
+    // Function to calculate weighted scores - make it global
+    window.calculateWeightedScore = function(input) {
         const score = parseFloat(input.value) || 1;
         let weight = 0.2; // Default weight for strategic alignment and user impact
         
@@ -932,8 +929,8 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateFinalScore();
     }
     
-    // Function to calculate final score
-    function calculateFinalScore() {
+    // Function to calculate final score - make it global
+    window.calculateFinalScore = function() {
         let finalScore = 0;
         const criteria = ['strategic_alignment', 'cost_benefit', 'user_impact', 'ease_of_implementation', 
                          'vendor_reputation_support', 'security_compliance', 'student_centered'];
@@ -975,8 +972,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to save the score
-    function saveScore(projectId) {
+    // Function to save the score - make it global
+    window.saveScore = function(projectId) {
         const form = document.getElementById('scoringForm');
         const formData = new FormData(form);
         const saveStatus = document.getElementById('saveStatus');
@@ -998,7 +995,12 @@ document.addEventListener('DOMContentLoaded', function() {
         saveStatus.innerHTML = '<span class="text-info">Saving...</span>';
         
         // Get CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfTokenElement) {
+            saveStatus.innerHTML = '<span class="text-danger">CSRF token not found. Please refresh the page and try again.</span>';
+            return;
+        }
+        const csrfToken = csrfTokenElement.value;
         
         // Prepare data for submission
         const scoreData = {
@@ -1013,6 +1015,22 @@ document.addEventListener('DOMContentLoaded', function() {
             final_score: parseFloat(formData.get('final_score'))
         };
         
+        // Debug: Log form data
+        console.log('Form data debug:');
+        console.log('strategic_alignment:', formData.get('strategic_alignment'));
+        console.log('cost_benefit:', formData.get('cost_benefit'));
+        console.log('user_impact:', formData.get('user_impact'));
+        console.log('ease_of_implementation:', formData.get('ease_of_implementation'));
+        console.log('vendor_reputation_support:', formData.get('vendor_reputation_support'));
+        console.log('security_compliance:', formData.get('security_compliance'));
+        console.log('student_centered:', formData.get('student_centered'));
+        console.log('scoring_notes:', formData.get('scoring_notes'));
+        console.log('final_score:', formData.get('final_score'));
+        
+        console.log('Sending score data:', scoreData);
+        console.log('CSRF Token:', csrfToken);
+        console.log('Project ID:', projectId);
+        
         fetch(`/${projectId}/score/`, {
             method: 'POST',
             headers: {
@@ -1021,13 +1039,44 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(scoreData)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 saveStatus.innerHTML = '<span class="text-success">✓ Score saved successfully!</span>';
                 setTimeout(() => {
                     saveStatus.innerHTML = '';
-                }, 3000);
+                    // Close the modal after successful save
+                    const modalElement = document.getElementById('projectDetailsModal');
+                    if (modalElement) {
+                        // Try multiple approaches to close the modal
+                        try {
+                            // Method 1: Use Bootstrap's modal API
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) {
+                                modal.hide();
+                            } else {
+                                // Method 2: Create new modal instance and hide
+                                const newModal = new bootstrap.Modal(modalElement);
+                                newModal.hide();
+                            }
+                        } catch (e) {
+                            console.log('Bootstrap modal close failed, trying manual close');
+                            // Method 3: Manual close
+                            modalElement.classList.remove('show');
+                            modalElement.style.display = 'none';
+                            document.body.classList.remove('modal-open');
+                            const backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) {
+                                backdrop.remove();
+                            }
+                        }
+                    }
+                }, 1500);
             } else {
                 saveStatus.innerHTML = '<span class="text-danger">Error saving score: ' + (data.error || 'Unknown error') + '</span>';
             }

@@ -646,6 +646,7 @@ def project_scoring_list_test(request):
 @login_required
 @user_passes_test(is_scoring_user)
 def project_scoring(request, pk):
+    print(f"DEBUG: project_scoring view called with pk={pk}, method={request.method}")
     project = get_object_or_404(Project, pk=pk)
     
     # Check if user has access to this project based on their group
@@ -656,14 +657,28 @@ def project_scoring(request, pk):
     
     if request.method == 'POST':
         try:
-            # Convert form data to integers
-            strategic_alignment = int(request.POST.get('strategic_alignment', 1))
-            cost_benefit = int(request.POST.get('cost_benefit', 1))
-            user_impact = int(request.POST.get('user_impact', 1))
-            ease_of_implementation = int(request.POST.get('ease_of_implementation', 1))
-            vendor_reputation_support = int(request.POST.get('vendor_reputation_support', 1))
-            security_compliance = int(request.POST.get('security_compliance', 1))
-            student_centered = int(request.POST.get('student_centered', 1))
+            # Check if this is a JSON request
+            if request.content_type == 'application/json':
+                import json
+                data = json.loads(request.body)
+                strategic_alignment = int(data.get('strategic_alignment', 1))
+                cost_benefit = int(data.get('cost_benefit', 1))
+                user_impact = int(data.get('user_impact', 1))
+                ease_of_implementation = int(data.get('ease_of_implementation', 1))
+                vendor_reputation_support = int(data.get('vendor_reputation_support', 1))
+                security_compliance = int(data.get('security_compliance', 1))
+                student_centered = int(data.get('student_centered', 1))
+                scoring_notes = data.get('scoring_notes', '')
+            else:
+                # Handle form data
+                strategic_alignment = int(request.POST.get('strategic_alignment', 1))
+                cost_benefit = int(request.POST.get('cost_benefit', 1))
+                user_impact = int(request.POST.get('user_impact', 1))
+                ease_of_implementation = int(request.POST.get('ease_of_implementation', 1))
+                vendor_reputation_support = int(request.POST.get('vendor_reputation_support', 1))
+                security_compliance = int(request.POST.get('security_compliance', 1))
+                student_centered = int(request.POST.get('student_centered', 1))
+                scoring_notes = request.POST.get('scoring_notes', '')
             
             # Get or create the ProjectScore instance for this user and project
             score, created = ProjectScore.objects.get_or_create(
@@ -677,7 +692,7 @@ def project_scoring(request, pk):
                     'vendor_reputation_support': vendor_reputation_support,
                     'security_compliance': security_compliance,
                     'student_centered': student_centered,
-                    'scoring_notes': request.POST.get('scoring_notes')
+                    'scoring_notes': scoring_notes
                 }
             )
             
@@ -690,22 +705,63 @@ def project_scoring(request, pk):
                 score.vendor_reputation_support = vendor_reputation_support
                 score.security_compliance = security_compliance
                 score.student_centered = student_centered
-                score.scoring_notes = request.POST.get('scoring_notes')
+                score.scoring_notes = scoring_notes
             
             # Save the score - this will automatically calculate and save the final_score
+            print(f"DEBUG: About to save score for project {project.id}, user {request.user.username}")
+            print(f"DEBUG: Score object before save: {score}")
+            print(f"DEBUG: Score fields before save:")
+            print(f"  - strategic_alignment: {score.strategic_alignment}")
+            print(f"  - cost_benefit: {score.cost_benefit}")
+            print(f"  - user_impact: {score.user_impact}")
+            print(f"  - ease_of_implementation: {score.ease_of_implementation}")
+            print(f"  - vendor_reputation_support: {score.vendor_reputation_support}")
+            print(f"  - security_compliance: {score.security_compliance}")
+            print(f"  - student_centered: {score.student_centered}")
+            print(f"  - scoring_notes: {score.scoring_notes}")
+            
             score.save()
+            print(f"DEBUG: Score saved successfully!")
+            
+            # Refresh the score object from database to verify it was saved
+            score.refresh_from_db()
+            print(f"DEBUG: Score after save and refresh:")
+            print(f"  - strategic_alignment: {score.strategic_alignment}")
+            print(f"  - cost_benefit: {score.cost_benefit}")
+            print(f"  - user_impact: {score.user_impact}")
+            print(f"  - ease_of_implementation: {score.ease_of_implementation}")
+            print(f"  - vendor_reputation_support: {score.vendor_reputation_support}")
+            print(f"  - security_compliance: {score.security_compliance}")
+            print(f"  - student_centered: {score.student_centered}")
+            print(f"  - scoring_notes: {score.scoring_notes}")
+            print(f"  - final_score: {score.final_score}")
             
             # Update the project's final score based on the average of all scores
             project.update_final_score()
             
-            messages.success(request, 'Project scoring updated successfully!')
-            return redirect('projects:project_scoring', pk=pk)
+            # Return JSON response for AJAX requests
+            if request.content_type == 'application/json':
+                from django.http import JsonResponse
+                return JsonResponse({'success': True, 'message': 'Project scoring updated successfully!'})
+            else:
+                messages.success(request, 'Project scoring updated successfully!')
+                return redirect('projects:project_scoring', pk=pk)
         except ValueError as e:
-            messages.error(request, f'Error updating project scoring: Invalid score value. Please ensure all scores are numbers between 1 and 5.')
-            return redirect('projects:project_scoring', pk=pk)
+            error_msg = f'Error updating project scoring: Invalid score value. Please ensure all scores are numbers between 1 and 5.'
+            if request.content_type == 'application/json':
+                from django.http import JsonResponse
+                return JsonResponse({'success': False, 'error': error_msg})
+            else:
+                messages.error(request, error_msg)
+                return redirect('projects:project_scoring', pk=pk)
         except Exception as e:
-            messages.error(request, f'Error updating project scoring: {str(e)}')
-            return redirect('projects:project_scoring', pk=pk)
+            error_msg = f'Error updating project scoring: {str(e)}'
+            if request.content_type == 'application/json':
+                from django.http import JsonResponse
+                return JsonResponse({'success': False, 'error': error_msg})
+            else:
+                messages.error(request, error_msg)
+                return redirect('projects:project_scoring', pk=pk)
     
     # Get the user's existing score if it exists
     user_score = ProjectScore.objects.filter(project=project, scored_by=request.user).first()
@@ -1008,10 +1064,24 @@ def project_scoring_details_modal(request, pk):
             'stage': project.stage,
         }
         
+        # Prepare user score data if it exists
+        user_score_data = None
+        if user_score:
+            user_score_data = {
+                'final_score': user_score.final_score,
+                'scoring_notes': user_score.scoring_notes,
+                'strategic_alignment': user_score.strategic_alignment,
+                'cost_benefit': user_score.cost_benefit,
+                'user_impact': user_score.user_impact,
+                'ease_of_implementation': user_score.ease_of_implementation,
+                'vendor_reputation_support': user_score.vendor_reputation_support,
+                'security_compliance': user_score.security_compliance,
+                'student_centered': user_score.student_centered,
+            }
+        
         response_data = {
             'project': project_data,
-            'user_score': user_score.final_score if user_score else None,
-            'user_score_notes': user_score.scoring_notes if user_score else None,
+            'user_score': user_score_data,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
@@ -1021,6 +1091,30 @@ def project_scoring_details_modal(request, pk):
         print(f"ERROR in project_scoring_details_modal: {str(e)}")
         import traceback
         traceback.print_exc()
+        return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
+
+@login_required
+def project_final_scoring_details_modal(request, pk):
+    """AJAX endpoint to get final scoring details for modal"""
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        
+        # Get all scores for this project
+        scores = project.scores.all().order_by('-created_at')
+        
+        # Get triage notes
+        triage_notes = project.triage_note_history.all().order_by('-created_at')
+        
+        # Render the modal content
+        context = {
+            'project': project,
+            'scores': scores,
+            'triage_notes': triage_notes,
+        }
+        
+        return render(request, 'projects/project_final_scoring_details_modal.html', context)
+        
+    except Exception as e:
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 @login_required
