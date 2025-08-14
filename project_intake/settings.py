@@ -92,10 +92,12 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+DB_DIR = Path(os.getenv("DJANGO_DB_DIR", BASE_DIR))  # default: project folder locally
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_DIR / 'db.sqlite3',  # <-- use override dir
         'OPTIONS': {
             'timeout': 30,  # Increase timeout to 30 seconds
             'isolation_level': None,  # This should help with locking issues
