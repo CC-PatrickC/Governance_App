@@ -990,7 +990,6 @@ def test_modal_view(request):
     print("DEBUG: test_modal_view called!")
     return JsonResponse({'status': 'success', 'message': 'Test modal view working'})
 
-@login_required
 def project_scoring_details_modal(request, pk):
     try:
         print(f"DEBUG: project_scoring_details_modal called with pk={pk}")
@@ -998,6 +997,8 @@ def project_scoring_details_modal(request, pk):
         print(f"DEBUG: User is authenticated: {request.user.is_authenticated}")
         print(f"DEBUG: User is staff: {request.user.is_staff}")
         print(f"DEBUG: User groups: {list(request.user.groups.all())}")
+        
+
         
         project = get_object_or_404(Project, pk=pk)
         print(f"DEBUG: Found project: {project.title}")
@@ -1402,3 +1403,57 @@ def logout_view(request):
     
     messages.success(request, 'You have been successfully logged out.')
     return redirect('projects:project_list')
+
+@login_required
+def project_intake_form(request):
+    """Intake form for new project requests"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            title = request.POST.get('title')
+            description = request.POST.get('description')
+            contact_person = request.POST.get('contact_person')
+            contact_email = request.POST.get('contact_email')
+            contact_phone = request.POST.get('contact_phone')
+            
+            # Validate required fields
+            if not title:
+                raise ValueError("Title is required")
+            if not description:
+                raise ValueError("Description is required")
+            if not contact_person:
+                raise ValueError("Contact person is required")
+            if not contact_email:
+                raise ValueError("Contact email is required")
+            
+            # Create new project
+            project = Project.objects.create(
+                title=title,
+                description=description,
+                contact_person=contact_person,
+                contact_email=contact_email,
+                contact_phone=contact_phone,
+                submitted_by=request.user,
+                status='pending',
+                stage='Pending_Review'
+            )
+            
+            # Handle file uploads
+            files = request.FILES.getlist('files')
+            if files:
+                if len(files) > 5:
+                    messages.error(request, 'You can upload a maximum of 5 files.')
+                    return render(request, 'projects/intake_form.html')
+                
+                for file in files:
+                    ProjectFile.objects.create(project=project, file=file)
+            
+            messages.success(request, f'Request "{project.title}" submitted successfully! Your request ID is {project.formatted_id}.')
+            return redirect('projects:project_list')
+            
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f'Error submitting request: {str(e)}')
+    
+    return render(request, 'projects/intake_form.html')
