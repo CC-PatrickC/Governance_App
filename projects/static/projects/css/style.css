@@ -130,6 +130,87 @@
     padding: 0.25em 0.5em;
 }
 
+/* Dashboard Equal Height Cards */
+.row .col-md-4 .card,
+.row .col-md-6 .card,
+.row .col-md-12 .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.row .col-md-4 .card .card-body,
+.row .col-md-6 .card .card-body,
+.row .col-md-12 .card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.row .col-md-4 .card .card-body > div:last-child,
+.row .col-md-6 .card .card-body > div:last-child,
+.row .col-md-12 .card .card-body > div:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure chart containers maintain aspect ratio */
+.row .col-md-4 .card .card-body div[style*="height: 350px"],
+.row .col-md-6 .card .card-body div[style*="height: 350px"],
+.row .col-md-12 .card .card-body div[style*="height: 350px"] {
+    flex: 1;
+    min-height: 350px;
+}
+
+/* Ensure table containers maintain consistent height */
+.row .col-md-4 .card .card-body .table-responsive,
+.row .col-md-6 .card .card-body .table-responsive,
+.row .col-md-12 .card .card-body .table-responsive {
+    flex: 1;
+    min-height: 350px;
+}
+
+/* Make sure the row itself uses flexbox for equal height columns */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.row > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Force equal heights for dashboard sections - override inline styles */
+.test-dashboard .row .col-md-4 .card {
+    height: 450px !important;
+}
+
+.test-dashboard .row .col-md-4 .card .card-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.test-dashboard .row .col-md-4 .card .card-body > div:last-child {
+    flex: 1 !important;
+    height: 350px !important;
+    max-height: 350px !important;
+}
+
+/* Specific override for the line chart section */
+.test-dashboard .row .col-md-4 .card .card-body div[style*="height: 350px"] {
+    height: 350px !important;
+    max-height: 350px !important;
+    overflow: hidden !important;
+}
+
+/* Ensure all chart containers are the same height */
+.test-dashboard canvas {
+    max-height: 350px !important;
+}
+
 /* Disabled Navigation Links */
 .nav-link.disabled {
     opacity: 0.6;
@@ -174,4 +255,61 @@
     letter-spacing: 0.5px;
     border-bottom: 1px solid #e9ecef;
     margin-bottom: 0.5rem;
+} 
+
+/* Force equal heights for test dashboard - very specific selectors */
+.test-dashboard .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+
+.test-dashboard .row > .col-md-4 {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card {
+    height: 500px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 1rem !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card > .card-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 1rem !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card > .card-body > div:last-child {
+    flex: 1 !important;
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow: hidden !important;
+}
+
+/* Override any inline styles on chart containers */
+.test-dashboard .row > .col-md-4 > .card > .card-body > div[style*="height: 350px"] {
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow: hidden !important;
+    flex: 1 !important;
+}
+
+/* Ensure table containers are also constrained */
+.test-dashboard .row > .col-md-4 > .card > .card-body > .table-responsive {
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+}
+
+/* Force canvas elements to respect container height */
+.test-dashboard canvas {
+    max-height: 350px !important;
+    height: 350px !important;
 } 

@@ -102,6 +102,80 @@
         text-decoration: none;
     }
 
+    /* Search Bar Styles */
+    .cc-search-section {
+        margin-bottom: 1rem;
+    }
+
+    .cc-search-container {
+        display: flex;
+        align-items: center;
+        background: white;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .cc-search-container:focus-within {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-input {
+        flex: 1;
+        border: none;
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: transparent;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+    }
+
+    .cc-search-input::placeholder {
+        color: #6c757d;
+    }
+
+    .cc-search-btn {
+        background: #D09B2C;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    .cc-search-btn:hover {
+        background: #B8860B;
+    }
+
+    .cc-search-results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding: 4px 0;
+    }
+
+    .cc-clear-search {
+        color: #D09B2C;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-clear-search:hover {
+        color: #B8860B;
+        background: #f8f9fa;
+        text-decoration: none;
+    }
+
 
 
     .cc-projects-section {
@@ -389,6 +463,29 @@
         <div class="cc-filters-header">
             <h3>Filter Requests</h3>
         </div>
+        
+        <!-- Search Bar -->
+        <div class="cc-search-section mb-3">
+            <form method="get" class="cc-search-form">
+                <div class="cc-search-container">
+                    <input type="text" 
+                           name="search" 
+                           class="cc-search-input" 
+                           placeholder="Search requests by title, description, department, or contact..." 
+                           value="{{ search_query|default:'' }}">
+                    <button type="submit" class="cc-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                {% if search_query %}
+                <div class="cc-search-results-info">
+                    <small class="text-muted">Search results for: "{{ search_query }}"</small>
+                    <a href="?{% if type_filter %}type={{ type_filter }}{% endif %}{% if priority_filter %}{% if type_filter %}&{% endif %}priority={{ priority_filter }}{% endif %}{% if status_filter %}{% if type_filter or priority_filter %}&{% endif %}status={{ status_filter }}{% endif %}{% if department_filter %}{% if type_filter or priority_filter or status_filter %}&{% endif %}department={{ department_filter }}{% endif %}" class="cc-clear-search">Clear search</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+        
         <form method="get" class="cc-filters-form">
             {% if search_query %}
             <input type="hidden" name="search" value="{{ search_query }}">

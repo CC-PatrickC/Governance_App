@@ -867,11 +867,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{% url 'projects:project_scoring_list_test' %}" class="nav-link {% if request.resolver_match.url_name == 'project_scoring_list_test' %}active{% endif %}" data-tooltip="Test Scoring Page">
+                            <a href="{% url 'projects:test_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'test_dashboard' %}active{% endif %}" data-tooltip="Test Dashboard">
                                 <i class="fas fa-flask nav-icon"></i>
-                                <span>Test Scoring</span>
+                                <span>Test Dashboard</span>
                             </a>
                         </li>
+                        
                         {% endif %}
                     </ul>
                 </div>

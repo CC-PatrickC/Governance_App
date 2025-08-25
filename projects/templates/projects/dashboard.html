@@ -54,6 +54,7 @@
                     <div style="height: 400px;">
                         <canvas id="departmentChart"></canvas>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -66,6 +67,7 @@
                     <div style="height: 400px;">
                         <canvas id="statusChart"></canvas>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -114,37 +116,22 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Requests per Day</h5>
+                        <h5 class="card-title mb-0" id="requestsChartTitle">Requests per Day</h5>
                         <div class="btn-group" role="group" aria-label="Time period filters">
-                            <button type="button" class="btn btn-sm" id="filter7days" style="border-color: #D09B2C; color: #D09B2C;">7 Days</button>
-                            <button type="button" class="btn btn-sm" id="filter30days" style="border-color: #D09B2C; color: #D09B2C;">30 Days</button>
-                            <button type="button" class="btn btn-sm active" id="filter12months" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">12 Months</button>
-                        </div>
-                    </div>
-                    
-                    <!-- View Indicator -->
-                    <div id="viewIndicator" class="mb-2" style="display: none;">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            <span id="viewIndicatorText"></span>
-                        </small>
-                    </div>
-                    
-                    <!-- Overview Mini-Chart -->
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center">
-                            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="prevPeriod" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;">
-                                <i class="fas fa-chevron-left"></i>
+                            <button type="button" class="btn btn-sm active" id="btn12Months" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
+                                12 Months
                             </button>
-                            <div style="flex: 1; height: 60px; position: relative;">
-                                <canvas id="overviewChart"></canvas>
-                                <div id="selectionBar" style="position: absolute; top: 0; left: 0; width: 20%; height: 100%; background: rgba(208, 155, 44, 0.2); border: 2px solid #D09B2C; cursor: grab; display: none;"></div>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="nextPeriod" style="border-radius: 50%; width: 32px; height: 32px; padding: 0;">
-                                <i class="fas fa-chevron-right"></i>
+                            <button type="button" class="btn btn-sm" id="btn30Days" style="border-color: #D09B2C; color: #D09B2C;">
+                                30 Days
+                            </button>
+                            <button type="button" class="btn btn-sm" id="btn7Days" style="border-color: #D09B2C; color: #D09B2C;">
+                                7 Days
                             </button>
                         </div>
                     </div>
+                    
+                    
+                    
                     <div style="height: 400px;">
                         <canvas id="dailyChart"></canvas>
                     </div>
@@ -176,6 +163,7 @@
         </div>
     </div>
 </div>
+{% endblock content %}
 
 {% block extra_js %}
 <script>
@@ -183,6 +171,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Department Chart
     console.log('Starting chart creation...');
+    
+    // Simple test to see if Chart.js is working
+    console.log('Chart.js available:', typeof Chart !== 'undefined');
+    console.log('Department chart canvas:', document.getElementById('departmentChart'));
     
     try {
         // Check if Chart.js is loaded
@@ -298,11 +290,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const dailyData = {{ daily_data|safe }};
         console.log('Daily data:', dailyData);
         
-        // Function to filter data based on days
-        function filterDataByDays(days) {
-            const endDate = new Date();
+        // Function to get 12 months of data
+        function get12MonthsData() {
+            const endDate = new Date(); // Current date
             const startDate = new Date();
-            startDate.setDate(endDate.getDate() - days);
+            startDate.setMonth(endDate.getMonth() - 11); // 12 months back from current date
             
             const filteredData = {};
             Object.keys(dailyData).forEach(dateStr => {
@@ -314,12 +306,180 @@ document.addEventListener('DOMContentLoaded', function() {
             return filteredData;
         }
         
-        // Function to create chart with filtered data
-        function createDailyChart(data) {
-            const dates = Object.keys(data).sort();
-            const counts = dates.map(date => data[date] || 0);
+        // Function to get 30 days of data
+        function get30DaysData() {
+            const endDate = new Date(); // Current date
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 29); // 30 days back from current date
             
-            if (dates.length === 0) {
+            console.log('30 Days Filter - Start Date:', startDate.toISOString().split('T')[0]);
+            console.log('30 Days Filter - End Date:', endDate.toISOString().split('T')[0]);
+            console.log('Available data dates:', Object.keys(dailyData));
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            
+            console.log('30 Days Filtered Data:', filteredData);
+            console.log('30 Days Filtered Data Count:', Object.keys(filteredData).length);
+            
+            // If no data in the last 30 days, return the most recent 30 days of available data
+            if (Object.keys(filteredData).length === 0) {
+                console.log('No data in last 30 days, getting most recent 30 days of available data');
+                const availableDates = Object.keys(dailyData).sort();
+                if (availableDates.length > 0) {
+                    // Get the most recent date and work backwards
+                    const mostRecentDate = new Date(availableDates[availableDates.length - 1]);
+                    const adjustedStartDate = new Date(mostRecentDate);
+                    adjustedStartDate.setDate(mostRecentDate.getDate() - 29);
+                    
+                    availableDates.forEach(dateStr => {
+                        const date = new Date(dateStr);
+                        if (date >= adjustedStartDate && date <= mostRecentDate) {
+                            filteredData[dateStr] = dailyData[dateStr];
+                        }
+                    });
+                    
+                    console.log('Adjusted 30 Days Filtered Data:', filteredData);
+                    console.log('Adjusted 30 Days Filtered Data Count:', Object.keys(filteredData).length);
+                }
+            }
+            
+            return filteredData;
+        }
+        
+        // Function to get 7 days of data
+        function get7DaysData() {
+            const endDate = new Date(); // Current date
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 6); // 7 days back from current date
+            
+            console.log('7 Days Filter - Start Date:', startDate.toISOString().split('T')[0]);
+            console.log('7 Days Filter - End Date:', endDate.toISOString().split('T')[0]);
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            
+            console.log('7 Days Filtered Data:', filteredData);
+            console.log('7 Days Filtered Data Count:', Object.keys(filteredData).length);
+            
+            // If no data in the last 7 days, return the most recent 7 days of available data
+            if (Object.keys(filteredData).length === 0) {
+                console.log('No data in last 7 days, getting most recent 7 days of available data');
+                const availableDates = Object.keys(dailyData).sort();
+                if (availableDates.length > 0) {
+                    // Get the most recent date and work backwards
+                    const mostRecentDate = new Date(availableDates[availableDates.length - 1]);
+                    const adjustedStartDate = new Date(mostRecentDate);
+                    adjustedStartDate.setDate(mostRecentDate.getDate() - 6);
+                    
+                    availableDates.forEach(dateStr => {
+                        const date = new Date(dateStr);
+                        if (date >= adjustedStartDate && date <= mostRecentDate) {
+                            filteredData[dateStr] = dailyData[dateStr];
+                        }
+                    });
+                    
+                    console.log('Adjusted 7 Days Filtered Data:', filteredData);
+                    console.log('Adjusted 7 Days Filtered Data Count:', Object.keys(filteredData).length);
+                }
+            }
+            
+            return filteredData;
+        }
+        
+        // Function to create chart with filtered data
+        function createDailyChart(data, timePeriod = '12months') {
+            let labels, counts;
+            
+            if (timePeriod === '12months') {
+                // Aggregate data by month-year for 12 months view
+                const monthlyData = {};
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                Object.keys(data).forEach(dateStr => {
+                    const date = new Date(dateStr);
+                    const month = date.getMonth();
+                    const year = date.getFullYear();
+                    const monthKey = `${month}-${year}`;
+                    const monthLabel = `${monthNames[month]} ${year}`;
+                    
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {
+                            label: monthLabel,
+                            count: 0
+                        };
+                    }
+                    monthlyData[monthKey].count += data[dateStr] || 0;
+                });
+                
+                // Use current date as end date for 12 months view
+                const endDate = new Date();
+                
+                // Calculate start date (12 months back from current date)
+                const startDate = new Date(endDate);
+                startDate.setMonth(endDate.getMonth() - 11);
+                
+                // Generate all 12 months from start to end date
+                const allMonths = [];
+                const currentDate = new Date(startDate);
+                
+                for (let i = 0; i < 12; i++) {
+                    const month = currentDate.getMonth();
+                    const year = currentDate.getFullYear();
+                    const monthKey = `${month}-${year}`;
+                    const monthLabel = `${monthNames[month]} ${year}`;
+                    
+                    allMonths.push({
+                        key: monthKey,
+                        label: monthLabel,
+                        count: monthlyData[monthKey] ? monthlyData[monthKey].count : 0
+                    });
+                    
+                    // Move to next month
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                }
+                
+                labels = allMonths.map(month => month.label);
+                counts = allMonths.map(month => month.count);
+            } else {
+                // For 30 days and 7 days views, generate all dates in the range
+                const endDate = new Date();
+                const startDate = new Date();
+                
+                if (timePeriod === '30days') {
+                    startDate.setDate(endDate.getDate() - 29); // 30 days back
+                } else if (timePeriod === '7days') {
+                    startDate.setDate(endDate.getDate() - 6); // 7 days back
+                }
+                
+                // Generate all dates in the range
+                const allDates = [];
+                const currentDate = new Date(startDate);
+                
+                while (currentDate <= endDate) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    allDates.push({
+                        date: dateStr,
+                        count: data[dateStr] || 0
+                    });
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                labels = allDates.map(item => item.date);
+                counts = allDates.map(item => item.count);
+            }
+            
+            if (labels.length === 0) {
                 throw new Error('No data available for selected time period');
             }
             
@@ -330,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const dailyChart = new Chart(dailyCtx, {
                 type: 'line',
                 data: {
-                    labels: dates,
+                    labels: labels,
                     datasets: [{
                         label: 'Requests',
                         data: counts,
@@ -347,6 +507,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     scales: {
                         y: {
                             beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
                             grid: {
                                 display: false
                             }
@@ -369,410 +533,200 @@ document.addEventListener('DOMContentLoaded', function() {
             return dailyChart;
         }
         
-        // Initialize with 18 months data
-        let currentDailyChart = createDailyChart(dailyData);
-        let currentTimePeriod = 365; // Track current time period
-        let currentFilteredData = dailyData; // Track current filtered data
-        let overviewChart = null; // Track overview chart
-        let currentOverviewStartDate = new Date(); // Track current overview start date
-        currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 17); // Start 18 months back
-        let isDragging = false; // Track if selection bar is being dragged
-        let dragStartX = 0; // Track drag start position
-        let selectionBar = null; // Reference to selection bar element
+        // Initialize with 12 months data
+        let currentDailyChart = createDailyChart(get12MonthsData(), '12months');
+        let currentTimePeriod = '12months'; // Track current time period
         
-        // Add event listeners for filter buttons
-        document.getElementById('filter7days').addEventListener('click', function() {
-            currentTimePeriod = 7;
-            currentFilteredData = filterDataByDays(7); // Show 7 days of data in main chart
-            if (currentDailyChart) currentDailyChart.destroy();
-            currentDailyChart = createDailyChart(currentFilteredData);
-            
-            // Update button states with CC Gold styling
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.backgroundColor = '';
-                btn.style.color = '#D09B2C';
-                btn.style.borderColor = '#D09B2C';
-            });
-            this.classList.add('active');
-            this.style.backgroundColor = '#D09B2C';
-            this.style.color = 'white';
-            this.style.borderColor = '#D09B2C';
-            
-            // Show view indicator for 7-day view
-            const viewIndicator = document.getElementById('viewIndicator');
-            const viewIndicatorText = document.getElementById('viewIndicatorText');
-            viewIndicator.style.display = 'block';
-            viewIndicatorText.textContent = 'Showing 7 days of data with 30-day overview';
-            
-            // Update selection bar to show 7 days out of 30 days in mini chart
-            updateSelectionBarFor7Days();
-            
-            // Reset date slider
-            document.getElementById('dateRangeSlider').value = 100;
-            document.getElementById('dateSliderValue').textContent = 'All';
-        });
+        console.log('Setting up button event listeners...');
         
-        document.getElementById('filter30days').addEventListener('click', function() {
-            currentTimePeriod = 30;
-            currentFilteredData = filterDataByDays(30);
-            if (currentDailyChart) currentDailyChart.destroy();
-            currentDailyChart = createDailyChart(currentFilteredData);
-            
-            // Update button states with CC Gold styling
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.backgroundColor = '';
-                btn.style.color = '#D09B2C';
-                btn.style.borderColor = '#D09B2C';
-            });
-            this.classList.add('active');
-            this.style.backgroundColor = '#D09B2C';
-            this.style.color = 'white';
-            this.style.borderColor = '#D09B2C';
-            
-            // Hide view indicator
-            document.getElementById('viewIndicator').style.display = 'none';
-            
-            // Reset selection bar to default 12-month view
-            updateSelectionBar();
-            
-            // Reset date slider
-            document.getElementById('dateRangeSlider').value = 100;
-            document.getElementById('dateSliderValue').textContent = 'All';
-        });
-        
-        document.getElementById('filter12months').addEventListener('click', function() {
-            currentTimePeriod = 365;
-            currentFilteredData = dailyData;
-            if (currentDailyChart) currentDailyChart.destroy();
-            currentDailyChart = createDailyChart(currentFilteredData);
-            
-            // Update button states with CC Gold styling
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.backgroundColor = '';
-                btn.style.color = '#D09B2C';
-                btn.style.borderColor = '#D09B2C';
-            });
-            this.classList.add('active');
-            this.style.backgroundColor = '#D09B2C';
-            this.style.color = 'white';
-            this.style.borderColor = '#D09B2C';
-            
-            // Hide view indicator
-            document.getElementById('viewIndicator').style.display = 'none';
-            
-            // Reset selection bar to default 12-month view
-            updateSelectionBar();
-            
-            // Reset date slider
-            document.getElementById('dateRangeSlider').value = 100;
-            document.getElementById('dateSliderValue').textContent = 'All';
-        });
-        
-        // Create overview chart
-        function createOverviewChart(startDate = null) {
-            const overviewCanvas = document.getElementById('overviewChart');
-            if (!overviewCanvas) return;
-            
-            // Destroy any existing chart on this canvas
-            const existingOverviewChart = Chart.getChart(overviewCanvas);
-            if (existingOverviewChart) {
-                console.log('Destroying existing overview chart');
-                existingOverviewChart.destroy();
-            }
-            
-            // Use provided start date or default to 18 months back
-            const chartStartDate = startDate || new Date();
-            if (!startDate) {
-                chartStartDate.setMonth(chartStartDate.getMonth() - 17);
-            }
-            
-            // Generate 18 months of labels
-            const monthLabels = [];
-            const monthCounts = [];
-            
-            for (let i = 0; i < 18; i++) {
-                const currentDate = new Date(chartStartDate);
-                currentDate.setMonth(chartStartDate.getMonth() + i);
+        // Add event listener for 12 Months button
+        const btn12Months = document.getElementById('btn12Months');
+        console.log('12 Months button found:', btn12Months);
+        if (btn12Months) {
+            btn12Months.addEventListener('click', function() {
+                console.log('12 Months button clicked!');
+                console.log('Switching to 12 months view...');
+                currentTimePeriod = '12months';
                 
-                const month = currentDate.toLocaleDateString('en-US', { month: 'short' });
-                const year = currentDate.getFullYear().toString().slice(-2);
-                monthLabels.push(`${month} '${year}`);
+                // Update button states
+                document.getElementById('btn12Months').classList.add('active');
+                document.getElementById('btn12Months').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn12Months').style.color = 'white';
+                document.getElementById('btn30Days').classList.remove('active');
+                document.getElementById('btn30Days').style.backgroundColor = '';
+                document.getElementById('btn30Days').style.color = '#D09B2C';
+                document.getElementById('btn7Days').classList.remove('active');
+                document.getElementById('btn7Days').style.backgroundColor = '';
+                document.getElementById('btn7Days').style.color = '#D09B2C';
                 
-                // Calculate total count for this month
-                const yearMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
-                let monthTotal = 0;
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests by Month';
                 
-                Object.keys(dailyData).forEach(dateStr => {
-                    if (dateStr.startsWith(yearMonth)) {
-                        monthTotal += dailyData[dateStr] || 0;
-                    }
-                });
-                
-                monthCounts.push(monthTotal);
-            }
-            
-            const overviewCtx = overviewCanvas.getContext('2d');
-            overviewChart = new Chart(overviewCtx, {
-                type: 'line',
-                data: {
-                    labels: monthLabels,
-                    datasets: [{
-                        label: 'Overview',
-                        data: monthCounts,
-                        borderColor: '#6c757d',
-                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                        borderWidth: 1,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                font: {
-                                    size: 10
-                                },
-                                maxTicksLimit: 6
-                            }
-                        },
-                        y: {
-                            display: false
-                        }
-                    },
-                    elements: {
-                        point: {
-                            radius: 0
-                        }
-                    }
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
                 }
-            });
-        }
-        
-        // Function to create 30-day overview chart
-        function create30DayOverviewChart() {
-            const overviewCanvas = document.getElementById('overviewChart');
-            if (!overviewCanvas) return;
-            
-            // Destroy any existing chart on this canvas
-            const existingOverviewChart = Chart.getChart(overviewCanvas);
-            if (existingOverviewChart) {
-                console.log('Destroying existing overview chart');
-                existingOverviewChart.destroy();
-            }
-            
-            // Generate 30 days of labels
-            const dayLabels = [];
-            const dayCounts = [];
-            
-            for (let i = 29; i >= 0; i--) {
-                const currentDate = new Date();
-                currentDate.setDate(currentDate.getDate() - i);
                 
-                const day = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                dayLabels.push(day);
-                
-                // Calculate total count for this day
-                const dateStr = currentDate.toISOString().split('T')[0];
-                dayCounts.push(dailyData[dateStr] || 0);
-            }
-            
-            const overviewCtx = overviewCanvas.getContext('2d');
-            const thirtyDayOverviewChart = new Chart(overviewCtx, {
-                type: 'line',
-                data: {
-                    labels: dayLabels,
-                    datasets: [{
-                        label: '30-Day Overview',
-                        data: dayCounts,
-                        borderColor: '#6c757d',
-                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                        borderWidth: 1,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                font: {
-                                    size: 10
-                                },
-                                maxTicksLimit: 6
-                            }
-                        },
-                        y: {
-                            display: false
-                        }
-                    },
-                    elements: {
-                        point: {
-                            radius: 0
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Initialize overview chart
-        try {
-            createOverviewChart(currentOverviewStartDate);
-            updateSelectionBar();
-        } catch (error) {
-            console.error('Overview chart creation error:', error);
-        }
-        
-        // Initialize selection bar
-        selectionBar = document.getElementById('selectionBar');
-        
-        // Function to update selection bar position
-        function updateSelectionBar() {
-            if (!selectionBar) return;
-            
-            // Calculate position based on current start date
-            const totalMonths = 18; // Show 18 months of data
-            const currentMonth = 0; // Always start from the beginning since we're showing 18 months
-            const position = (currentMonth / totalMonths) * 100;
-            
-            selectionBar.style.left = `${Math.max(0, Math.min(100 - 66.67, position))}%`;
-            selectionBar.style.width = '66.67%'; // 12 months = 66.67% of 18 months
-            selectionBar.style.display = 'block';
-        }
-        
-        // Function to update selection bar for 7-day view (showing 7 days out of 30 days)
-        function updateSelectionBarFor7Days() {
-            if (!selectionBar) return;
-            
-            // Create a 30-day overview mini-chart
-            create30DayOverviewChart();
-            
-            // For 7-day view, show 7 days out of 30 days = 23.33% width
-            selectionBar.style.left = '0%';
-            selectionBar.style.width = '23.33%'; // 7 days = 23.33% of 30 days
-            selectionBar.style.display = 'block';
-        }
-        
-        // Mouse event handlers for dragging
-        const overviewContainer = document.querySelector('#overviewChart').parentElement;
-        
-        selectionBar.addEventListener('mousedown', function(e) {
-            isDragging = true;
-            dragStartX = e.clientX;
-            selectionBar.style.cursor = 'grabbing';
-            e.preventDefault();
-        });
-        
-        document.addEventListener('mousemove', function(e) {
-            if (!isDragging) return;
-            
-            const containerRect = overviewContainer.getBoundingClientRect();
-            const mouseX = e.clientX - containerRect.left;
-            const containerWidth = containerRect.width;
-            const selectionWidth = containerWidth * 0.6667; // 66.67% width for 12 months
-            
-            // Calculate new position
-            let newLeft = (mouseX / containerWidth) * 100;
-            newLeft = Math.max(0, Math.min(100 - 66.67, newLeft)); // Keep within bounds
-            
-            // Update selection bar position
-            selectionBar.style.left = `${newLeft}%`;
-            
-            // Calculate corresponding date
-            const totalMonths = 18; // 18 months total
-            const monthsFromStart = (newLeft / 100) * totalMonths;
-            const newStartDate = new Date(currentOverviewStartDate);
-            newStartDate.setMonth(newStartDate.getMonth() + monthsFromStart);
-            
-            // Update if within valid range
-            const currentDate = new Date();
-            const maxStartDate = new Date();
-            maxStartDate.setMonth(currentDate.getMonth() - 17);
-            
-            if (newStartDate <= maxStartDate) {
-                currentOverviewStartDate = new Date(newStartDate);
+                // Recreate chart with 12 months data
                 try {
-                    createOverviewChart(currentOverviewStartDate);
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(get12MonthsData(), '12months');
                 } catch (error) {
-                    console.error('Overview chart update error:', error);
+                    console.error('Error creating 12 months chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 12 months</p>`;
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            console.warn('12 Months button not found');
+        }
         
-        document.addEventListener('mouseup', function() {
-            if (isDragging) {
-                isDragging = false;
-                selectionBar.style.cursor = 'grab';
-            }
-        });
+        // Add event listener for 30 Days button
+        const btn30Days = document.getElementById('btn30Days');
+        console.log('30 Days button found:', btn30Days);
+        if (btn30Days) {
+            btn30Days.addEventListener('click', function() {
+                console.log('30 Days button clicked!');
+                console.log('Switching to 30 days view...');
+                currentTimePeriod = '30days';
+                
+                // Update button states
+                document.getElementById('btn30Days').classList.add('active');
+                document.getElementById('btn30Days').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn30Days').style.color = 'white';
+                document.getElementById('btn12Months').classList.remove('active');
+                document.getElementById('btn12Months').style.backgroundColor = '';
+                document.getElementById('btn12Months').style.color = '#D09B2C';
+                document.getElementById('btn7Days').classList.remove('active');
+                document.getElementById('btn7Days').style.backgroundColor = '';
+                document.getElementById('btn7Days').style.color = '#D09B2C';
+                
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests per Day';
+                
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
+                }
+                
+                // Get 30 days data and log it
+                const thirtyDaysData = get30DaysData();
+                console.log('30 Days data for chart:', thirtyDaysData);
+                
+                // Recreate chart with 30 days data
+                try {
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(thirtyDaysData, '30days');
+                } catch (error) {
+                    console.error('Error creating 30 days chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 30 days</p>`;
+                    }
+                }
+            });
+        } else {
+            console.warn('30 Days button not found');
+        }
         
-        // Navigation buttons
-        document.getElementById('prevPeriod').addEventListener('click', function() {
-            // Navigate to previous 12-month period
-            currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() - 12);
-            try {
-                createOverviewChart(currentOverviewStartDate);
-                updateSelectionBar();
-            } catch (error) {
-                console.error('Overview chart navigation error:', error);
-            }
-        });
+        // Add event listener for 7 Days button
+        const btn7Days = document.getElementById('btn7Days');
+        console.log('7 Days button found:', btn7Days);
+        if (btn7Days) {
+            btn7Days.addEventListener('click', function() {
+                console.log('7 Days button clicked!');
+                console.log('Switching to 7 days view...');
+                currentTimePeriod = '7days';
+                
+                // Update button states
+                document.getElementById('btn7Days').classList.add('active');
+                document.getElementById('btn7Days').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn7Days').style.color = 'white';
+                document.getElementById('btn12Months').classList.remove('active');
+                document.getElementById('btn12Months').style.backgroundColor = '';
+                document.getElementById('btn12Months').style.color = '#D09B2C';
+                document.getElementById('btn30Days').classList.remove('active');
+                document.getElementById('btn30Days').style.backgroundColor = '';
+                document.getElementById('btn30Days').style.color = '#D09B2C';
+                
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests per Day';
+                
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
+                }
+                
+                // Get 7 days data and log it
+                const sevenDaysData = get7DaysData();
+                console.log('7 Days data for chart:', sevenDaysData);
+                
+                // Recreate chart with 7 days data
+                try {
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(sevenDaysData, '7days');
+                } catch (error) {
+                    console.error('Error creating 7 days chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 7 days</p>`;
+                    }
+                }
+            });
+        } else {
+            console.warn('7 Days button not found');
+        }
         
-        document.getElementById('nextPeriod').addEventListener('click', function() {
-            // Navigate to next 12-month period
-            currentOverviewStartDate.setMonth(currentOverviewStartDate.getMonth() + 12);
-            
-            // Don't go beyond current date
-            const currentDate = new Date();
-            const maxStartDate = new Date();
-            maxStartDate.setMonth(currentDate.getMonth() - 17);
-            
-            if (currentOverviewStartDate > maxStartDate) {
-                currentOverviewStartDate = new Date(maxStartDate);
-            }
-            
-            try {
-                createOverviewChart(currentOverviewStartDate);
-                updateSelectionBar();
-            } catch (error) {
-                console.error('Overview chart navigation error:', error);
-            }
-        });
+
+        
+
+        
+
+        
         
     } catch (error) {
         console.error('Daily chart creation error:', error);
@@ -877,5 +831,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-{% endblock %}
 {% endblock %} 

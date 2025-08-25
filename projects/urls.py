@@ -9,9 +9,11 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('triage/', views.project_triage, name='project_triage'),
     path('scoring/', views.project_scoring_list, name='project_scoring_list'),
-    path('scoring-test/', views.project_scoring_list_test, name='project_scoring_list_test'),
+
     path('final-scoring/', views.project_final_scoring_list, name='project_final_scoring_list'),
     path('dashboard/', views.cabinet_dashboard, name='dashboard'),
+    path('test-dashboard/', views.test_dashboard, name='test_dashboard'),
+
     path('new/', views.project_create, name='project_create'),
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/edit-form/', views.project_update_form_ajax, name='project_update_form_ajax'),
