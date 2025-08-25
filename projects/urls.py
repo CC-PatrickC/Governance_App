@@ -15,6 +15,7 @@ urlpatterns = [
     path('test-dashboard/', views.test_dashboard, name='test_dashboard'),
 
     path('new/', views.project_create, name='project_create'),
+    path('intake/', views.project_intake_form, name='project_intake_form'),
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/edit-form/', views.project_update_form_ajax, name='project_update_form_ajax'),
     path('<int:pk>/update/', views.project_update_ajax, name='project_update_ajax'),

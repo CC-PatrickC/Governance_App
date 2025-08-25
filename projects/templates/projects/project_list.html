@@ -420,6 +420,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Request List</h2>
         <div class="d-flex gap-2">
+            <a href="{% url 'projects:project_intake_form' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Submit New Request
+            </a>
             <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">
                 Refresh
             </button>
@@ -599,8 +602,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="modalViewDetailsBtn" class="btn btn-primary">View Full Details</a>
-                <a href="#" id="modalEditBtn" class="btn btn-warning">Edit Project</a>
             </div>
         </div>
     </div>
@@ -770,7 +771,9 @@ function loadProjectDetails(projectId) {
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                });
             }
             return response.json();
         })
@@ -846,10 +849,6 @@ function displayProjectDetails(data) {
             </div>
         </div>
     `;
-    
-    // Update action buttons
-    document.getElementById('modalViewDetailsBtn').href = `/projects/${currentProjectId}/`;
-    document.getElementById('modalEditBtn').href = `/projects/${currentProjectId}/edit/`;
 }
 
 function refreshProjects() {

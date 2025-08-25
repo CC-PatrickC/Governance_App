@@ -1,0 +1,368 @@
+{% extends 'base_cc.html' %}
+{% load static %}
+
+{% block title %}Submit New Request{% endblock %}
+
+{% block extra_css %}
+<style>
+    .intake-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .intake-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #D09B2C;
+    }
+
+    .intake-header h1 {
+        color: #000000;
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .intake-header p {
+        color: #6c757d;
+        font-size: 1.1rem;
+        margin-bottom: 0;
+    }
+
+    .form-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-section h3 {
+        color: #000000;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.1);
+        outline: none;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .btn-submit {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-submit:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-cancel {
+        background: #6c757d;
+        border: 1px solid #6c757d;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.15s ease-in-out;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background: #5a6268;
+        border-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #ced4da;
+        border-radius: 6px;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .file-upload-area:hover {
+        border-color: #D09B2C;
+    }
+
+    .file-upload-area.dragover {
+        border-color: #D09B2C;
+        background: #fff3cd;
+    }
+
+    .priority-high {
+        color: #dc3545;
+        font-weight: 600;
+    }
+
+    .priority-medium {
+        color: #fd7e14;
+        font-weight: 600;
+    }
+
+    .priority-low {
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    .priority-top {
+        color: #6f42c1;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="intake-form-container">
+    <!-- Header -->
+    <div class="intake-header">
+        <h1>Submit New Request</h1>
+        <p>Please fill out the form below to submit your IT request for review</p>
+    </div>
+
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="intakeForm">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="form-section">
+            <h3>Basic Information</h3>
+            
+            <div class="mb-3">
+                <label for="title" class="form-label required-field">Request Title</label>
+                <input type="text" class="form-control" id="title" name="title" required 
+                       placeholder="Enter a descriptive title for your request">
+                <div class="help-text">Provide a clear, concise title that describes your request</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label required-field">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="6" required
+                          placeholder="Please provide a detailed description of your request, including objectives, requirements, and expected outcomes"></textarea>
+                <div class="help-text">Include as much detail as possible to help us understand your needs</div>
+            </div>
+
+            
+        </div>
+
+        
+
+        <!-- Contact Information -->
+        <div class="form-section">
+            <h3>Contact Information</h3>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="contact_person" class="form-label required-field">Contact Person</label>
+                    <input type="text" class="form-control" id="contact_person" name="contact_person" required
+                           placeholder="Enter the primary contact person's name">
+                    <div class="help-text">Who should we contact for questions about this request?</div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="contact_email" class="form-label required-field">Contact Email</label>
+                    <input type="email" class="form-control" id="contact_email" name="contact_email" required
+                           placeholder="Enter contact email address">
+                    <div class="help-text">We'll use this email for updates and questions</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="contact_phone" class="form-label">Contact Phone</label>
+                <input type="tel" class="form-control" id="contact_phone" name="contact_phone"
+                       placeholder="Enter contact phone number (optional)">
+                <div class="help-text">Optional: Provide a phone number for urgent matters</div>
+            </div>
+        </div>
+
+        <!-- Supporting Documents -->
+        <div class="form-section">
+            <h3>Supporting Documents</h3>
+            
+            <div class="file-upload-area" id="fileUploadArea">
+                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                <h5>Upload Supporting Documents</h5>
+                <p class="text-muted">Drag and drop files here or click to browse</p>
+                <input type="file" class="form-control" id="files" name="files" multiple 
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+                       style="display: none;">
+                <button type="button" class="btn btn-outline-secondary mt-2" onclick="document.getElementById('files').click()">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
+            </div>
+            
+            <div class="help-text">
+                <strong>Accepted file types:</strong> PDF, Word, Excel, PowerPoint, Text, Images<br>
+                <strong>Maximum files:</strong> 5 files, 10MB each<br>
+                <strong>Optional:</strong> Upload any relevant documents that support your request
+            </div>
+            
+            <div id="fileList" class="mt-3"></div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{% url 'projects:project_list' %}" class="btn-cancel">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// File upload handling
+const fileUploadArea = document.getElementById('fileUploadArea');
+const fileInput = document.getElementById('files');
+const fileList = document.getElementById('fileList');
+
+// Drag and drop functionality
+fileUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+});
+
+fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('dragover');
+});
+
+fileUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+    fileInput.files = e.dataTransfer.files;
+    updateFileList();
+});
+
+fileInput.addEventListener('change', updateFileList);
+
+function updateFileList() {
+    fileList.innerHTML = '';
+    const files = fileInput.files;
+    
+    if (files.length > 0) {
+        const list = document.createElement('div');
+        list.className = 'list-group';
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.innerHTML = `
+                <i class="fas fa-file me-2"></i>
+                <strong>${file.name}</strong>
+                <small class="text-muted ms-2">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+            `;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-sm btn-outline-danger';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.onclick = () => removeFile(i);
+            
+            item.appendChild(fileInfo);
+            item.appendChild(removeBtn);
+            list.appendChild(item);
+        }
+        
+        fileList.appendChild(list);
+    }
+}
+
+function removeFile(index) {
+    const dt = new DataTransfer();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+            dt.items.add(files[i]);
+        }
+    }
+    
+    fileInput.files = dt.files;
+    updateFileList();
+}
+
+// Form validation
+document.getElementById('intakeForm').addEventListener('submit', function(e) {
+         const requiredFields = ['title', 'description', 'contact_person', 'contact_email'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Please fill in all required fields marked with *');
+    }
+});
+</script>
+{% endblock %}

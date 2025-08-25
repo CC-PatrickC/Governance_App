@@ -162,7 +162,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="finalScoringDetailLink" class="btn btn-primary">View Full Details</a>
             </div>
         </div>
     </div>
@@ -519,9 +518,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function openFinalScoringModal(projectId) {
-    // Set the detail link
-    document.getElementById('finalScoringDetailLink').href = `/final-scoring/${projectId}/`;
-    
     // Load project details via AJAX
     fetch(`/${projectId}/final-scoring-details-modal/`)
         .then(response => response.text())
