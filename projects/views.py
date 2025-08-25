@@ -15,6 +15,29 @@ import logging
 
 logger = logging.getLogger('projects')
 
+def sync_status_with_stage(project):
+    """
+    Synchronize the status field with the stage field.
+    The stage field is the primary field that determines workflow progression.
+    """
+    # Mapping from stage to status
+    stage_to_status_mapping = {
+        'Pending_Review': 'pending',
+        'Under_Review_Triage': 'under_review_triage',
+        'Under_Review_Scoring': 'under_review_scoring',
+        'Under_Review_Final_Scoring': 'under_review_final_scoring',
+    }
+    
+    # Get the expected status based on stage
+    expected_status = stage_to_status_mapping.get(project.stage, project.status)
+    
+    # Only update if the status doesn't match the stage
+    if project.status != expected_status:
+        project.status = expected_status
+        logger.info(f"Synced status from '{project.status}' to '{expected_status}' based on stage '{project.stage}'")
+    
+    return project
+
 def is_triage_user(user):
     return user.is_staff or user.groups.filter(name='Triage Group').exists()
 
@@ -26,6 +49,12 @@ def is_it_governance_scoring_user(user):
 
 def is_cabinet_user(user):
     return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+
+def is_patrick(user):
+    """Check if the user is Patrick (for test dashboard access)"""
+    return user.username == 'pcondon' or user.email == 'pcondon@ccgov.org'
+
+
 
 def get_user_allowed_project_types(user):
     """
@@ -252,29 +281,11 @@ def project_update_ajax(request, pk):
             logger.error("Error: Title is missing")
             raise ValueError("Title is required")
         
-        # Debug status update
-        new_status = request.POST.get('status')
-        logger.info(f"\nStatus update:")
-        logger.info(f"New status from form: {new_status}")
-        logger.info(f"Current project status: {project.status}")
-        logger.info(f"Valid status choices: {dict(Project.STATUS_CHOICES)}")
-        
-        # Validate status
-        valid_statuses = dict(Project.STATUS_CHOICES).keys()
-        if not new_status or new_status not in valid_statuses:
-            logger.warning(f"Warning: Invalid status '{new_status}', defaulting to 'pending'")
-            new_status = 'pending'
-        
         # Update project fields
         project.title = title
         project.description = request.POST.get('description', '')
         project.project_type = request.POST.get('project_type')
         project.priority = request.POST.get('priority')
-        
-        # Explicitly update status
-        logger.info(f"\nSetting status to: {new_status}")
-        project.status = new_status
-        logger.info(f"Status after setting: {project.status}")
         
         # Update stage
         new_stage = request.POST.get('stage')
@@ -303,6 +314,9 @@ def project_update_ajax(request, pk):
         # Update contact information
         project.contact_person = request.POST.get('contact_person', '')
         project.contact_email = request.POST.get('contact_email', '')
+        
+        # Sync status with stage before saving
+        project = sync_status_with_stage(project)
         
         logger.info("\nAbout to save project...")
         logger.info(f"Project status before save: {project.status}")
@@ -424,20 +438,6 @@ def project_update(request, pk):
             if not title:
                 raise ValueError("Title is required")
             
-            # Get and validate status
-            new_status = request.POST.get('status')
-            print(f"\nStatus update:")
-            print(f"New status: {new_status}")
-            print(f"Current status: {project.status}")
-            print(f"Valid statuses: {dict(Project.STATUS_CHOICES)}")
-            
-            if not new_status:
-                raise ValueError("Status is required")
-            
-            valid_statuses = dict(Project.STATUS_CHOICES).keys()
-            if new_status not in valid_statuses:
-                raise ValueError(f"Invalid status: {new_status}")
-            
             # Get triage notes
             new_triage_notes = request.POST.get('triage_notes', '')
             
@@ -446,10 +446,17 @@ def project_update(request, pk):
             project.description = request.POST.get('description', '')
             project.project_type = request.POST.get('project_type')
             project.priority = request.POST.get('priority')
-            project.status = new_status
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
             project.contact_person = request.POST.get('contact_person', '')
+            
+            # Update stage if provided
+            new_stage = request.POST.get('stage')
+            if new_stage:
+                valid_stages = dict(Project.STAGE_CHOICES).keys()
+                if new_stage in valid_stages:
+                    project.stage = new_stage
+                    print(f"Updated stage to: {new_stage}")
             
             # Only create a new TriageNote if the notes have changed
             if new_triage_notes != project.triage_notes:
@@ -459,6 +466,9 @@ def project_update(request, pk):
                     notes=new_triage_notes,
                     created_by=request.user
                 )
+            
+            # Sync status with stage before saving
+            project = sync_status_with_stage(project)
             
             print(f"\nAbout to save project...")
             print(f"Project status before save: {project.status}")
@@ -599,49 +609,7 @@ def project_scoring_list(request):
     
     return render(request, 'projects/project_scoring_list.html', context)
 
-@login_required
-@user_passes_test(is_scoring_user)
-def project_scoring_list_test(request):
-    search_query = request.GET.get('search', '')
-    
-    # Get ALL projects for testing (not just Under_Review_Scoring)
-    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
-    
-    # Apply group-based filtering
-    allowed_types = get_user_allowed_project_types(request.user)
-    if allowed_types is not None:
-        # Filter projects based on user's allowed project types
-        projects = projects.filter(project_type__in=allowed_types)
-    
-    # Apply search filter
-    if search_query:
-        projects = projects.filter(
-            models.Q(title__icontains=search_query) |
-            models.Q(description__icontains=search_query) |
-            models.Q(department__icontains=search_query) |
-            models.Q(submitted_by__username__icontains=search_query)
-        )
-    
-    # Get user's allowed project types for template display
-    allowed_types = get_user_allowed_project_types(request.user)
-    if allowed_types is not None:
-        # Convert project type codes to display names
-        type_display_names = []
-        for project_type in allowed_types:
-            for choice in Project.PROJECT_TYPE_CHOICES:
-                if choice[0] == project_type:
-                    type_display_names.append(choice[1])
-                    break
-    else:
-        type_display_names = None
-    
-    context = {
-        'projects': projects,
-        'search_query': search_query,
-        'allowed_project_types': type_display_names,
-    }
-    
-    return render(request, 'projects/project_scoring_list_test.html', context)
+
 
 @login_required
 @user_passes_test(is_scoring_user)
@@ -775,7 +743,7 @@ def project_scoring(request, pk):
 @user_passes_test(is_scoring_user)
 def project_final_scoring_list(request):
     search_query = request.GET.get('search', '')
-    projects = Project.objects.all().select_related('submitted_by').order_by(
+    projects = Project.objects.filter(stage='Under_Review_Final_Scoring').select_related('submitted_by').order_by(
         models.F('final_priority').asc(nulls_last=True), 
         '-submission_date'
     )
@@ -1146,8 +1114,8 @@ def cabinet_dashboard(request):
         'Under Review - Final Scoring': projects.filter(stage='Under_Review_Final_Scoring').order_by('-submission_date')[:5],
     }
     
-    # Get recent projects
-    recent_projects = projects.order_by('-submission_date')
+    # Get recent projects (get at least 20 for the Latest Requests buttons)
+    recent_projects = projects.order_by('-submission_date')[:20]
     
     # Get projects sorted by priority (Top, High, Normal, Low)
     priority_sorted_projects = projects.extra(
@@ -1233,6 +1201,174 @@ def cabinet_dashboard(request):
     }
     
     return render(request, 'projects/dashboard.html', context)
+
+
+@login_required
+@user_passes_test(is_patrick)
+def test_dashboard(request):
+    """Test dashboard - identical to main dashboard but only accessible to Patrick"""
+    # Get all projects
+    projects = Project.objects.all().order_by('-submission_date')
+    
+    # Get recent projects (get at least 20 for the Latest Requests buttons)
+    recent_projects = projects[:20]
+    
+    # Get projects sorted by priority
+    priority_sorted_projects = projects.order_by('-priority', '-submission_date')[:5]
+    
+    # Get high priority projects
+    high_priority_projects = projects.filter(priority='High')[:5]
+    
+    # Get top priority projects
+    top_priority_projects = projects.filter(priority='Top')[:5]
+    
+    # Calculate status counts
+    status_counts = {}
+    for status, _ in Project.STATUS_CHOICES:
+        count = projects.filter(status=status).count()
+        if count > 0:
+            status_counts[status] = count
+    
+    # Calculate stage counts
+    stage_counts = {}
+    for stage, _ in Project.STAGE_CHOICES:
+        count = projects.filter(stage=stage).count()
+        if count > 0:
+            stage_counts[stage] = count
+    
+    # Calculate projects by stage
+    projects_by_stage = []
+    for stage, _ in Project.STAGE_CHOICES:
+        count = projects.filter(stage=stage).count()
+        if count > 0:
+            projects_by_stage.append({'stage': stage, 'count': count})
+    
+    # Calculate projects by status
+    projects_by_status = []
+    for status, _ in Project.STATUS_CHOICES:
+        count = projects.filter(status=status).count()
+        if count > 0:
+            projects_by_status.append({'status': status, 'count': count})
+    
+    # Calculate projects by priority
+    projects_by_priority = []
+    for priority, _ in Project.PRIORITY_CHOICES:
+        count = projects.filter(priority=priority).count()
+        if count > 0:
+            projects_by_priority.append({'priority': priority, 'count': count})
+    
+    # Calculate priority counts for display
+    priority_counts = {
+        'Top': projects.filter(priority='Top').count(),
+        'High': projects.filter(priority='High').count(),
+        'Normal': projects.filter(priority='Normal').count(),
+        'Low': projects.filter(priority='Low').count(),
+    }
+    
+    # Calculate requests per department (all requests, not just active)
+    department_counts = {}
+    for project in projects:
+        if project.department:
+            if project.department in department_counts:
+                department_counts[project.department] += 1
+            else:
+                department_counts[project.department] = 1
+    
+    # Sort departments by count (descending)
+    department_counts = dict(sorted(department_counts.items(), key=lambda x: x[1], reverse=True))
+    
+    # Calculate daily request data for the last 12 months
+    from datetime import datetime, timedelta
+    from django.db.models import Count
+    from django.utils import timezone
+    
+    # Get the date range (12 months back from today)
+    end_date = timezone.now().date()
+    start_date = end_date - timedelta(days=365)
+    
+    # Get daily counts for the last 12 months
+    daily_counts = projects.filter(
+        submission_date__gte=start_date,
+        submission_date__lte=end_date
+    ).extra(
+        select={'date': 'DATE(submission_date)'}
+    ).values('date').annotate(count=Count('id')).order_by('date')
+    
+    # Convert to a format suitable for Chart.js
+    daily_data = {}
+    for entry in daily_counts:
+        # The date is already a string from the SQL DATE() function
+        date_str = entry['date']
+        daily_data[date_str] = entry['count']
+    
+    # Calculate department requests by year for stacked bar chart
+    from django.db.models.functions import ExtractYear
+    
+    # Get all projects with their submission year and department
+    projects_with_year = projects.annotate(
+        year=ExtractYear('submission_date')
+    ).values('year', 'department').annotate(
+        count=Count('id')
+    ).order_by('year', 'department')
+    
+    # Organize data for stacked bar chart
+    department_year_data = {}
+    years = set()
+    departments = set()
+    
+    for entry in projects_with_year:
+        year = entry['year']
+        department = entry['department'] if entry['department'] else 'Unknown'
+        count = entry['count']
+        
+        years.add(year)
+        departments.add(department)
+        
+        if year not in department_year_data:
+            department_year_data[year] = {}
+        department_year_data[year][department] = count
+    
+    # Sort years and departments
+    years = sorted(list(years))
+    departments = sorted(list(departments))
+    
+    # Create datasets for each department
+    department_datasets = []
+    department_colors = ['#D09B2C']  # CC Gold for all departments
+    
+    for i, department in enumerate(departments):
+        data = []
+        for year in years:
+            count = department_year_data.get(year, {}).get(department, 0)
+            data.append(count)
+        
+        department_datasets.append({
+            'label': department,
+            'data': data,
+            'backgroundColor': department_colors[i % len(department_colors)],
+            'borderColor': '#ffffff',  # White border for separation
+            'borderWidth': 2  # Thicker border lines
+        })
+    
+    context = {
+        'stage_counts': stage_counts,
+        'status_counts': status_counts,
+        'projects_by_stage': projects_by_stage,
+        'recent_projects': recent_projects,
+        'priority_sorted_projects': priority_sorted_projects,
+        'high_priority_projects': high_priority_projects,
+        'top_priority_projects': top_priority_projects,
+        'projects_by_status': projects_by_status,
+        'projects_by_priority': projects_by_priority,
+        'priority_counts': priority_counts,
+        'department_counts': department_counts,
+        'daily_data': daily_data,
+        'department_year_labels': years,
+        'department_year_datasets': department_datasets,
+    }
+    
+    return render(request, 'projects/test_dashboard.html', context)
+
 
 @login_required
 @user_passes_test(is_triage_user)

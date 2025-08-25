@@ -107,7 +107,6 @@
                 <table class="table table-bordered table-hover">
                     <thead class="table-dark">
                         <tr>
-                            <th>User</th>
                             <th>Strategic Alignment - (20%)</th>
                             <th>Cost Benefit - (15%)</th>
                             <th>User Impact - (20%)</th>
@@ -121,13 +120,6 @@
                     <tbody>
                         {% for score in scores %}
                         <tr>
-                            <td>
-                                {% if score.scored_by.first_name and score.scored_by.last_name %}
-                                    {{ score.scored_by.get_full_name }}
-                                {% else %}
-                                    {{ score.scored_by.username }}
-                                {% endif %}
-                            </td>
                             <td>{{ score.strategic_alignment|default:"-" }}</td>
                             <td>{{ score.cost_benefit|default:"-" }}</td>
                             <td>{{ score.user_impact|default:"-" }}</td>
@@ -139,7 +131,7 @@
                         </tr>
                         <!-- Timestamps row -->
                         <tr class="timestamp-row">
-                            <td colspan="9" class="p-3">
+                            <td colspan="8" class="p-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
                                         <i class="fas fa-clock"></i> 
@@ -160,7 +152,7 @@
                         </tr>
                                                  {% if score.scoring_notes %}
                          <tr class="scoring-notes-row">
-                             <td colspan="9" class="p-3">
+                             <td colspan="8" class="p-3">
                                  <div class="mb-2">
                                      <small class="text-muted">
                                          <i class="fas fa-comment"></i> Scoring Notes
