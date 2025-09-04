@@ -2,13 +2,13 @@
 {% load static %}
 {% load project_tags %}
 
-{% block title %}Final Request Scoring{% endblock %}
+{% block title %}Final Request Governance{% endblock %}
 
 {% block content %}
 {% csrf_token %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Final Request Scoring</h2>
+        <h2>Final Request Governance</h2>
         <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Requests
         </a>
@@ -49,7 +49,7 @@
     <!-- Requests Section -->
     <div class="cc-projects-section">
         <div class="cc-projects-header">
-            <h3>Requests for Final Scoring ({{ projects|length }})</h3>
+                            <h3>Requests for Final Governance ({{ projects|length }})</h3>
             {% if user.is_authenticated %}
                 {% if user.is_staff %}
                     <p class="text-muted mb-0"><small>You have access to all project types as an administrator.</small></p>

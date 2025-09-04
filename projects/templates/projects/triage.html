@@ -227,12 +227,14 @@
         font-weight: 600;
         font-size: 1.1rem;
         margin: 0;
+        color: white;
     }
 
     .cc-project-id {
         font-size: 0.875rem;
         font-weight: 500;
         opacity: 0.8;
+        color: black;
     }
 
     .cc-project-body {
@@ -695,8 +697,8 @@ function openEditModal(projectId) {
             const form = formContainer.querySelector('form');
             
             if (form) {
-                // Update form action to submit via AJAX
-                form.action = `/${projectId}/update/`;
+                // Remove form action to prevent default submission
+                form.removeAttribute('action');
                 form.method = 'POST';
                 
                 // Show save button
@@ -731,7 +733,7 @@ function submitEditForm(form, projectId) {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
     
-    fetch(`/${projectId}/update/`, {
+    fetch(`/${projectId}/update-ajax/`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -739,30 +741,30 @@ function submitEditForm(form, projectId) {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Parse JSON response to check for success/error
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            // Show success message
-            formContainer.innerHTML = `
-                <div class="alert alert-success">
-                    <h5>Project Updated Successfully!</h5>
-                    <p>${data.message}</p>
-                </div>
-            `;
-            
-            // Hide save button
-            saveBtn.style.display = 'none';
-            
-            // Reload page after a short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            // Success - reload the page
+            window.location.reload();
         } else {
-            // Show error message
+            // Error - show error message and don't reload
             formContainer.innerHTML = `
                 <div class="alert alert-danger">
                     <h5>Error Updating Project</h5>
-                    <p>${data.message}</p>
+                    <p>${data.message || 'An error occurred while saving the project.'}</p>
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="loadEditForm(${projectId})">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
                 </div>
             `;
             
@@ -777,6 +779,9 @@ function submitEditForm(form, projectId) {
             <div class="alert alert-danger">
                 <h5>Error Updating Project</h5>
                 <p>An error occurred while saving the project.</p>
+                <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="loadEditForm(${projectId})">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
             </div>
         `;
         

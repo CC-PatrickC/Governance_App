@@ -1,7 +1,7 @@
 {% extends 'base_cc.html' %}
 {% load static %}
 
-{% block title %}Requests to Score{% endblock %}
+{% block title %}Requests for Governance{% endblock %}
 
 {% block extra_head %}
 {% endblock %}
@@ -62,12 +62,14 @@
         font-weight: 600;
         font-size: 1.1rem;
         margin: 0;
+        color: white;
     }
 
     .cc-project-id {
         font-size: 0.875rem;
         font-weight: 500;
         opacity: 0.8;
+        color: black;
     }
 
     .cc-project-body {
@@ -461,7 +463,7 @@
 <div class="container-fluid py-4">
     <div class="cc-projects-section">
         <div class="cc-projects-header">
-            <h3>Requests to Score ({{ projects|length }})</h3>
+                                <h3>Requests for Governance ({{ projects|length }})</h3>
             {% if user.is_authenticated %}
                 {% if user.is_staff %}
                     <p class="text-muted mb-0"><small>You have access to all request types as an administrator.</small></p>
@@ -655,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="detail-card">
                             <div class="detail-title">Contact Information</div>
                             <div class="detail-content">
+                                <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
                                 <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
                                 <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
                                 <p><strong>Budget:</strong> ${project.budget_formatted || 'N/A'}</p>
