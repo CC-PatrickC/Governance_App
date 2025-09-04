@@ -11,6 +11,7 @@ from .forms import ProjectForm
 import json
 from django.utils import timezone
 from django.db import models
+from django.db.models import Q
 import logging
 
 logger = logging.getLogger('projects')
@@ -170,8 +171,6 @@ def project_list(request):
     
     return render(request, 'projects/project_list.html', context)
 
-@login_required
-@user_passes_test(is_triage_user)
 def project_triage(request):
     search_query = request.GET.get('search', '')
     type_filter = request.GET.get('type', '')
@@ -258,6 +257,8 @@ def project_update_ajax(request, pk):
     logger.info(f"Request method: {request.method}")
     logger.info(f"User: {request.user} (Staff: {request.user.is_staff}, Groups: {request.user.groups.all()})")
     logger.info(f"Project ID: {pk}")
+    logger.info(f"X-Requested-With header: {request.headers.get('X-Requested-With')}")
+    logger.info(f"Is AJAX request: {request.headers.get('X-Requested-With') == 'XMLHttpRequest'}")
     
     if request.method != 'POST':
         logger.info("Not a POST request, rendering form")
@@ -359,41 +360,34 @@ def project_update_ajax(request, pk):
         
         messages.success(request, 'Project updated successfully!')
         
-        # Check if this is an AJAX request
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'message': 'Project updated successfully!'
-            })
-        else:
-            return redirect('projects:project_triage')
+        # Always return JSON for the update endpoint
+        return JsonResponse({
+            'success': True
+        })
     except ValueError as e:
         logger.error(f"\nValidation error: {str(e)}")
         messages.error(request, str(e))
         
-        # Check if this is an AJAX request
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': False,
-                'message': str(e)
-            })
-        else:
-            return render(request, 'projects/project_edit.html', {'project': project})
+        # Always return JSON for the update endpoint
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
     except Exception as e:
         logger.error(f"\nError updating project {pk}:")
         logger.error(f"Error type: {type(e)}")
         logger.error(f"Error message: {str(e)}")
         logger.error(f"Error args: {e.args}")
+        logger.error(f"Traceback: {e.__traceback__}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         messages.error(request, f'Error updating project: {str(e)}')
         
-        # Check if this is an AJAX request
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': False,
-                'message': f'Error updating project: {str(e)}'
-            })
-        else:
-            return render(request, 'projects/project_edit.html', {'project': project})
+        # Always return JSON for the update endpoint
+        return JsonResponse({
+            'success': False,
+            'message': f'Error updating project: {str(e)}'
+        })
 
 @login_required
 def project_create(request):
@@ -512,7 +506,16 @@ def project_update(request, pk):
 def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
     project = get_object_or_404(Project, pk=pk)
-    return render(request, 'projects/project_edit_form.html', {'project': project})
+    
+    # Get all users for the contact person dropdown
+    from django.contrib.auth.models import User
+    users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+    
+    context = {
+        'project': project,
+        'users': users,
+    }
+    return render(request, 'projects/project_edit_form.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -570,7 +573,7 @@ def delete_attachment(request, project_pk, file_pk):
 def project_scoring_list(request):
     search_query = request.GET.get('search', '')
     
-    # Get projects that need scoring (stage is Under_Review_Scoring)
+    # Get projects that need governance review (stage is Under_Review_Scoring)
     projects = Project.objects.filter(stage='Under_Review_Scoring').select_related('submitted_by').order_by('-submission_date')
     
     # Apply group-based filtering
@@ -1014,6 +1017,7 @@ def project_scoring_details_modal(request, pk):
             'id': project.id,
             'title': project.title,
             'department': project.department,
+            'contact_person': project.contact_person,
             'contact_email': project.contact_email,
             'contact_phone': project.contact_phone,
             'project_type': project.project_type,
@@ -1049,11 +1053,14 @@ def project_scoring_details_modal(request, pk):
             }
         
         response_data = {
+            'success': True,
             'project': project_data,
             'user_score': user_score_data,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
+        print(f"DEBUG: Contact person: {project.contact_person}")
+        print(f"DEBUG: Contact email: {project.contact_email}")
         return JsonResponse(response_data)
         
     except Exception as e:
@@ -1111,8 +1118,8 @@ def cabinet_dashboard(request):
     projects_by_stage = {
         'Pending Review': projects.filter(stage='Pending_Review').order_by('-submission_date')[:5],
         'Under Review - Triage': projects.filter(stage='Under_Review_Triage').order_by('-submission_date')[:5],
-        'Under Review - Scoring': projects.filter(stage='Under_Review_Scoring').order_by('-submission_date')[:5],
-        'Under Review - Final Scoring': projects.filter(stage='Under_Review_Final_Scoring').order_by('-submission_date')[:5],
+        'Under Review - Governance': projects.filter(stage='Under_Review_Scoring').order_by('-submission_date')[:5],
+        'Under Review - Final Governance': projects.filter(stage='Under_Review_Final_Scoring').order_by('-submission_date')[:5],
     }
     
     # Get recent projects (get at least 20 for the Latest Requests buttons)
@@ -1457,3 +1464,58 @@ def project_intake_form(request):
             messages.error(request, f'Error submitting request: {str(e)}')
     
     return render(request, 'projects/intake_form.html')
+
+def my_governance(request):
+    """My Governance page - shows user's submitted requests and contact requests"""
+    # Get all projects submitted by the current user
+    user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
+    
+    # Get all projects where the user is the contact person
+    # Check by full name first, then by username if no match
+    user_full_name = request.user.get_full_name()
+    user_username = request.user.username
+    
+    contact_projects = Project.objects.filter(
+        Q(contact_person=user_full_name) | 
+        Q(contact_person=user_username)
+    ).exclude(submitted_by=request.user).order_by('-submission_date')
+    
+    # Get triage projects for users in Triage Group
+    triage_projects = None
+    if is_triage_user(request.user):
+        # Get all projects that are in triage stages
+        triage_projects = Project.objects.filter(
+            stage__in=['Pending_Review', 'Under_Review_Triage']
+        ).exclude(
+            submitted_by=request.user
+        ).order_by('-submission_date')
+    
+    # Get governance projects for users in Triage Group
+    governance_projects = None
+    if is_triage_user(request.user):
+        # Get all projects that are in governance review stage
+        governance_projects = Project.objects.filter(
+            stage='Under_Review_Scoring'
+        ).exclude(
+            submitted_by=request.user
+        ).order_by('-submission_date')
+    
+    # Get final governance projects for users in Triage Group
+    final_governance_projects = None
+    if is_triage_user(request.user):
+        # Get all projects that are in final governance review stage
+        final_governance_projects = Project.objects.filter(
+            stage='Under_Review_Final_Scoring'
+        ).exclude(
+            submitted_by=request.user
+        ).order_by('-submission_date')
+    
+    context = {
+        'user_projects': user_projects,
+        'contact_projects': contact_projects,
+        'triage_projects': triage_projects,
+        'governance_projects': governance_projects,
+        'final_governance_projects': final_governance_projects,
+        'is_triage_user': is_triage_user(request.user),
+    }
+    return render(request, 'projects/my_governance.html', context)

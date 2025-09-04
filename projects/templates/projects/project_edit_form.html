@@ -1,6 +1,6 @@
 {% load static %}
 
-<form id="project-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
+<form id="project-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="status" value="{{ project.status }}">
     
@@ -64,8 +64,20 @@
 
     <div class="mb-3">
         <label for="contact_person" class="form-label">Contact Person</label>
-        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ project.contact_person|default:'' }}" required>
-        <small class="form-text text-muted">The primary contact person for this request.</small>
+        <select class="form-select" id="contact_person" name="contact_person">
+            <option value="">-- Select a user --</option>
+            {% for user in users %}
+                <option value="{{ user.get_full_name|default:user.username }}" 
+                        {% if project.contact_person == user.get_full_name or project.contact_person == user.username %}selected{% endif %}>
+                    {% if user.first_name and user.last_name %}
+                        {{ user.get_full_name }} ({{ user.username }})
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </option>
+            {% endfor %}
+        </select>
+        <small class="form-text text-muted">Select the primary contact person for this request from the list of users.</small>
     </div>
 
     <div class="form-group">

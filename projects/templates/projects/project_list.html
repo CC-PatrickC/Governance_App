@@ -26,12 +26,12 @@
         color: #92400e;
     }
     
-    .stage-under_review_scoring {
+    .stage-under_review_governance {
         background-color: #dbeafe;
         color: #1e40af;
     }
     
-    .stage-under_review_final_scoring {
+    .stage-under_review_final_governance {
         background-color: #f3e8ff;
         color: #6b21a8;
     }
@@ -87,7 +87,7 @@
     .cc-project-id {
         font-size: 0.75rem;
         font-weight: 600;
-        color: white;
+        color: black;
         margin-bottom: 4px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -97,7 +97,7 @@
         font-size: 1.125rem;
         font-weight: 600;
         line-height: 1.3;
-        color: black;
+        color: white;
     }
 
     .cc-project-body {
@@ -420,7 +420,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Request List</h2>
         <div class="d-flex gap-2">
-            <a href="{% url 'projects:project_intake_form' %}" class="btn btn-primary">
+            <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
                 <i class="fas fa-plus-circle"></i> Submit New Request
             </a>
             <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">

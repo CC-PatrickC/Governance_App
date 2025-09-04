@@ -246,7 +246,7 @@
         .sidebar-toggle {
             background: transparent;
             border: none;
-            color: black;
+            color: white;
             padding: 0.5rem;
             border-radius: var(--radius);
             cursor: pointer;
@@ -255,7 +255,7 @@
         }
 
         .sidebar-toggle:hover {
-            color: black;
+            color: white;
             background: rgba(255, 255, 255, 0.2);
         }
 
@@ -268,18 +268,19 @@
         .brand-logo img {
             height: 40px;
             width: auto;
+            filter: brightness(0) invert(1);
         }
 
         .brand-title {
             font-size: 1.5rem;
             font-weight: 600;
-            color: black;
+            color: white;
             margin: 0;
         }
 
         .brand-subtitle {
             font-size: 0.875rem;
-            color: black;
+            color: white;
             margin: 0;
         }
 
@@ -297,7 +298,7 @@
         .notification-toggle {
             background: transparent;
             border: none;
-            color: black;
+            color: white;
             font-size: 1.25rem;
             padding: 0.5rem;
             border-radius: 50%;
@@ -310,13 +311,13 @@
 
         .notification-toggle:hover {
             background: rgba(255, 255, 255, 0.2);
-            color: black;
+            color: white;
         }
 
         .user-dropdown-toggle {
             background: transparent;
             border: none;
-            color: black;
+            color: white;
             font-size: 1.5rem;
             padding: 0.5rem;
             border-radius: 50%;
@@ -329,7 +330,7 @@
 
         .user-dropdown-toggle:hover {
             background: rgba(255, 255, 255, 0.2);
-            color: black;
+            color: white;
         }
 
         .dropdown-menu {
@@ -822,6 +823,12 @@
                                 <span>Submit Request</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{% url 'projects:my_governance' %}" class="nav-link {% if request.resolver_match.url_name == 'my_governance' %}active{% endif %}" data-tooltip="MyGovernance">
+                                <i class="fas fa-chart-line nav-icon"></i>
+                                <span>MyGovernance</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
@@ -846,15 +853,15 @@
                 <div class="nav-section">
                     <ul class="nav-menu">
                         <li class="nav-item">
-                            <a href="{% url 'projects:project_scoring_list' %}" class="nav-link {% if request.resolver_match.url_name == 'project_scoring_list' %}active{% endif %}" data-tooltip="ITS Governance">
+                            <a href="/governance/" class="nav-link {% if request.path == '/governance/' %}active{% endif %}" data-tooltip="Governance">
                                 <i class="fas fa-star nav-icon"></i>
-                                <span>Scoring</span>
+                                <span>Governance</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{% url 'projects:project_final_scoring_list' %}" class="nav-link {% if request.resolver_match.url_name == 'project_final_scoring_list' %}active{% endif %}" data-tooltip="Final Scoring Governance">
+                            <a href="/final-governance/" class="nav-link {% if request.path == '/final-governance/' %}active{% endif %}" data-tooltip="Final Governance">
                                 <i class="fas fa-trophy nav-icon"></i>
-                                <span>Final Scoring</span>
+                                <span>Final Governance</span>
                             </a>
                         </li>
                     </ul>
