@@ -319,6 +319,19 @@ def project_update_ajax(request, pk):
         # Sync status with stage before saving
         project = sync_status_with_stage(project)
         
+        # Auto-assign final priority rank when moving to Under_Review_Final_Scoring
+        if new_stage == 'Under_Review_Final_Scoring' and project.final_priority is None:
+            # Get the highest existing rank
+            max_rank = Project.objects.filter(
+                stage='Under_Review_Final_Scoring',
+                final_priority__isnull=False
+            ).aggregate(max_rank=models.Max('final_priority'))['max_rank']
+            
+            # Set the new rank to be the next available number (append to end)
+            new_rank = (max_rank or 0) + 1
+            project.final_priority = new_rank
+            logger.info(f"Auto-assigned final priority rank {new_rank} for project {pk} (appended to end)")
+        
         logger.info("\nAbout to save project...")
         logger.info(f"Project status before save: {project.status}")
         try:
@@ -463,6 +476,19 @@ def project_update(request, pk):
             
             # Sync status with stage before saving
             project = sync_status_with_stage(project)
+            
+            # Auto-assign final priority rank when moving to Under_Review_Final_Scoring
+            if new_stage == 'Under_Review_Final_Scoring' and project.final_priority is None:
+                # Get the highest existing rank
+                max_rank = Project.objects.filter(
+                    stage='Under_Review_Final_Scoring',
+                    final_priority__isnull=False
+                ).aggregate(max_rank=models.Max('final_priority'))['max_rank']
+                
+                # Set the new rank to be the next available number (append to end)
+                new_rank = (max_rank or 0) + 1
+                project.final_priority = new_rank
+                print(f"Auto-assigned final priority rank {new_rank} for project {pk} (appended to end)")
             
             print(f"\nAbout to save project...")
             print(f"Project status before save: {project.status}")
@@ -902,57 +928,89 @@ def update_final_priority(request, pk):
         print(f"DEBUG: Received final_priority: {final_priority}")
         
         if final_priority is not None:
-            # Handle rank shifting logic
+            # Handle cascading rank update logic
             old_final_priority = project.final_priority
             new_rank = int(final_priority)
             old_rank = int(old_final_priority) if old_final_priority else None
             print(f"DEBUG: Old rank: {old_rank}, New rank: {new_rank}")
             
             # Get all projects with final priority ranks (excluding current project)
-            all_projects = Project.objects.filter(final_priority__isnull=False).exclude(pk=project.pk)
+            all_projects = Project.objects.filter(
+                stage='Under_Review_Final_Scoring',
+                final_priority__isnull=False
+            ).exclude(pk=project.pk)
             print(f"DEBUG: Found {all_projects.count()} other projects with ranks")
             
-            # Always shift ranks when changing to a new rank
+            # Use a more robust cascading approach with temporary ranks to avoid conflicts
+            # First, set all projects to temporary negative ranks to avoid conflicts
+            all_projects_list = list(all_projects.order_by('final_priority'))
+            temp_rank = -1000
+            
+            # Set temporary ranks for all projects
+            for p in all_projects_list:
+                p.final_priority = temp_rank
+                p.save()
+                temp_rank -= 1
+            
+            # Now rebuild the ranks in the correct order
             if old_rank is not None:
-                # Project had a previous rank
+                # Project had a previous rank - implement cascading update
                 if new_rank < old_rank:
                     # Moving to a higher priority (lower number)
-                    # Shift projects with ranks >= new_rank and < old_rank up by 1
-                    projects_to_shift = all_projects.filter(
-                        final_priority__gte=new_rank,
-                        final_priority__lt=old_rank
-                    )
-                    print(f"DEBUG: Shifting {projects_to_shift.count()} projects up")
-                    for p in projects_to_shift:
-                        p.final_priority += 1
-                        p.save()
+                    # Example: Moving from rank 5 to rank 2
+                    # Ranks 2, 3, 4 should become 3, 4, 5
+                    current_rank = 1
+                    for p in all_projects_list:
+                        if current_rank == new_rank:
+                            # This is where our moved project goes
+                            project.final_priority = new_rank
+                            project.save()
+                            current_rank += 1
+                        
+                        if p.id != project.id:  # Don't process the moved project twice
+                            p.final_priority = current_rank
+                            p.save()
+                            current_rank += 1
+                        
                 elif new_rank > old_rank:
                     # Moving to a lower priority (higher number)
-                    # Shift projects with ranks > old_rank and <= new_rank down by 1
-                    projects_to_shift = all_projects.filter(
-                        final_priority__gt=old_rank,
-                        final_priority__lte=new_rank
-                    )
-                    print(f"DEBUG: Shifting {projects_to_shift.count()} projects down")
-                    for p in projects_to_shift:
-                        p.final_priority -= 1
-                        p.save()
+                    # Example: Moving from rank 2 to rank 5
+                    # Ranks 3, 4, 5 should become 2, 3, 4
+                    current_rank = 1
+                    for p in all_projects_list:
+                        if p.id != project.id:  # Don't process the moved project yet
+                            p.final_priority = current_rank
+                            p.save()
+                            current_rank += 1
+                        
+                        if current_rank == new_rank:
+                            # This is where our moved project goes
+                            project.final_priority = new_rank
+                            project.save()
+                            current_rank += 1
             else:
                 # Project didn't have a previous rank, insert at new position
-                # Shift all projects with ranks >= new_rank up by 1
-                projects_to_shift = all_projects.filter(final_priority__gte=new_rank)
-                print(f"DEBUG: Shifting {projects_to_shift.count()} projects up for new rank")
-                for p in projects_to_shift:
-                    p.final_priority += 1
+                # Example: Adding new project at rank 3
+                # Ranks 3, 4, 5, 6 should become 4, 5, 6, 7
+                current_rank = 1
+                for p in all_projects_list:
+                    if current_rank == new_rank:
+                        # This is where our new project goes
+                        project.final_priority = new_rank
+                        project.save()
+                        current_rank += 1
+                    
+                    p.final_priority = current_rank
                     p.save()
+                    current_rank += 1
             
-            # Set the new rank for the current project
-            project.final_priority = new_rank
-            project.save()
             print(f"DEBUG: Successfully updated project {project.id} to rank {new_rank}")
             
             # Debug: Check all projects and their ranks after update
-            all_projects_after = Project.objects.filter(final_priority__isnull=False).order_by('final_priority')
+            all_projects_after = Project.objects.filter(
+                stage='Under_Review_Final_Scoring',
+                final_priority__isnull=False
+            ).order_by('final_priority')
             print("DEBUG: All projects and their ranks after update:")
             for p in all_projects_after:
                 print(f"  Project {p.id}: rank {p.final_priority}")
@@ -1506,9 +1564,10 @@ def my_governance(request):
         # Get all projects that are in final governance review stage
         final_governance_projects = Project.objects.filter(
             stage='Under_Review_Final_Scoring'
-        ).exclude(
-            submitted_by=request.user
-        ).order_by('-submission_date')
+        ).order_by(
+            models.F('final_priority').asc(nulls_last=True), 
+            '-submission_date'
+        )
     
     context = {
         'user_projects': user_projects,
