@@ -1189,11 +1189,11 @@
                             </thead>
                             <tbody>
                                 {% for project in final_governance_projects %}
-                                <tr class="cc-project-row" data-project-id="{{ project.id }}" onclick="showProjectDetails({{ project.id }})" style="cursor: pointer;">
-                                    <td class="cc-project-id-cell">
+                                <tr class="cc-project-row" data-project-id="{{ project.id }}" style="cursor: pointer;">
+                                    <td class="cc-project-id-cell" onclick="showProjectDetails({{ project.id }})">
                                         <span class="cc-project-id">{{ project.formatted_id }}</span>
                                     </td>
-                                    <td class="cc-project-title-cell">
+                                    <td class="cc-project-title-cell" onclick="showProjectDetails({{ project.id }})">
                                         <div class="cc-project-title">{{ project.title }}</div>
                                         <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
                                         <div class="cc-project-requested">
@@ -1208,23 +1208,23 @@
                                             </small>
                                         </div>
                                     </td>
-                                    <td class="cc-project-type-cell">
+                                    <td class="cc-project-type-cell" onclick="showProjectDetails({{ project.id }})">
                                         <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
                                     </td>
-                                    <td class="cc-project-priority-cell">
+                                    <td class="cc-project-priority-cell" onclick="showProjectDetails({{ project.id }})">
                                         <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
                                     </td>
-                                    <td class="cc-project-department-cell">
+                                    <td class="cc-project-department-cell" onclick="showProjectDetails({{ project.id }})">
                                         {% if project.department %}
                                             {{ project.department }}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
-                                    <td class="cc-project-status-cell">
+                                    <td class="cc-project-status-cell" onclick="showProjectDetails({{ project.id }})">
                                         <span class="cc-meta-item">{{ project.get_status_display }}</span>
                                     </td>
-                                    <td class="cc-project-score-cell">
+                                    <td class="cc-project-score-cell" onclick="showProjectDetails({{ project.id }})">
                                         {% if project.final_score %}
                                             <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
                                         {% else %}
@@ -1238,7 +1238,9 @@
                                                    value="{{ project.final_priority|default:'' }}"
                                                    min="1"
                                                    data-project-id="{{ project.id }}"
-                                                   placeholder="Rank">
+                                                   placeholder="Rank"
+                                                   onclick="event.stopPropagation();"
+                                                   onkeypress="if(event.key==='Enter') updateFinalPriority({{ project.id }}, this.value);">
                                         </div>
                                     </td>
                                 </tr>
@@ -1864,5 +1866,144 @@ function saveGovernanceScore(projectId) {
         }, 3000);
     });
 }
+
+// Function to update final priority rank
+function updateFinalPriority(projectId, priority) {
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    console.log(`Updating project ${projectId} to priority ${priority}`);
+    
+    // Check if user is still authenticated
+    if (!csrfToken) {
+        alert('Authentication error. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Save the priority via AJAX
+    fetch(`/${projectId}/update-final-priority/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            final_priority: priority
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (response.status === 302 || response.status === 401) {
+            throw new Error('Authentication required');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            console.log(`Priority updated successfully for project ${projectId}`);
+            
+            // Broadcast the update to other tabs/windows
+            broadcastPriorityUpdate(projectId, priority);
+            
+            // Force a hard refresh to show updated sorting
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        } else {
+            console.error('Error updating priority:', data.error);
+            alert('Error updating priority: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (error.message.includes('JSON.parse') || error.message.includes('Authentication required')) {
+            alert('Authentication error. Please refresh the page and try again.');
+        } else {
+            alert('Error updating priority. Please try again. Error: ' + error.message);
+        }
+    });
+}
+
+// Function to broadcast priority updates to other tabs/windows
+function broadcastPriorityUpdate(projectId, priority) {
+    try {
+        // Use Broadcast Channel API if available (modern browsers)
+        if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('final-priority-updates');
+            channel.postMessage({
+                type: 'priority-updated',
+                projectId: projectId,
+                priority: priority,
+                timestamp: Date.now()
+            });
+            channel.close();
+        }
+        
+        // Fallback to localStorage events for older browsers
+        const updateEvent = {
+            type: 'priority-updated',
+            projectId: projectId,
+            priority: priority,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('final-priority-update', JSON.stringify(updateEvent));
+        localStorage.removeItem('final-priority-update');
+    } catch (error) {
+        console.warn('Could not broadcast priority update:', error);
+    }
+}
+
+// Function to listen for priority updates from other tabs/windows
+function listenForPriorityUpdates() {
+    try {
+        // Listen for Broadcast Channel messages
+        if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('final-priority-updates');
+            channel.addEventListener('message', function(event) {
+                if (event.data.type === 'priority-updated') {
+                    console.log('Received priority update from another tab:', event.data);
+                    refreshFinalGovernanceTable();
+                }
+            });
+        }
+        
+        // Listen for localStorage events (fallback)
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'final-priority-update' && event.newValue) {
+                try {
+                    const updateData = JSON.parse(event.newValue);
+                    if (updateData.type === 'priority-updated') {
+                        console.log('Received priority update from localStorage:', updateData);
+                        refreshFinalGovernanceTable();
+                    }
+                } catch (error) {
+                    console.warn('Error parsing priority update:', error);
+                }
+            }
+        });
+    } catch (error) {
+        console.warn('Could not set up priority update listeners:', error);
+    }
+}
+
+// Function to refresh the final governance table without full page reload
+function refreshFinalGovernanceTable() {
+    // Check if we're on a page with the final governance table
+    const finalGovernanceTable = document.querySelector('.cc-final-scoring-table-container');
+    if (finalGovernanceTable) {
+        console.log('Refreshing final governance table...');
+        // Reload the page to get updated data
+        window.location.reload();
+    }
+}
+
+// Initialize listeners when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    listenForPriorityUpdates();
+});
 </script>
 {% endblock %}

@@ -677,6 +677,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Response data:', data);
             if (data.success) {
                 console.log(`Priority updated successfully for project ${projectId}`);
+                
+                // Broadcast the update to other tabs/windows
+                broadcastPriorityUpdate(projectId, priority);
+                
                 // Force a hard refresh to show updated sorting
                 setTimeout(() => {
                     window.location.reload(true);
@@ -695,6 +699,84 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Function to broadcast priority updates to other tabs/windows
+    function broadcastPriorityUpdate(projectId, priority) {
+        try {
+            // Use Broadcast Channel API if available (modern browsers)
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('final-priority-updates');
+                channel.postMessage({
+                    type: 'priority-updated',
+                    projectId: projectId,
+                    priority: priority,
+                    timestamp: Date.now()
+                });
+                channel.close();
+            }
+            
+            // Fallback to localStorage events for older browsers
+            const updateEvent = {
+                type: 'priority-updated',
+                projectId: projectId,
+                priority: priority,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('final-priority-update', JSON.stringify(updateEvent));
+            localStorage.removeItem('final-priority-update');
+        } catch (error) {
+            console.warn('Could not broadcast priority update:', error);
+        }
+    }
+
+    // Function to listen for priority updates from other tabs/windows
+    function listenForPriorityUpdates() {
+        try {
+            // Listen for Broadcast Channel messages
+            if (typeof BroadcastChannel !== 'undefined') {
+                const channel = new BroadcastChannel('final-priority-updates');
+                channel.addEventListener('message', function(event) {
+                    if (event.data.type === 'priority-updated') {
+                        console.log('Received priority update from another tab:', event.data);
+                        refreshFinalGovernanceTable();
+                    }
+                });
+            }
+            
+            // Listen for localStorage events (fallback)
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'final-priority-update' && event.newValue) {
+                    try {
+                        const updateData = JSON.parse(event.newValue);
+                        if (updateData.type === 'priority-updated') {
+                            console.log('Received priority update from localStorage:', updateData);
+                            refreshFinalGovernanceTable();
+                        }
+                    } catch (error) {
+                        console.warn('Error parsing priority update:', error);
+                    }
+                }
+            });
+        } catch (error) {
+            console.warn('Could not set up priority update listeners:', error);
+        }
+    }
+
+    // Function to refresh the final governance table without full page reload
+    function refreshFinalGovernanceTable() {
+        // Check if we're on a page with the final governance table
+        const finalGovernanceTable = document.querySelector('.cc-final-scoring-table-container');
+        if (finalGovernanceTable) {
+            console.log('Refreshing final governance table...');
+            // Reload the page to get updated data
+            window.location.reload();
+        }
+    }
+
+    // Initialize listeners when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        listenForPriorityUpdates();
+    });
 });
 </script>
 {% endblock %} 
