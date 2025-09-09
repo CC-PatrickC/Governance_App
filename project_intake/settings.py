@@ -29,6 +29,10 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-please-change")
 # DEBUG = True
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 
+# Force DEBUG to False for production safety
+if not DEBUG:
+    DEBUG = False
+
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
