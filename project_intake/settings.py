@@ -96,16 +96,14 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DB_DIR = Path(os.getenv("DJANGO_DB_DIR", BASE_DIR))  # default: project folder locally
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DB_DIR / 'db.sqlite3',  # <-- use override dir
-        'OPTIONS': {
-            'timeout': 30,  # Increase timeout to 30 seconds
-            'isolation_level': None,  # This should help with locking issues
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
+        'USER': os.getenv('POSTGRES_USER', 'csmart'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 
