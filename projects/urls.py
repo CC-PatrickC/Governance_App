@@ -1,10 +1,12 @@
 from django.urls import path
+from django.shortcuts import redirect
 from . import views
 
 app_name = 'projects'
 
 urlpatterns = [
-    path('', views.project_list, name='project_list'),
+    path('', views.custom_login_view, name='home'),
+    path('requests/', views.project_list, name='project_list'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('triage/', views.project_triage, name='project_triage'),

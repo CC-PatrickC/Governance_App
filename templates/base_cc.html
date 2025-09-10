@@ -807,6 +807,7 @@
         {% if user.is_authenticated %}
         <aside class="sidebar">
             <nav class="sidebar-nav">
+                {% if user.is_authenticated %}
                 <!-- Requests -->
                 <hr class="nav-divider">
                 <div class="nav-section">
@@ -831,6 +832,7 @@
                         </li>
                     </ul>
                 </div>
+                {% endif %}
 
                 {% if user.is_staff or user|has_group:'Triage Group' %}
                 <!-- Triage -->
@@ -868,24 +870,23 @@
                 </div>
                 {% endif %}
 
-                {% if user.is_staff or user|has_group:'Cabinet Group' %}
+                {% if user.is_staff %}
                 <hr class="nav-divider">
                 <div class="nav-section">
                     <ul class="nav-menu">
-                        {% if user.username == 'pcondon' %}
                         <li class="nav-item">
                             <a href="{% url 'projects:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard">
                                 <i class="fas fa-chart-bar nav-icon"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
+                        {% if user.username == 'pcondon' %}
                         <li class="nav-item">
                             <a href="{% url 'projects:test_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'test_dashboard' %}active{% endif %}" data-tooltip="Test Dashboard">
                                 <i class="fas fa-flask nav-icon"></i>
                                 <span>Test Dashboard</span>
                             </a>
                         </li>
-                        
                         {% endif %}
                     </ul>
                 </div>
