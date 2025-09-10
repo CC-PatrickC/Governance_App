@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import AuthenticationForm
 from .models import Project, ProjectFile, ProjectScore, TriageNote
 from .forms import ProjectForm
 import json
@@ -83,8 +84,11 @@ def get_user_allowed_project_types(user):
     return allowed_types if allowed_types else None
 
 def custom_login_view(request):
+    if request.user.is_authenticated:
+        return redirect('projects:project_list')
+    
     if request.method == 'POST':
-        username = request.POST.get('login')
+        username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         
@@ -95,8 +99,9 @@ def custom_login_view(request):
         else:
             messages.error(request, 'Invalid username or password.')
     
-    return redirect('projects:project_list')
+    return render(request, 'registration/login.html')
 
+@login_required
 def project_list(request):
     search_query = request.GET.get('search', '')
     filter_type = request.GET.get('filter', 'all')
@@ -1152,7 +1157,7 @@ def project_final_scoring_details_modal(request, pk):
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 @login_required
-@user_passes_test(is_cabinet_user)
+@user_passes_test(lambda u: u.is_staff)
 def cabinet_dashboard(request):
     # Get all projects for statistics
     projects = Project.objects.all()
@@ -1467,7 +1472,7 @@ def logout_view(request):
         request.session.flush()
     
     messages.success(request, 'You have been successfully logged out.')
-    return redirect('projects:project_list')
+    return redirect('projects:home')
 
 @login_required
 def project_intake_form(request):
@@ -1525,49 +1530,57 @@ def project_intake_form(request):
 
 def my_governance(request):
     """My Governance page - shows user's submitted requests and contact requests"""
-    # Get all projects submitted by the current user
-    user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
+    # Handle anonymous users
+    if not request.user.is_authenticated:
+        user_projects = Project.objects.none()
+        contact_projects = Project.objects.none()
+        triage_projects = None
+        governance_projects = None
+        final_governance_projects = None
+    else:
+        # Get all projects submitted by the current user
+        user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
+        
+        # Get all projects where the user is the contact person
+        # Check by full name first, then by username if no match
+        user_full_name = request.user.get_full_name()
+        user_username = request.user.username
+        
+        contact_projects = Project.objects.filter(
+            Q(contact_person=user_full_name) | 
+            Q(contact_person=user_username)
+        ).exclude(submitted_by=request.user).order_by('-submission_date')
     
-    # Get all projects where the user is the contact person
-    # Check by full name first, then by username if no match
-    user_full_name = request.user.get_full_name()
-    user_username = request.user.username
-    
-    contact_projects = Project.objects.filter(
-        Q(contact_person=user_full_name) | 
-        Q(contact_person=user_username)
-    ).exclude(submitted_by=request.user).order_by('-submission_date')
-    
-    # Get triage projects for users in Triage Group
-    triage_projects = None
-    if is_triage_user(request.user):
-        # Get all projects that are in triage stages
-        triage_projects = Project.objects.filter(
-            stage__in=['Pending_Review', 'Under_Review_Triage']
-        ).exclude(
-            submitted_by=request.user
-        ).order_by('-submission_date')
-    
-    # Get governance projects for users in Triage Group
-    governance_projects = None
-    if is_triage_user(request.user):
-        # Get all projects that are in governance review stage
-        governance_projects = Project.objects.filter(
-            stage='Under_Review_Scoring'
-        ).exclude(
-            submitted_by=request.user
-        ).order_by('-submission_date')
-    
-    # Get final governance projects for users in Triage Group
-    final_governance_projects = None
-    if is_triage_user(request.user):
-        # Get all projects that are in final governance review stage
-        final_governance_projects = Project.objects.filter(
-            stage='Under_Review_Final_Scoring'
-        ).order_by(
-            models.F('final_priority').asc(nulls_last=True), 
-            '-submission_date'
-        )
+        # Get triage projects for users in Triage Group
+        triage_projects = None
+        if is_triage_user(request.user):
+            # Get all projects that are in triage stages
+            triage_projects = Project.objects.filter(
+                stage__in=['Pending_Review', 'Under_Review_Triage']
+            ).exclude(
+                submitted_by=request.user
+            ).order_by('-submission_date')
+        
+        # Get governance projects for users in Triage Group
+        governance_projects = None
+        if is_triage_user(request.user):
+            # Get all projects that are in governance review stage
+            governance_projects = Project.objects.filter(
+                stage='Under_Review_Scoring'
+            ).exclude(
+                submitted_by=request.user
+            ).order_by('-submission_date')
+        
+        # Get final governance projects for users in Triage Group
+        final_governance_projects = None
+        if is_triage_user(request.user):
+            # Get all projects that are in final governance review stage
+            final_governance_projects = Project.objects.filter(
+                stage='Under_Review_Final_Scoring'
+            ).order_by(
+                models.F('final_priority').asc(nulls_last=True), 
+                '-submission_date'
+            )
     
     context = {
         'user_projects': user_projects,
