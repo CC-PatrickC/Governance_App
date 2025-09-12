@@ -30,3 +30,5 @@ class Command(BaseCommand):
             self.stdout.write(f"  - Project {project.id}: {project.title} - Stage: {project.stage}")
 
 
+
+

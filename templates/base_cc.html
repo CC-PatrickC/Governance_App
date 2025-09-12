@@ -834,63 +834,7 @@
                 </div>
                 {% endif %}
 
-                {% if user.is_staff or user|has_group:'Triage Group' %}
-                <!-- Triage -->
-                <hr class="nav-divider">
-                <div class="nav-section">
-                    <ul class="nav-menu">
-                        <li class="nav-item">
-                            <a href="{% url 'projects:project_triage' %}" class="nav-link {% if request.resolver_match.url_name == 'project_triage' %}active{% endif %}" data-tooltip="Triage">
-                                <i class="fas fa-clipboard-check nav-icon"></i>
-                                <span>Triage</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                {% endif %}
-
-                {% if user.is_staff or not user|has_group:'Cabinet Group' and not user|has_group:'Triage Group' %}
-                <!-- ITS Governance -->
-                <hr class="nav-divider">
-                <div class="nav-section">
-                    <ul class="nav-menu">
-                        <li class="nav-item">
-                            <a href="/governance/" class="nav-link {% if request.path == '/governance/' %}active{% endif %}" data-tooltip="Governance">
-                                <i class="fas fa-star nav-icon"></i>
-                                <span>Governance</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/final-governance/" class="nav-link {% if request.path == '/final-governance/' %}active{% endif %}" data-tooltip="Final Governance">
-                                <i class="fas fa-trophy nav-icon"></i>
-                                <span>Final Governance</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                {% endif %}
-
-                {% if user.is_staff %}
-                <hr class="nav-divider">
-                <div class="nav-section">
-                    <ul class="nav-menu">
-                        <li class="nav-item">
-                            <a href="{% url 'projects:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard">
-                                <i class="fas fa-chart-bar nav-icon"></i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-                        {% if user.username == 'pcondon' %}
-                        <li class="nav-item">
-                            <a href="{% url 'projects:test_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'test_dashboard' %}active{% endif %}" data-tooltip="Test Dashboard">
-                                <i class="fas fa-flask nav-icon"></i>
-                                <span>Test Dashboard</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-                {% endif %}
+                <!-- Hidden sections - Triage, ITS Governance, and Dashboard are now hidden --> 
             </nav>
         </aside>
         {% endif %}

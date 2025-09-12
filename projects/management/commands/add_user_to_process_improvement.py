@@ -2,10 +2,10 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User, Group
 
 class Command(BaseCommand):
-    help = 'Add a user to the IT Governance Group'
+    help = 'Add a user to the Process Improvement Group'
 
     def add_arguments(self, parser):
-        parser.add_argument('username', type=str, help='Username to add to IT Governance Group')
+        parser.add_argument('username', type=str, help='Username to add to Process Improvement Group')
 
     def handle(self, *args, **options):
         username = options['username']
@@ -19,19 +19,19 @@ class Command(BaseCommand):
             return
 
         try:
-            group = Group.objects.get(name='IT Governance Group')
+            group = Group.objects.get(name='Process Improvement Group')
         except Group.DoesNotExist:
             self.stdout.write(
-                self.style.ERROR('IT Governance Group does not exist. Please run create_it_governance_groups first.')
+                self.style.ERROR('Process Improvement Group does not exist. Please run create_process_improvement_groups first.')
             )
             return
 
-        if user.groups.filter(name='IT Governance Group').exists():
+        if user.groups.filter(name='Process Improvement Group').exists():
             self.stdout.write(
-                self.style.WARNING(f'User "{username}" is already in the IT Governance Group')
+                self.style.WARNING(f'User "{username}" is already in the Process Improvement Group')
             )
         else:
             user.groups.add(group)
             self.stdout.write(
-                self.style.SUCCESS(f'Successfully added user "{username}" to IT Governance Group')
+                self.style.SUCCESS(f'Successfully added user "{username}" to Process Improvement Group')
             )

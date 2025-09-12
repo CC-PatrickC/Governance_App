@@ -22,6 +22,7 @@ urlpatterns = [
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/edit-form/', views.project_update_form_ajax, name='project_update_form_ajax'),
     path('<int:pk>/update/', views.project_update_ajax, name='project_update_ajax'),
+    path('<int:pk>/update-ajax/', views.project_update_ajax, name='project_update_ajax_alt'),
     path('<int:pk>/update-status/', views.project_update_status, name='project_update_status'),
     path('<int:pk>/update-type/', views.project_update_type, name='project_update_type'),
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),

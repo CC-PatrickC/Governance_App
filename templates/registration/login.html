@@ -69,12 +69,28 @@
 
         /* Login Container */
         .login-container {
-            max-width: 400px;
+            max-width: 800px;
             margin: 120px auto 50px;
-            padding: 30px;
+            padding: 0;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .login-form-section {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .login-image-section {
+            flex: 1;
+            background-image: url('{% static "projects/images/cc-tutt-library.webp" %}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 400px;
         }
 
         .login-header {
@@ -173,31 +189,37 @@
 
     <!-- Login Container -->
     <div class="login-container">
-        <div class="login-header">
-            <h1>Welcome</h1>
-            <p>Please sign in with your Colorado College credentials to access your request or submit on.</p>
+        <!-- Login Form Section -->
+        <div class="login-form-section">
+            <div class="login-header">
+                <h1>Welcome</h1>
+                <p>Please sign in with your Colorado College credentials to access your request or submit on.</p>
+            </div>
+            
+            <div class="login-form">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="login-button">Login</button>
+                </form>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="error-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
         </div>
         
-        <div class="login-form">
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="login-button">Login</button>
-            </form>
-        </div>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="error-message">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+        <!-- Image Section -->
+        <div class="login-image-section"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -8,8 +8,8 @@ class Project(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('under_review_triage', 'Under Review - Triage'),
-        ('under_review_scoring', 'Under Review - Scoring'),
-        ('under_review_final_scoring', 'Under Review - Final Scoring'),
+        ('under_review_governance', 'Under Review - Governance'),
+        ('under_review_final_governance', 'Under Review - Final Governance'),
         ('completed', 'Completed'),
         ('archived', 'Archived'),
         ('on_hold', 'On Hold'),
@@ -19,8 +19,9 @@ class Project(models.Model):
     STAGE_CHOICES = [
         ('Pending_Review', 'Pending Review'),
         ('Under_Review_Triage', 'Under Review - Triage'),
-        ('Under_Review_Scoring', 'Under Review - Scoring'),
-        ('Under_Review_Final_Scoring', 'Under Review - Final Scoring'),
+        ('Under_Review_governance', 'Under Review - Governance'),
+        ('Under_Review_Final_governance', 'Under Review - Final Governance'),
+        ('Governance_Closure', 'Governance Closed'),
     ]
 
     PRIORITY_CHOICES = [
@@ -41,7 +42,7 @@ class Project(models.Model):
         ('process_improvement', 'Process Improvement'),
         ('it_governance', 'IT Governance'),
         ('erp_governance', 'ERP Governance'),
-        ('data_governance', 'Data Governance'),
+        ('ai_governance', 'AI Governance'),
     ]
 
     title = models.CharField(max_length=200)
