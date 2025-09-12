@@ -26,8 +26,8 @@ def sync_status_with_stage(project):
     stage_to_status_mapping = {
         'Pending_Review': 'pending',
         'Under_Review_Triage': 'under_review_triage',
-        'Under_Review_Scoring': 'under_review_scoring',
-        'Under_Review_Final_Scoring': 'under_review_final_scoring',
+        'Under_Review_governance': 'under_review_scoring',
+        'Under_Review_Final_governance': 'under_review_final_scoring',
     }
     
     # Get the expected status based on stage
@@ -43,8 +43,44 @@ def sync_status_with_stage(project):
 def is_triage_user(user):
     return user.is_staff or user.groups.filter(name='Triage Group').exists()
 
+def is_triage_lead_user(user):
+    return user.is_staff or user.groups.filter(name='Triage Group Lead').exists()
+
+def is_ai_governance_user(user):
+    return user.is_staff or user.groups.filter(name='AI Governance Group').exists()
+
+def is_ai_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='AI Governance Group Lead').exists()
+
+def is_erp_governance_user(user):
+    return user.is_staff or user.groups.filter(name='ERP Governance Group').exists()
+
+def is_erp_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='ERP Governance Group Lead').exists()
+
+def is_it_governance_user(user):
+    return user.is_staff or user.groups.filter(name='IT Governance Group').exists()
+
+def is_it_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='IT Governance Group Lead').exists()
+
+def is_process_improvement_user(user):
+    return user.is_staff or user.groups.filter(name='Process Improvement Group').exists() or user.groups.filter(name='Process Improvement Governance Group').exists()
+
+def is_process_improvement_lead_user(user):
+    return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists() or user.groups.filter(name='Process Improvement Governance Group Lead').exists()
+
 def is_scoring_user(user):
-    return user.is_staff or (not user.groups.filter(name='Cabinet Group').exists() and not user.groups.filter(name='Triage Group').exists())
+    return (user.is_staff or 
+            user.groups.filter(name='AI Governance Group').exists() or 
+            user.groups.filter(name='AI Governance Group Lead').exists() or
+            user.groups.filter(name='ERP Governance Group').exists() or 
+            user.groups.filter(name='ERP Governance Group Lead').exists() or
+            user.groups.filter(name='IT Governance Group').exists() or 
+            user.groups.filter(name='IT Governance Group Lead').exists() or
+            user.groups.filter(name='Process Improvement Group').exists() or 
+            user.groups.filter(name='Process Improvement Group Lead').exists() or
+            (not user.groups.filter(name='Cabinet Group').exists() and not user.groups.filter(name='Triage Group').exists()))
 
 def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
@@ -256,7 +292,7 @@ def project_triage(request):
     return render(request, 'projects/triage.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='Triage Group').exists())
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update_ajax(request, pk):
     logger.info(f"=== Project Update Request ===")
     logger.info(f"Request method: {request.method}")
@@ -324,11 +360,11 @@ def project_update_ajax(request, pk):
         # Sync status with stage before saving
         project = sync_status_with_stage(project)
         
-        # Auto-assign final priority rank when moving to Under_Review_Final_Scoring
-        if new_stage == 'Under_Review_Final_Scoring' and project.final_priority is None:
+        # Auto-assign final priority rank when moving to Under_Review_Final_governance
+        if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
             # Get the highest existing rank
             max_rank = Project.objects.filter(
-                stage='Under_Review_Final_Scoring',
+                stage='Under_Review_Final_governance',
                 final_priority__isnull=False
             ).aggregate(max_rank=models.Max('final_priority'))['max_rank']
             
@@ -431,7 +467,7 @@ def project_detail(request, pk):
     return render(request, 'projects/project_detail.html', {'project': project})
 
 @login_required
-@user_passes_test(is_triage_user)
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
@@ -482,11 +518,11 @@ def project_update(request, pk):
             # Sync status with stage before saving
             project = sync_status_with_stage(project)
             
-            # Auto-assign final priority rank when moving to Under_Review_Final_Scoring
-            if new_stage == 'Under_Review_Final_Scoring' and project.final_priority is None:
+            # Auto-assign final priority rank when moving to Under_Review_Final_governance
+            if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
                 # Get the highest existing rank
                 max_rank = Project.objects.filter(
-                    stage='Under_Review_Final_Scoring',
+                    stage='Under_Review_Final_governance',
                     final_priority__isnull=False
                 ).aggregate(max_rank=models.Max('final_priority'))['max_rank']
                 
@@ -533,7 +569,7 @@ def project_update(request, pk):
     return render(request, 'projects/project_edit.html', {'project': project})
 
 @login_required
-@user_passes_test(is_triage_user)
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
     project = get_object_or_404(Project, pk=pk)
@@ -604,8 +640,8 @@ def delete_attachment(request, project_pk, file_pk):
 def project_scoring_list(request):
     search_query = request.GET.get('search', '')
     
-    # Get projects that need governance review (stage is Under_Review_Scoring)
-    projects = Project.objects.filter(stage='Under_Review_Scoring').select_related('submitted_by').order_by('-submission_date')
+    # Get projects that need governance review (stage is Under_Review_governance)
+    projects = Project.objects.filter(stage='Under_Review_governance').select_related('submitted_by').order_by('-submission_date')
     
     # Apply group-based filtering
     allowed_types = get_user_allowed_project_types(request.user)
@@ -742,7 +778,7 @@ def project_scoring(request, pk):
             project.update_final_score()
             
             # Return JSON response for AJAX requests
-            if request.content_type == 'application/json':
+            if request.content_type == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 from django.http import JsonResponse
                 return JsonResponse({'success': True, 'message': 'Project scoring updated successfully!'})
             else:
@@ -750,7 +786,7 @@ def project_scoring(request, pk):
                 return redirect('projects:project_scoring', pk=pk)
         except ValueError as e:
             error_msg = f'Error updating project scoring: Invalid score value. Please ensure all scores are numbers between 1 and 5.'
-            if request.content_type == 'application/json':
+            if request.content_type == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 from django.http import JsonResponse
                 return JsonResponse({'success': False, 'error': error_msg})
             else:
@@ -758,7 +794,7 @@ def project_scoring(request, pk):
                 return redirect('projects:project_scoring', pk=pk)
         except Exception as e:
             error_msg = f'Error updating project scoring: {str(e)}'
-            if request.content_type == 'application/json':
+            if request.content_type == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 from django.http import JsonResponse
                 return JsonResponse({'success': False, 'error': error_msg})
             else:
@@ -777,7 +813,7 @@ def project_scoring(request, pk):
 @user_passes_test(is_scoring_user)
 def project_final_scoring_list(request):
     search_query = request.GET.get('search', '')
-    projects = Project.objects.filter(stage='Under_Review_Final_Scoring').select_related('submitted_by').order_by(
+    projects = Project.objects.filter(stage='Under_Review_Final_governance').select_related('submitted_by').order_by(
         models.F('final_priority').asc(nulls_last=True), 
         '-submission_date'
     )
@@ -941,7 +977,7 @@ def update_final_priority(request, pk):
             
             # Get all projects with final priority ranks (excluding current project)
             all_projects = Project.objects.filter(
-                stage='Under_Review_Final_Scoring',
+                stage='Under_Review_Final_governance',
                 final_priority__isnull=False
             ).exclude(pk=project.pk)
             print(f"DEBUG: Found {all_projects.count()} other projects with ranks")
@@ -1013,7 +1049,7 @@ def update_final_priority(request, pk):
             
             # Debug: Check all projects and their ranks after update
             all_projects_after = Project.objects.filter(
-                stage='Under_Review_Final_Scoring',
+                stage='Under_Review_Final_governance',
                 final_priority__isnull=False
             ).order_by('final_priority')
             print("DEBUG: All projects and their ranks after update:")
@@ -1166,8 +1202,9 @@ def cabinet_dashboard(request):
     stage_counts = {
         'Pending_Review': projects.filter(stage='Pending_Review').count(),
         'Under_Review_Triage': projects.filter(stage='Under_Review_Triage').count(),
-        'Under_Review_Scoring': projects.filter(stage='Under_Review_Scoring').count(),
-        'Under_Review_Final_Scoring': projects.filter(stage='Under_Review_Final_Scoring').count(),
+        'Under_Review_governance': projects.filter(stage='Under_Review_governance').count(),
+        'Under_Review_Final_governance': projects.filter(stage='Under_Review_Final_governance').count(),
+        'Governance_Closure': projects.filter(stage='Governance_Closure').count(),
     }
     
     # Calculate statistics by status using STATUS_CHOICES from model
@@ -1181,8 +1218,9 @@ def cabinet_dashboard(request):
     projects_by_stage = {
         'Pending Review': projects.filter(stage='Pending_Review').order_by('-submission_date')[:5],
         'Under Review - Triage': projects.filter(stage='Under_Review_Triage').order_by('-submission_date')[:5],
-        'Under Review - Governance': projects.filter(stage='Under_Review_Scoring').order_by('-submission_date')[:5],
-        'Under Review - Final Governance': projects.filter(stage='Under_Review_Final_Scoring').order_by('-submission_date')[:5],
+        'Under Review - Governance': projects.filter(stage='Under_Review_governance').order_by('-submission_date')[:5],
+        'Under Review - Final Governance': projects.filter(stage='Under_Review_Final_governance').order_by('-submission_date')[:5],
+        'Governance Closure': projects.filter(stage='Governance_Closure').order_by('-submission_date')[:5],
     }
     
     # Get recent projects (get at least 20 for the Latest Requests buttons)
@@ -1442,7 +1480,7 @@ def test_dashboard(request):
 
 
 @login_required
-@user_passes_test(is_triage_user)
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update_status(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Project, pk=pk)
@@ -1551,9 +1589,9 @@ def my_governance(request):
             Q(contact_person=user_username)
         ).exclude(submitted_by=request.user).order_by('-submission_date')
     
-        # Get triage projects for users in Triage Group
+        # Get triage projects for users in Triage Group or Triage Group Lead
         triage_projects = None
-        if is_triage_user(request.user):
+        if is_triage_user(request.user) or is_triage_lead_user(request.user):
             # Get all projects that are in triage stages
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
@@ -1561,22 +1599,43 @@ def my_governance(request):
                 submitted_by=request.user
             ).order_by('-submission_date')
         
-        # Get governance projects for users in Triage Group
+        # Get governance projects for users in Triage Group, AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
         governance_projects = None
-        if is_triage_user(request.user):
+        if (is_triage_user(request.user) or is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
+            is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
+            is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
+            is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user)):
             # Get all projects that are in governance review stage
             governance_projects = Project.objects.filter(
-                stage='Under_Review_Scoring'
-            ).exclude(
-                submitted_by=request.user
-            ).order_by('-submission_date')
+                stage='Under_Review_governance'
+            )
+            
+            # Filter by project type based on user's group
+            allowed_types = []
+            if is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user):
+                allowed_types.append('ai_governance')
+            if is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user):
+                allowed_types.append('erp_governance')
+            if is_it_governance_user(request.user) or is_it_governance_lead_user(request.user):
+                allowed_types.append('it_governance')
+            if is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user):
+                allowed_types.append('process_improvement')
+            
+            if allowed_types:
+                # Governance groups see only their specific project types
+                governance_projects = governance_projects.filter(project_type__in=allowed_types)
+            else:
+                # Triage Group sees all requests except AI Governance, ERP Governance, IT Governance, and Process Improvement
+                governance_projects = governance_projects.exclude(project_type='ai_governance').exclude(project_type='erp_governance').exclude(project_type='it_governance').exclude(project_type='process_improvement')
+            
+            governance_projects = governance_projects.order_by('-submission_date')
         
         # Get final governance projects for users in Triage Group
         final_governance_projects = None
         if is_triage_user(request.user):
             # Get all projects that are in final governance review stage
             final_governance_projects = Project.objects.filter(
-                stage='Under_Review_Final_Scoring'
+                stage='Under_Review_Final_governance'
             ).order_by(
                 models.F('final_priority').asc(nulls_last=True), 
                 '-submission_date'
@@ -1589,5 +1648,14 @@ def my_governance(request):
         'governance_projects': governance_projects,
         'final_governance_projects': final_governance_projects,
         'is_triage_user': is_triage_user(request.user),
+        'is_triage_lead_user': is_triage_lead_user(request.user),
+        'is_ai_governance_user': is_ai_governance_user(request.user),
+        'is_ai_governance_lead_user': is_ai_governance_lead_user(request.user),
+        'is_erp_governance_user': is_erp_governance_user(request.user),
+        'is_erp_governance_lead_user': is_erp_governance_lead_user(request.user),
+        'is_it_governance_user': is_it_governance_user(request.user),
+        'is_it_governance_lead_user': is_it_governance_lead_user(request.user),
+        'is_process_improvement_user': is_process_improvement_user(request.user),
+        'is_process_improvement_lead_user': is_process_improvement_lead_user(request.user),
     }
     return render(request, 'projects/my_governance.html', context)

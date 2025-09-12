@@ -1018,8 +1018,8 @@
                 {% endif %}
             </div>
             
-            <!-- Triage Section (Only visible for Triage Group users) -->
-            {% if is_triage_user %}
+            <!-- Triage Section (Only visible for Triage Group and Triage Group Lead users) -->
+            {% if is_triage_user or is_triage_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Triage Requests ({{ triage_projects.count }})</h2>
@@ -1091,8 +1091,8 @@
             </div>
             {% endif %}
             
-            <!-- Governance Section (Only visible for Triage Group users) -->
-            {% if is_triage_user %}
+            <!-- Governance Section (Only visible for Triage Group, AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, and Process Improvement Group Lead users) -->
+            {% if is_triage_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
@@ -1274,6 +1274,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none;">Save Changes</button>
             </div>
         </div>
     </div>
@@ -1290,6 +1291,10 @@ function showProjectDetails(projectId) {
             if (data.success) {
                 const project = data.project;
                 const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+                const saveBtn = document.getElementById('saveChangesBtn');
+                
+                // Hide save button for project details view
+                saveBtn.style.display = 'none';
                 
                 modalBody.innerHTML = `
                     <div class="project-title mb-3">${project.title}</div>
@@ -1373,9 +1378,13 @@ function openTriageEditModal(projectId) {
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
     
     // Update modal title
     modalTitle.textContent = 'Edit Request - Triage';
+    
+    // Hide save button initially
+    saveBtn.style.display = 'none';
     
     // Show loading state
     modalBody.innerHTML = `
@@ -1410,18 +1419,28 @@ function openTriageEditModal(projectId) {
                 form.removeAttribute('action');
                 form.method = 'POST';
                 
+                // Show save button
+                saveBtn.style.display = 'inline-block';
+                
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     submitTriageEditForm(form, projectId);
                 });
+                
+                // Add click handler to save button
+                saveBtn.addEventListener('click', function() {
+                    form.dispatchEvent(new Event('submit'));
+                });
             } else {
                 modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+                saveBtn.style.display = 'none';
             }
         })
         .catch(error => {
             console.error('Error loading edit form:', error);
             modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+            saveBtn.style.display = 'none';
         });
 }
 
@@ -1429,6 +1448,10 @@ function openTriageEditModal(projectId) {
 function submitTriageEditForm(form, projectId) {
     const formData = new FormData(form);
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Hide save button during save process
+    saveBtn.style.display = 'none';
     
     // Show loading state
     modalBody.innerHTML = `
@@ -1477,6 +1500,7 @@ function submitTriageEditForm(form, projectId) {
                     </button>
                 </div>
             `;
+            // Don't show save button on error - user needs to reload form
         }
     })
     .catch(error => {
@@ -1490,6 +1514,7 @@ function submitTriageEditForm(form, projectId) {
                 </button>
             </div>
         `;
+        // Don't show save button on error - user needs to reload form
     });
 }
 
@@ -1498,9 +1523,13 @@ function openGovernanceScoringModal(projectId) {
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
     
     // Update modal title
     modalTitle.textContent = 'Project Scoring - Governance';
+    
+    // Hide save button for scoring modal
+    saveBtn.style.display = 'none';
     
     // Show loading state
     modalBody.innerHTML = `
@@ -1831,7 +1860,7 @@ function saveGovernanceScore(projectId) {
     // Show saving status
     saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
-    fetch(`/${projectId}/scoring/`, {
+    fetch(`/${projectId}/score/`, {
         method: 'POST',
         body: formData,
         headers: {

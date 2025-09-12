@@ -25,6 +25,16 @@ SECRET_KEY = 'django-insecure-&*hb2%)zdi-5-w&u0pl7*q5)g^z!7sad6(kry_rj#nkzgj9m^$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# CSRF settings for development
+CSRF_COOKIE_SECURE = False  # Set to False for development
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF token
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
+
+# Session settings for development
+SESSION_COOKIE_SECURE = False  # Set to False for development
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 86400  # 24 hours
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
