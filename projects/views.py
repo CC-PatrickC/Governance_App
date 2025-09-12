@@ -121,7 +121,7 @@ def get_user_allowed_project_types(user):
 
 def custom_login_view(request):
     if request.user.is_authenticated:
-        return redirect('projects:project_list')
+        return redirect('projects:my_governance')
     
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -131,7 +131,7 @@ def custom_login_view(request):
         if user is not None:
             login(request, user)
             messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
-            return redirect('projects:project_list')
+            return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
     

@@ -158,7 +158,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Authentication settings
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/requests/'
+LOGIN_REDIRECT_URL = '/my-governance/'
 LOGOUT_REDIRECT_URL = '/'
 
 SITE_ID = 1

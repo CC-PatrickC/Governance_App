@@ -813,9 +813,9 @@
                 <div class="nav-section">
                     <ul class="nav-menu">
                         <li class="nav-item">
-                            <a href="{% url 'projects:project_list' %}" class="nav-link {% if request.resolver_match.url_name == 'project_list' %}active{% endif %}" data-tooltip="Requests">
-                                <i class="fas fa-list nav-icon"></i>
-                                <span>Requests</span>
+                            <a href="{% url 'projects:my_governance' %}" class="nav-link {% if request.resolver_match.url_name == 'my_governance' %}active{% endif %}" data-tooltip="MyGovernance">
+                                <i class="fas fa-chart-line nav-icon"></i>
+                                <span>MyGovernance</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -825,9 +825,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{% url 'projects:my_governance' %}" class="nav-link {% if request.resolver_match.url_name == 'my_governance' %}active{% endif %}" data-tooltip="MyGovernance">
-                                <i class="fas fa-chart-line nav-icon"></i>
-                                <span>MyGovernance</span>
+                            <a href="{% url 'projects:project_list' %}" class="nav-link {% if request.resolver_match.url_name == 'project_list' %}active{% endif %}" data-tooltip="Requests">
+                                <i class="fas fa-list nav-icon"></i>
+                                <span>Requests</span>
                             </a>
                         </li>
                     </ul>
