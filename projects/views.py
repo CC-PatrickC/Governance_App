@@ -131,7 +131,6 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -1520,7 +1519,6 @@ def logout_view(request):
         # Clear the session
         request.session.flush()
     
-    messages.success(request, 'You have been successfully logged out.')
     return redirect('projects:home')
 
 @login_required
