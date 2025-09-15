@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test, login_not_required
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate, login
 from django.http import JsonResponse
@@ -119,6 +119,7 @@ def get_user_allowed_project_types(user):
     
     return allowed_types if allowed_types else None
 
+@login_not_required
 def custom_login_view(request):
     if request.user.is_authenticated:
         return redirect('projects:my_governance')
@@ -975,6 +976,11 @@ def update_final_priority(request, pk):
             old_rank = int(old_final_priority) if old_final_priority else None
             print(f"DEBUG: Old rank: {old_rank}, New rank: {new_rank}")
             
+            # If the rank is not changing, do nothing
+            if old_rank == new_rank:
+                print(f"DEBUG: Rank unchanged ({old_rank}), no update needed")
+                return JsonResponse({'success': True})
+            
             # Get all projects with final priority ranks (excluding current project)
             all_projects = Project.objects.filter(
                 stage='Under_Review_Final_governance',
@@ -982,68 +988,44 @@ def update_final_priority(request, pk):
             ).exclude(pk=project.pk)
             print(f"DEBUG: Found {all_projects.count()} other projects with ranks")
             
-            # Use a more robust cascading approach with temporary ranks to avoid conflicts
-            # First, set all projects to temporary negative ranks to avoid conflicts
-            all_projects_list = list(all_projects.order_by('final_priority'))
-            temp_rank = -1000
-            
-            # Set temporary ranks for all projects
-            for p in all_projects_list:
-                p.final_priority = temp_rank
-                p.save()
-                temp_rank -= 1
-            
-            # Now rebuild the ranks in the correct order
+            # Simple cascading approach - no temporary ranks needed
             if old_rank is not None:
                 # Project had a previous rank - implement cascading update
                 if new_rank < old_rank:
                     # Moving to a higher priority (lower number)
-                    # Example: Moving from rank 5 to rank 2
-                    # Ranks 2, 3, 4 should become 3, 4, 5
-                    current_rank = 1
-                    for p in all_projects_list:
-                        if current_rank == new_rank:
-                            # This is where our moved project goes
-                            project.final_priority = new_rank
-                            project.save()
-                            current_rank += 1
-                        
-                        if p.id != project.id:  # Don't process the moved project twice
-                            p.final_priority = current_rank
-                            p.save()
-                            current_rank += 1
+                    # Shift projects with ranks >= new_rank and < old_rank up by 1
+                    projects_to_shift = all_projects.filter(
+                        final_priority__gte=new_rank,
+                        final_priority__lt=old_rank
+                    )
+                    for p in projects_to_shift:
+                        p.final_priority += 1
+                        p.save()
+                        print(f"DEBUG: Shifted project {p.id} from rank {p.final_priority - 1} to rank {p.final_priority}")
                         
                 elif new_rank > old_rank:
                     # Moving to a lower priority (higher number)
-                    # Example: Moving from rank 2 to rank 5
-                    # Ranks 3, 4, 5 should become 2, 3, 4
-                    current_rank = 1
-                    for p in all_projects_list:
-                        if p.id != project.id:  # Don't process the moved project yet
-                            p.final_priority = current_rank
-                            p.save()
-                            current_rank += 1
-                        
-                        if current_rank == new_rank:
-                            # This is where our moved project goes
-                            project.final_priority = new_rank
-                            project.save()
-                            current_rank += 1
+                    # Shift projects with ranks > old_rank and <= new_rank down by 1
+                    projects_to_shift = all_projects.filter(
+                        final_priority__gt=old_rank,
+                        final_priority__lte=new_rank
+                    )
+                    for p in projects_to_shift:
+                        p.final_priority -= 1
+                        p.save()
+                        print(f"DEBUG: Shifted project {p.id} from rank {p.final_priority + 1} to rank {p.final_priority}")
             else:
                 # Project didn't have a previous rank, insert at new position
-                # Example: Adding new project at rank 3
-                # Ranks 3, 4, 5, 6 should become 4, 5, 6, 7
-                current_rank = 1
-                for p in all_projects_list:
-                    if current_rank == new_rank:
-                        # This is where our new project goes
-                        project.final_priority = new_rank
-                        project.save()
-                        current_rank += 1
-                    
-                    p.final_priority = current_rank
+                # Shift all projects with ranks >= new_rank up by 1
+                projects_to_shift = all_projects.filter(final_priority__gte=new_rank)
+                for p in projects_to_shift:
+                    p.final_priority += 1
                     p.save()
-                    current_rank += 1
+                    print(f"DEBUG: Shifted project {p.id} from rank {p.final_priority - 1} to rank {p.final_priority}")
+            
+            # Set the new rank for the current project
+            project.final_priority = new_rank
+            project.save()
             
             print(f"DEBUG: Successfully updated project {project.id} to rank {new_rank}")
             
@@ -1151,10 +1133,38 @@ def project_scoring_details_modal(request, pk):
                 'student_centered': user_score.student_centered,
             }
         
+        # Get condensed scores for AI Governance Group Lead users
+        condensed_scores_data = None
+        if is_ai_governance_lead_user(request.user) and project.project_type == 'ai_governance':
+            # Get all AI Governance Group members
+            ai_governance_group = Group.objects.filter(name='AI Governance Group').first()
+            if ai_governance_group:
+                ai_governance_users = ai_governance_group.user_set.all()
+                
+                # Get all scores from AI Governance Group members for this project
+                ai_scores = project.scores.filter(scored_by__in=ai_governance_users).select_related('scored_by')
+                
+                condensed_scores_data = []
+                for score in ai_scores:
+                    condensed_scores_data.append({
+                        'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                        'final_score': score.final_score,
+                        'strategic_alignment': score.strategic_alignment,
+                        'cost_benefit': score.cost_benefit,
+                        'user_impact': score.user_impact,
+                        'ease_of_implementation': score.ease_of_implementation,
+                        'vendor_reputation_support': score.vendor_reputation_support,
+                        'security_compliance': score.security_compliance,
+                        'student_centered': score.student_centered,
+                        'scoring_notes': score.scoring_notes,
+                        'created_at': score.created_at.isoformat() if score.created_at else None,
+                    })
+        
         response_data = {
             'success': True,
             'project': project_data,
             'user_score': user_score_data,
+            'condensed_scores': condensed_scores_data,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
@@ -1495,6 +1505,7 @@ def project_update_status(request, pk):
     
     return redirect('projects:project_update', pk=pk)
 
+@login_not_required
 def logout_view(request):
     """Simple logout view that logs out the user and redirects to home page"""
     from django.contrib.auth import logout as django_logout
