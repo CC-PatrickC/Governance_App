@@ -733,14 +733,26 @@
          color: #495057;
      }
      
-     .cc-priority-input {
-         width: 60px;
-         padding: 4px 8px;
-         border: 1px solid #e9ecef;
-         border-radius: 4px;
-         font-size: 0.8rem;
-         text-align: center;
-     }
+    .cc-priority-input {
+        width: 60px;
+        padding: 4px 8px;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    
+    /* Remove number input arrows/spinners */
+    .cc-priority-input::-webkit-outer-spin-button,
+    .cc-priority-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .cc-priority-input[type=number] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
      
      .cc-priority-input:focus {
          outline: none;
@@ -1190,10 +1202,10 @@
                             <tbody>
                                 {% for project in final_governance_projects %}
                                 <tr class="cc-project-row" data-project-id="{{ project.id }}" style="cursor: pointer;">
-                                    <td class="cc-project-id-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-id-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         <span class="cc-project-id">{{ project.formatted_id }}</span>
                                     </td>
-                                    <td class="cc-project-title-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-title-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         <div class="cc-project-title">{{ project.title }}</div>
                                         <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
                                         <div class="cc-project-requested">
@@ -1208,23 +1220,23 @@
                                             </small>
                                         </div>
                                     </td>
-                                    <td class="cc-project-type-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-type-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
                                     </td>
-                                    <td class="cc-project-priority-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-priority-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
                                     </td>
-                                    <td class="cc-project-department-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-department-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         {% if project.department %}
                                             {{ project.department }}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
-                                    <td class="cc-project-status-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-status-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         <span class="cc-meta-item">{{ project.get_status_display }}</span>
                                     </td>
-                                    <td class="cc-project-score-cell" onclick="showProjectDetails({{ project.id }})">
+                                    <td class="cc-project-score-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         {% if project.final_score %}
                                             <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
                                         {% else %}
@@ -1232,7 +1244,15 @@
                                         {% endif %}
                                     </td>
                                     <td class="cc-project-final-priority-cell">
-                                        <div class="cc-rank-display">
+                                        <div class="cc-rank-display d-flex align-items-center">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move up in priority (lower rank number)"
+                                                    style="padding: 2px 6px; margin-right: 2px;">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
                                             <input type="number" 
                                                    class="cc-priority-input final-priority-input" 
                                                    value="{{ project.final_priority|default:'' }}"
@@ -1240,7 +1260,16 @@
                                                    data-project-id="{{ project.id }}"
                                                    placeholder="Rank"
                                                    onclick="event.stopPropagation();"
-                                                   onkeypress="if(event.key==='Enter') updateFinalPriority({{ project.id }}, this.value);">
+                                                   onkeypress="if(event.key==='Enter') updateFinalPriority({{ project.id }}, this.value);"
+                                                   style="width: 60px; text-align: center; margin: 0 2px;">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move down in priority (higher rank number)"
+                                                    style="padding: 2px 6px; margin-left: 2px;">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1275,6 +1304,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final Scoring Details Modal -->
+<div class="modal fade" id="finalScoringModal" tabindex="-1" aria-labelledby="finalScoringModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="finalScoringModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -1555,6 +1602,7 @@ function openGovernanceScoringModal(projectId) {
         .then(data => {
             const project = data.project;
             const userScore = data.user_score;
+            const condensedScores = data.condensed_scores;
             
             // Create the modal content with project details and scoring form
             modalBody.innerHTML = `
@@ -1767,6 +1815,52 @@ function openGovernanceScoringModal(projectId) {
                         </form>
                     </div>
                 </div>
+                
+                ${condensedScores && condensedScores.length > 0 ? `
+                <!-- Condensed Scores Section for AI Governance Group Lead -->
+                <div class="condensed-scores-section mt-4">
+                    <h6 class="section-header small">AI Governance Group Scores</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Scored By</th>
+                                    <th>Strategic</th>
+                                    <th>Cost</th>
+                                    <th>Impact</th>
+                                    <th>Ease</th>
+                                    <th>Vendor</th>
+                                    <th>Security</th>
+                                    <th>Student</th>
+                                    <th>Final</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${condensedScores.map(score => `
+                                    <tr>
+                                        <td class="small">${score.scored_by}</td>
+                                        <td class="text-center">${score.strategic_alignment || '-'}</td>
+                                        <td class="text-center">${score.cost_benefit || '-'}</td>
+                                        <td class="text-center">${score.user_impact || '-'}</td>
+                                        <td class="text-center">${score.ease_of_implementation || '-'}</td>
+                                        <td class="text-center">${score.vendor_reputation_support || '-'}</td>
+                                        <td class="text-center">${score.security_compliance || '-'}</td>
+                                        <td class="text-center">${score.student_centered || '-'}</td>
+                                        <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
+                                    </tr>
+                                    <tr class="notes-row">
+                                        <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
+                                            <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
+                                                score.scoring_notes.trim() : 
+                                                'Member did not provide any scoring notes.'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
             `;
             
             // Add event listener for the scoring form
@@ -1896,6 +1990,30 @@ function saveGovernanceScore(projectId) {
     });
 }
 
+// Function to move rank up (lower rank number = higher priority)
+function moveRankUp(projectId, currentRank) {
+    if (currentRank <= 1) {
+        console.log('Project is already at the highest priority (rank 1)');
+        return;
+    }
+    const newRank = currentRank - 1;
+    console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (up in priority)`);
+    updateFinalPriority(projectId, newRank);
+}
+
+// Function to move rank down (higher rank number = lower priority)
+function moveRankDown(projectId, currentRank) {
+    // Get the total number of projects to determine the maximum rank
+    const totalProjects = document.querySelectorAll('.cc-project-row').length;
+    if (currentRank >= totalProjects) {
+        console.log('Project is already at the lowest priority (rank ' + totalProjects + ')');
+        return;
+    }
+    const newRank = currentRank + 1;
+    console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (down in priority)`);
+    updateFinalPriority(projectId, newRank);
+}
+
 // Function to update final priority rank
 function updateFinalPriority(projectId, priority) {
     // Get CSRF token
@@ -1938,10 +2056,9 @@ function updateFinalPriority(projectId, priority) {
             // Broadcast the update to other tabs/windows
             broadcastPriorityUpdate(projectId, priority);
             
-            // Force a hard refresh to show updated sorting
-            setTimeout(() => {
-                window.location.reload(true);
-            }, 1000);
+            // Refresh the table without full page reload
+            console.log('Refreshing table to show updated ranks...');
+            refreshFinalGovernanceTable();
         } else {
             console.error('Error updating priority:', data.error);
             alert('Error updating priority: ' + data.error);
@@ -2025,14 +2142,102 @@ function refreshFinalGovernanceTable() {
     const finalGovernanceTable = document.querySelector('.cc-final-scoring-table-container');
     if (finalGovernanceTable) {
         console.log('Refreshing final governance table...');
-        // Reload the page to get updated data
-        window.location.reload();
+        
+        // Fetch updated data from the server
+        fetch(window.location.href.split('?')[0], {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary DOM element to parse the new HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Find the new table content
+            const newTableContainer = tempDiv.querySelector('.cc-final-scoring-table-container');
+            if (newTableContainer) {
+                // Replace the current table with the updated one
+                finalGovernanceTable.innerHTML = newTableContainer.innerHTML;
+                
+                // Re-attach event listeners to the new input fields
+                attachPriorityInputListeners();
+                
+                console.log('Table refreshed successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing table:', error);
+            // Fallback to full page reload if AJAX refresh fails
+            window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        });
     }
+}
+
+// Function to attach event listeners to priority input fields and arrow buttons
+function attachPriorityInputListeners() {
+    const priorityInputs = document.querySelectorAll('.final-priority-input');
+    priorityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updateFinalPriority(this.dataset.projectId, this.value);
+        });
+        
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur(); // Trigger the change event
+            }
+        });
+    });
+
+    // Attach event listeners to arrow buttons
+    const upButtons = document.querySelectorAll('.rank-up-btn');
+    upButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent row click
+            const projectId = this.dataset.projectId;
+            const currentRank = parseInt(this.dataset.currentRank);
+            moveRankUp(projectId, currentRank);
+        });
+    });
+
+    const downButtons = document.querySelectorAll('.rank-down-btn');
+    downButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent row click
+            const projectId = this.dataset.projectId;
+            const currentRank = parseInt(this.dataset.currentRank);
+            moveRankDown(projectId, currentRank);
+        });
+    });
+}
+
+// Function to open final scoring modal
+function openFinalScoringModal(projectId) {
+    // Load project details via AJAX
+    fetch(`/${projectId}/final-scoring-details-modal/`)
+        .then(response => response.text())
+        .then(html => {
+            // Use the entire response as the modal content
+            document.getElementById('finalScoringModalBody').innerHTML = html;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            document.getElementById('finalScoringModalBody').innerHTML = '<p>Error loading project details.</p>';
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        });
 }
 
 // Initialize listeners when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     listenForPriorityUpdates();
+    attachPriorityInputListeners();
 });
 </script>
 {% endblock %}

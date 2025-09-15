@@ -125,13 +125,30 @@
                             {% endif %}
                         </td>
                         <td class="cc-project-final-priority-cell">
-                            <div class="cc-rank-display">
+                            <div class="cc-rank-display d-flex align-items-center">
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
+                                        data-project-id="{{ project.id }}"
+                                        data-current-rank="{{ project.final_priority|default:0 }}"
+                                        title="Move up in priority (lower rank number)"
+                                        style="padding: 2px 6px; margin-right: 2px;">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
                                 <input type="number" 
                                        class="cc-priority-input final-priority-input" 
                                        value="{{ project.final_priority|default:'' }}"
                                        min="1"
                                        data-project-id="{{ project.id }}"
-                                       placeholder="Rank">
+                                       placeholder="Rank"
+                                       style="width: 60px; text-align: center; margin: 0 2px;">
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
+                                        data-project-id="{{ project.id }}"
+                                        data-current-rank="{{ project.final_priority|default:0 }}"
+                                        title="Move down in priority (higher rank number)"
+                                        style="padding: 2px 6px; margin-left: 2px;">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
                             </div>
                         </td>
 
@@ -305,6 +322,7 @@
 
     .cc-priority-input[type=number] {
         -moz-appearance: textfield;
+        appearance: textfield;
     }
 
     /* Rank Display */
@@ -337,6 +355,7 @@
 
     .cc-priority-input[type=number] {
         -moz-appearance: textfield;
+        appearance: textfield;
     }
 
     /* Drag and Drop Styles */
@@ -640,6 +659,30 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePriority(projectId, targetRank);
     }
 
+    // Function to move rank up (lower rank number = higher priority)
+    function moveRankUp(projectId, currentRank) {
+        if (currentRank <= 1) {
+            console.log('Project is already at the highest priority (rank 1)');
+            return;
+        }
+        const newRank = currentRank - 1;
+        console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (up in priority)`);
+        updatePriority(projectId, newRank);
+    }
+
+    // Function to move rank down (higher rank number = lower priority)
+    function moveRankDown(projectId, currentRank) {
+        // Get the total number of projects to determine the maximum rank
+        const totalProjects = document.querySelectorAll('.cc-project-row').length;
+        if (currentRank >= totalProjects) {
+            console.log('Project is already at the lowest priority (rank ' + totalProjects + ')');
+            return;
+        }
+        const newRank = currentRank + 1;
+        console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (down in priority)`);
+        updatePriority(projectId, newRank);
+    }
+
     function updatePriority(projectId, priority) {
         // Get CSRF token
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -681,10 +724,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Broadcast the update to other tabs/windows
                 broadcastPriorityUpdate(projectId, priority);
                 
-                // Force a hard refresh to show updated sorting
-                setTimeout(() => {
-                    window.location.reload(true);
-                }, 1000);
+                // Refresh the table without full page reload
+                console.log('Refreshing table to show updated ranks...');
+                refreshFinalGovernanceTable();
             } else {
                 console.error('Error updating priority:', data.error);
                 alert('Error updating priority: ' + data.error);
@@ -768,14 +810,97 @@ document.addEventListener('DOMContentLoaded', function() {
         const finalGovernanceTable = document.querySelector('.cc-final-scoring-table-container');
         if (finalGovernanceTable) {
             console.log('Refreshing final governance table...');
-            // Reload the page to get updated data
-            window.location.reload();
+            
+            // Fetch updated data from the server
+            fetch(window.location.href.split('?')[0], {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Create a temporary DOM element to parse the new HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Find the new table content
+                const newTableContainer = tempDiv.querySelector('.cc-final-scoring-table-container');
+                if (newTableContainer) {
+                    // Replace the current table with the updated one
+                    finalGovernanceTable.innerHTML = newTableContainer.innerHTML;
+                    
+                    // Re-attach event listeners to the new input fields and drag handlers
+                    attachPriorityInputListeners();
+                    attachDragListeners();
+                    
+                    console.log('Table refreshed successfully');
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing table:', error);
+                // Fallback to full page reload if AJAX refresh fails
+                window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+            });
         }
+    }
+
+    // Function to attach event listeners to priority input fields and arrow buttons
+    function attachPriorityInputListeners() {
+        const priorityInputs = document.querySelectorAll('.final-priority-input');
+        priorityInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                updatePriority(this.dataset.projectId, this.value);
+            });
+            
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    this.blur(); // Trigger the change event
+                }
+            });
+        });
+
+        // Attach event listeners to arrow buttons
+        const upButtons = document.querySelectorAll('.rank-up-btn');
+        upButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const projectId = this.dataset.projectId;
+                const currentRank = parseInt(this.dataset.currentRank);
+                moveRankUp(projectId, currentRank);
+            });
+        });
+
+        const downButtons = document.querySelectorAll('.rank-down-btn');
+        downButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const projectId = this.dataset.projectId;
+                const currentRank = parseInt(this.dataset.currentRank);
+                moveRankDown(projectId, currentRank);
+            });
+        });
+    }
+
+    // Function to attach drag event listeners
+    function attachDragListeners() {
+        const table = document.querySelector('.cc-final-scoring-table');
+        const tbody = table.querySelector('tbody');
+        const rows = tbody.querySelectorAll('.cc-project-row');
+        
+        rows.forEach((row, index) => {
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragend', handleDragEnd);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('dragenter', handleDragEnter);
+            row.addEventListener('dragleave', handleDragLeave);
+            row.addEventListener('drop', handleDrop);
+        });
     }
 
     // Initialize listeners when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         listenForPriorityUpdates();
+        attachPriorityInputListeners();
+        attachDragListeners();
     });
 });
 </script>

@@ -105,18 +105,18 @@
         {% if scores %}
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Strategic Alignment - (20%)</th>
-                            <th>Cost Benefit - (15%)</th>
-                            <th>User Impact - (20%)</th>
-                            <th>Ease of Implementation - (15%)</th>
-                            <th>Vendor Reputation - (10%)</th>
-                            <th>Security Compliance - (10%)</th>
-                            <th>Student-Centered - (10%)</th>
-                            <th>Final Weighted Score</th>
-                        </tr>
-                    </thead>
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Strategic Alignment - (20%)</th>
+                                <th>Cost Benefit - (15%)</th>
+                                <th>User Impact - (20%)</th>
+                                <th>Ease of Implementation - (15%)</th>
+                                <th>Vendor Reputation - (10%)</th>
+                                <th>Security Compliance - (10%)</th>
+                                <th>Student-Centered - (10%)</th>
+                                <th>Final Weighted Score</th>
+                            </tr>
+                        </thead>
                     <tbody>
                         {% for score in scores %}
                         <tr>
@@ -127,21 +127,21 @@
                             <td>{{ score.vendor_reputation_support|default:"-" }}</td>
                             <td>{{ score.security_compliance|default:"-" }}</td>
                             <td>{{ score.student_centered|default:"-" }}</td>
-                            <td>{{ score.final_score|floatformat:2|default:"-" }}</td>
+                            <td><strong>{{ score.final_score|floatformat:2|default:"-" }}</strong></td>
                         </tr>
                         <!-- Timestamps row -->
                         <tr class="timestamp-row">
                             <td colspan="8" class="p-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        <i class="fas fa-clock"></i> 
+                                        <i class="fas fa-clock"></i>
                                         <span class="mountain-time" data-utc="{{ score.created_at|date:'c' }}">
                                             Submitted: {{ score.created_at|date:"F j, Y, g:i a" }} MT
                                         </span>
                                     </small>
                                     {% if score.updated_at != score.created_at %}
                                     <small class="text-muted">
-                                        <i class="fas fa-edit"></i> 
+                                        <i class="fas fa-edit"></i>
                                         <span class="mountain-time" data-utc="{{ score.updated_at|date:'c' }}">
                                             Updated: {{ score.updated_at|date:"F j, Y, g:i a" }} MT
                                         </span>
@@ -150,18 +150,18 @@
                                 </div>
                             </td>
                         </tr>
-                                                 {% if score.scoring_notes %}
-                         <tr class="scoring-notes-row">
-                             <td colspan="8" class="p-3">
-                                 <div class="mb-2">
-                                     <small class="text-muted">
-                                         <i class="fas fa-comment"></i> Scoring Notes
-                                     </small>
-                                 </div>
-                                 <p class="mb-0">{{ score.scoring_notes|linebreaks }}</p>
-                             </td>
-                         </tr>
-                         {% endif %}
+                        {% if score.scoring_notes %}
+                        <tr class="scoring-notes-row">
+                            <td colspan="8" class="p-3">
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-comment"></i> Scoring Notes
+                                    </small>
+                                </div>
+                                <p class="mb-0">{{ score.scoring_notes|linebreaks }}</p>
+                            </td>
+                        </tr>
+                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
