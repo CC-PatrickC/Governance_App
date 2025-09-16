@@ -224,3 +224,24 @@ class TriageNote(models.Model):
 
     def __str__(self):
         return f"Triage note for {self.project.title} by {self.created_by.username} on {self.created_at}"
+
+class TriageChange(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='triage_change_history')
+    field_name = models.CharField(max_length=50, help_text="Name of the field that was changed")
+    field_label = models.CharField(max_length=100, help_text="Human-readable label for the field")
+    old_value = models.TextField(blank=True, null=True, help_text="Previous value")
+    new_value = models.TextField(blank=True, null=True, help_text="New value")
+    changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return f"{self.field_label} changed for {self.project.title} by {self.changed_by.username}"
+    
+    def get_change_display(self):
+        """Return a formatted display of the change"""
+        old_display = self.old_value if self.old_value else "None"
+        new_display = self.new_value if self.new_value else "None"
+        return f"{old_display} → {new_display}"

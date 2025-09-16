@@ -33,5 +33,6 @@ urlpatterns = [
     path('<int:pk>/final-scoring-details-modal/', views.project_final_scoring_details_modal, name='project_final_scoring_details_modal'),
     path('<int:pk>/update-final-priority/', views.update_final_priority, name='update_final_priority'),
     path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
+    path('api/users/', views.api_users, name='api_users'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
 ] 
