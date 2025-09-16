@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Project, ProjectFile, ProjectScore, TriageNote
+from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -68,7 +68,55 @@ def is_process_improvement_user(user):
     return user.is_staff or user.groups.filter(name='Process Improvement Group').exists() or user.groups.filter(name='Process Improvement Governance Group').exists()
 
 def is_process_improvement_lead_user(user):
-    return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists() or user.groups.filter(name='Process Improvement Governance Group Lead').exists()
+    return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists()
+
+def track_project_changes(project, form_data, user):
+    """Track changes made to project fields during triage updates"""
+    # Define fields to track with their human-readable labels
+    tracked_fields = {
+        'title': 'Title',
+        'description': 'Description',
+        'project_type': 'Request Type',
+        'priority': 'Priority',
+        'stage': 'Stage',
+        'department': 'Department',
+        'contact_person': 'Contact Person',
+        'contact_email': 'Contact Email',
+    }
+    
+    changes_made = []
+    
+    for field_name, field_label in tracked_fields.items():
+        old_value = getattr(project, field_name, '')
+        new_value = form_data.get(field_name, '')
+        
+        # Convert choice fields to display values
+        if field_name == 'project_type' and new_value:
+            new_value = dict(Project.PROJECT_TYPE_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.PROJECT_TYPE_CHOICES).get(old_value, old_value)
+        elif field_name == 'stage' and new_value:
+            new_value = dict(Project.STAGE_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.STAGE_CHOICES).get(old_value, old_value)
+        elif field_name == 'status' and new_value:
+            new_value = dict(Project.STATUS_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.STATUS_CHOICES).get(old_value, old_value)
+        
+        # Track the change if values are different
+        if str(old_value) != str(new_value):
+            TriageChange.objects.create(
+                project=project,
+                field_name=field_name,
+                field_label=field_label,
+                old_value=str(old_value) if old_value else '',
+                new_value=str(new_value) if new_value else '',
+                changed_by=user
+            )
+            changes_made.append(f"{field_label}: {old_value} → {new_value}")
+    
+    return changes_made
 
 def is_scoring_user(user):
     return (user.is_staff or 
@@ -131,6 +179,7 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
+            messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -212,6 +261,8 @@ def project_list(request):
     
     return render(request, 'projects/project_list.html', context)
 
+@login_required
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_triage(request):
     search_query = request.GET.get('search', '')
     type_filter = request.GET.get('type', '')
@@ -220,8 +271,10 @@ def project_triage(request):
     stage_filter = request.GET.get('stage', '')
     department_filter = request.GET.get('department', '')
 
-    # Base queryset
-    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
+    # Base queryset - Triage team can see all projects except Governance Closed
+    projects = Project.objects.all().exclude(
+        stage='Governance_Closure'
+    ).select_related('submitted_by').order_by('-submission_date')
     
     # Apply search filter
     if search_query:
@@ -292,8 +345,15 @@ def project_triage(request):
     return render(request, 'projects/triage.html', context)
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update_ajax(request, pk):
+    # Check if user has permission to edit projects
+    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'You do not have permission to edit this request.'})
+        else:
+            messages.error(request, 'You do not have permission to edit this request.')
+            return redirect('projects:project_detail', pk=pk)
+    
     logger.info(f"=== Project Update Request ===")
     logger.info(f"Request method: {request.method}")
     logger.info(f"User: {request.user} (Staff: {request.user.is_staff}, Groups: {request.user.groups.all()})")
@@ -303,10 +363,25 @@ def project_update_ajax(request, pk):
     
     if request.method != 'POST':
         logger.info("Not a POST request, rendering form")
-        return render(request, 'projects/project_edit.html', {'project': get_object_or_404(Project, pk=pk)})
+        project = get_object_or_404(Project, pk=pk)
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            return render(request, 'projects/project_detail.html', {
+                'project': project,
+                'error_message': 'This request is closed and cannot be edited.'
+            })
+        return render(request, 'projects/project_edit.html', {'project': project})
         
     try:
         project = get_object_or_404(Project, pk=pk)
+        
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'This request is closed and cannot be edited.'})
+            else:
+                messages.error(request, 'This request is closed and cannot be edited.')
+                return redirect('projects:project_detail', pk=pk)
         logger.info(f"\nProject details before update:")
         logger.info(f"Title: {project.title}")
         logger.info(f"Status: {project.status}")
@@ -322,6 +397,9 @@ def project_update_ajax(request, pk):
         if not title:
             logger.error("Error: Title is missing")
             raise ValueError("Title is required")
+        
+        # Track changes before updating
+        changes_made = track_project_changes(project, request.POST, request.user)
         
         # Update project fields
         project.title = title
@@ -349,7 +427,19 @@ def project_update_ajax(request, pk):
         project.notes = request.POST.get('notes', '')
         
         # Update triage information
-        project.triage_notes = request.POST.get('triage_notes', '')
+        new_triage_notes = request.POST.get('triage_notes', '')
+        
+        # Only create a new TriageNote if the notes have changed and are not empty
+        if new_triage_notes and new_triage_notes != project.triage_notes:
+            TriageNote.objects.create(
+                project=project,
+                notes=new_triage_notes,
+                created_by=request.user
+            )
+        
+        # Clear the triage notes field after saving to history
+        project.triage_notes = ''
+        
         project.triaged_by = request.user
         project.triage_date = timezone.now()
         
@@ -464,12 +554,26 @@ def project_create(request):
 @login_required
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
+    
+    # If user is a triage team member, redirect them to the edit form (unless request is closed)
+    if (is_triage_user(request.user) or is_triage_lead_user(request.user)) and project.stage != 'Governance_Closure':
+        return redirect('projects:project_update', pk=pk)
+    
     return render(request, 'projects/project_detail.html', {'project': project})
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
+    
+    # Check if user has permission to edit projects
+    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+        messages.error(request, 'You do not have permission to edit this request.')
+        return redirect('projects:project_detail', pk=pk)
+    
+    # Check if request is in Governance Closed stage (cannot be edited)
+    if project.stage == 'Governance_Closure':
+        messages.error(request, 'This request is closed and cannot be edited.')
+        return redirect('projects:project_detail', pk=pk)
     
     print(f"\n=== Project Update Debug ===")
     print(f"Request method: {request.method}")
@@ -489,6 +593,9 @@ def project_update(request, pk):
             # Get triage notes
             new_triage_notes = request.POST.get('triage_notes', '')
             
+            # Track changes before updating
+            changes_made = track_project_changes(project, request.POST, request.user)
+            
             # Update project fields
             project.title = title
             project.description = request.POST.get('description', '')
@@ -506,14 +613,16 @@ def project_update(request, pk):
                     project.stage = new_stage
                     print(f"Updated stage to: {new_stage}")
             
-            # Only create a new TriageNote if the notes have changed
-            if new_triage_notes != project.triage_notes:
-                project.triage_notes = new_triage_notes
+            # Only create a new TriageNote if the notes have changed and are not empty
+            if new_triage_notes and new_triage_notes != project.triage_notes:
                 TriageNote.objects.create(
                     project=project,
                     notes=new_triage_notes,
                     created_by=request.user
                 )
+            
+            # Clear the triage notes field after saving to history
+            project.triage_notes = ''
             
             # Sync status with stage before saving
             project = sync_status_with_stage(project)
@@ -569,10 +678,17 @@ def project_update(request, pk):
     return render(request, 'projects/project_edit.html', {'project': project})
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
-    project = get_object_or_404(Project, pk=pk)
+    # Check if user has permission to edit projects
+    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+        return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+    
+    project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
+    
+    # Check if request is in Governance Closed stage (cannot be edited)
+    if project.stage == 'Governance_Closure':
+        return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
     
     # Get all users for the contact person dropdown
     from django.contrib.auth.models import User
@@ -1519,6 +1635,7 @@ def logout_view(request):
         # Clear the session
         request.session.flush()
     
+    messages.success(request, 'You have been successfully logged out.')
     return redirect('projects:home')
 
 @login_required
@@ -1532,6 +1649,14 @@ def project_intake_form(request):
             contact_person = request.POST.get('contact_person')
             contact_email = request.POST.get('contact_email')
             contact_phone = request.POST.get('contact_phone')
+            same_as_requestor = request.POST.get('same_as_requestor') == 'on'
+            
+            # If "same as requestor" is checked, use the current user's information
+            if same_as_requestor:
+                # Use the user's full name if available, otherwise username
+                user_full_name = f"{request.user.first_name} {request.user.last_name}".strip()
+                contact_person = user_full_name if user_full_name else request.user.username
+                contact_email = request.user.email
             
             # Validate required fields
             if not title:
@@ -1601,7 +1726,7 @@ def my_governance(request):
         # Get triage projects for users in Triage Group or Triage Group Lead
         triage_projects = None
         if is_triage_user(request.user) or is_triage_lead_user(request.user):
-            # Get all projects that are in triage stages
+            # Get projects in triage stages (excluding closed and user's own projects)
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
             ).exclude(
@@ -1634,8 +1759,8 @@ def my_governance(request):
                 # Governance groups see only their specific project types
                 governance_projects = governance_projects.filter(project_type__in=allowed_types)
             else:
-                # Triage Group sees all requests except AI Governance, ERP Governance, IT Governance, and Process Improvement
-                governance_projects = governance_projects.exclude(project_type='ai_governance').exclude(project_type='erp_governance').exclude(project_type='it_governance').exclude(project_type='process_improvement')
+                # Triage Group sees ALL governance requests (no exclusions)
+                pass
             
             governance_projects = governance_projects.order_by('-submission_date')
         
@@ -1668,3 +1793,20 @@ def my_governance(request):
         'is_process_improvement_lead_user': is_process_improvement_lead_user(request.user),
     }
     return render(request, 'projects/my_governance.html', context)
+
+@login_required
+def api_users(request):
+    """API endpoint to get all users for autocomplete"""
+    users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+    
+    user_data = []
+    for user in users:
+        full_name = user.get_full_name() if user.first_name and user.last_name else user.username
+        user_data.append({
+            'id': user.id,
+            'username': user.username,
+            'full_name': full_name,
+            'email': user.email
+        })
+    
+    return JsonResponse({'users': user_data})

@@ -1,4 +1,5 @@
 {% extends 'base_cc.html' %}
+{% load tz %}
 
 {% block title %}MyGovernance{% endblock %}
 
@@ -778,6 +779,45 @@
      .cc-final-scoring-table-container::-webkit-scrollbar-thumb:hover {
          background: #B8860B;
      }
+
+    /* Autocomplete styles */
+    .autocomplete-suggestions {
+        position: absolute;
+        background: white;
+        border: 1px solid #ced4da;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        width: 100%;
+    }
+
+    .autocomplete-suggestion {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .autocomplete-suggestion:hover,
+    .autocomplete-suggestion.active {
+        background-color: #f8f9fa;
+    }
+
+    .autocomplete-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .user-username {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-left: 8px;
+    }
 </style>
 {% endblock %}
 
@@ -893,143 +933,6 @@
                 </div>
             </div>
             
-            <!-- MyRequests Section -->
-            <div class="cc-content-area">
-                <div class="cc-section-header">
-                    <h2>MyRequests</h2>
-                    <p class="text-muted">Requests you have submitted</p>
-                </div>
-                
-                {% if user_projects %}
-                    <div class="cc-projects-grid">
-                        {% for project in user_projects %}
-                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
-                            <div class="cc-project-header">
-                                <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
-                            </div>
-                            <div class="cc-project-body">
-                                <div class="cc-project-description">
-                                    {{ project.description|truncatechars:120 }}
-                                </div>
-                                <div class="cc-project-meta">
-                                    {% if project.project_type %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Request Type</div>
-                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if project.priority %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Priority</div>
-                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                                    </div>
-                                </div>
-                                
-                                {% if project.department %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Department</div>
-                                    <span class="cc-meta-item">{{ project.department }}</span>
-                                </div>
-                                {% endif %}
-
-                                <div class="cc-project-meta-requested">
-                                    Requested by: 
-                                    {% if project.submitted_by %}
-                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                    on {{ project.submission_date|date:'M d, Y' }}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <h4>No Requests Yet</h4>
-                        <p>You haven't submitted any requests yet.</p>
-                        <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
-                            <i class="fas fa-plus-circle"></i> Submit Your First Request
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-            
-            <!-- My Contact Requests Section -->
-            <div class="cc-content-area" style="margin-top: 2rem;">
-                <div class="cc-section-header">
-                    <h2>My Contact Requests</h2>
-                    <p class="text-muted">Requests where you are listed as the contact person</p>
-                </div>
-                
-                {% if contact_projects %}
-                    <div class="cc-projects-grid">
-                        {% for project in contact_projects %}
-                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
-                            <div class="cc-project-header">
-                                <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
-                            </div>
-                            <div class="cc-project-body">
-                                <div class="cc-project-description">
-                                    {{ project.description|truncatechars:120 }}
-                                </div>
-                                <div class="cc-project-meta">
-                                    {% if project.project_type %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Request Type</div>
-                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if project.priority %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Priority</div>
-                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                                    </div>
-                                </div>
-                                
-                                {% if project.department %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Department</div>
-                                    <span class="cc-meta-item">{{ project.department }}</span>
-                                </div>
-                                {% endif %}
-
-                                <div class="cc-project-meta-requested">
-                                    Requested by: 
-                                    {% if project.submitted_by %}
-                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                    on {{ project.submission_date|date:'M d, Y' }}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-user-tie"></i>
-                        <h4>No Contact Requests</h4>
-                        <p>You are not listed as a contact person for any requests.</p>
-                    </div>
-                {% endif %}
-            </div>
-            
             <!-- Triage Section (Only visible for Triage Group and Triage Group Lead users) -->
             {% if is_triage_user or is_triage_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
@@ -1087,7 +990,7 @@
                                     {% else %}
                                         Unknown
                                     {% endif %}
-                                    on {{ project.submission_date|date:'M d, Y' }}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
                                 </div>
                             </div>
                         </div>
@@ -1160,7 +1063,7 @@
                                     {% else %}
                                         Unknown
                                     {% endif %}
-                                    on {{ project.submission_date|date:'M d, Y' }}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
                                 </div>
                             </div>
                         </div>
@@ -1216,7 +1119,7 @@
                                                 {% else %}
                                                     Unknown
                                                 {% endif %}
-                                                on {{ project.submission_date|date:'M d, Y' }}
+                                                on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
                                             </small>
                                         </div>
                                     </td>
@@ -1286,6 +1189,143 @@
                 {% endif %}
             </div>
             {% endif %}
+            
+            <!-- MyRequests Section -->
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>MyRequests</h2>
+                    <p class="text-muted">Requests you have submitted</p>
+                </div>
+                
+                {% if user_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in user_projects %}
+                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Status</div>
+                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>No Requests Yet</h4>
+                        <p>You haven't submitted any requests yet.</p>
+                        <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
+                            <i class="fas fa-plus-circle"></i> Submit Your First Request
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- My Contact Requests Section -->
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>My Contact Requests</h2>
+                    <p class="text-muted">Requests where you are listed as the contact person</p>
+                </div>
+                
+                {% if contact_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in contact_projects %}
+                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Status</div>
+                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-user-tie"></i>
+                        <h4>No Contact Requests</h4>
+                        <p>You are not listed as a contact person for any requests.</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -1303,7 +1343,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none;">Save Changes</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none; background-color: #D09B2C; border-color: #D09B2C;">Save Changes</button>
             </div>
         </div>
     </div>
@@ -1329,7 +1369,13 @@
 
 <script>
 function showProjectDetails(projectId) {
-    // Load project details via AJAX
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of details
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    // Load project details via AJAX for non-triage users
     fetch(`/${projectId}/scoring-details-modal/`)
         .then(response => {
             return response.json();
@@ -1469,6 +1515,9 @@ function openTriageEditModal(projectId) {
                 // Show save button
                 saveBtn.style.display = 'inline-block';
                 
+                // Initialize contact person autocomplete
+                initializeContactPersonAutocomplete();
+                
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -1531,11 +1580,18 @@ function submitTriageEditForm(form, projectId) {
                 <div class="alert alert-success">
                     <h5>Success!</h5>
                     <p>Request updated successfully.</p>
-                    <button type="button" class="btn btn-primary" onclick="window.location.reload()">
-                        <i class="fas fa-check"></i> Continue
-                    </button>
                 </div>
             `;
+            
+            // Auto-close modal after 2 seconds
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                // Refresh the page to show updated data
+                window.location.reload();
+            }, 2000);
         } else {
             // Error - show error message
             modalBody.innerHTML = `
@@ -1567,6 +1623,12 @@ function submitTriageEditForm(form, projectId) {
 
 // Function to open governance scoring modal
 function openGovernanceScoringModal(projectId) {
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of scoring modal
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
@@ -2215,6 +2277,12 @@ function attachPriorityInputListeners() {
 
 // Function to open final scoring modal
 function openFinalScoringModal(projectId) {
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of final scoring modal
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
     // Load project details via AJAX
     fetch(`/${projectId}/final-scoring-details-modal/`)
         .then(response => response.text())
@@ -2239,5 +2307,118 @@ document.addEventListener('DOMContentLoaded', function() {
     listenForPriorityUpdates();
     attachPriorityInputListeners();
 });
+
+// Global autocomplete function
+function initializeContactPersonAutocomplete() {
+    console.log('Initializing contact person autocomplete');
+    
+    const contactInput = document.getElementById('contact_person');
+    const suggestionsDiv = document.getElementById('contact_person_suggestions');
+    
+    if (!contactInput || !suggestionsDiv) {
+        console.log('Contact input or suggestions div not found');
+        return;
+    }
+    
+    console.log('Contact input and suggestions div found');
+    
+    let currentFocus = -1;
+    let users = [];
+    
+    // Load all users
+    fetch('{% url "projects:api_users" %}')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            users = data.users;
+            console.log('Loaded users for autocomplete:', users.length);
+        })
+        .catch(error => console.error('Error loading users:', error));
+    
+    // Remove any existing event listeners
+    const newContactInput = contactInput.cloneNode(true);
+    contactInput.parentNode.replaceChild(newContactInput, contactInput);
+    
+    newContactInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        currentFocus = -1;
+        
+        console.log('Input event triggered, query:', query, 'users loaded:', users.length);
+        
+        if (query.length < 1) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Filter users based on input
+        const filteredUsers = users.filter(user => {
+            const fullName = user.full_name.toLowerCase();
+            const username = user.username.toLowerCase();
+            return fullName.includes(query) || username.includes(query);
+        });
+        
+        console.log('Filtered users:', filteredUsers.length);
+        
+        if (filteredUsers.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Display suggestions
+        suggestionsDiv.innerHTML = '';
+        filteredUsers.slice(0, 10).forEach((user, index) => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'autocomplete-suggestion';
+            suggestion.innerHTML = `
+                <span class="user-name">${user.full_name}</span>
+                <span class="user-username">(${user.username})</span>
+            `;
+            
+            suggestion.addEventListener('click', function() {
+                newContactInput.value = user.full_name;
+                suggestionsDiv.style.display = 'none';
+            });
+            
+            suggestionsDiv.appendChild(suggestion);
+        });
+        
+        suggestionsDiv.style.display = 'block';
+    });
+    
+    // Handle keyboard navigation
+    newContactInput.addEventListener('keydown', function(e) {
+        const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentFocus++;
+            if (currentFocus >= suggestions.length) currentFocus = 0;
+            setActive(suggestions);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentFocus--;
+            if (currentFocus < 0) currentFocus = suggestions.length - 1;
+            setActive(suggestions);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentFocus > -1 && suggestions[currentFocus]) {
+                suggestions[currentFocus].click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsDiv.style.display = 'none';
+            currentFocus = -1;
+        }
+    });
+    
+    function setActive(suggestions) {
+        suggestions.forEach((suggestion, index) => {
+            suggestion.classList.toggle('active', index === currentFocus);
+        });
+    }
+}
 </script>
 {% endblock %}

@@ -156,6 +156,21 @@
         color: #6f42c1;
         font-weight: 600;
     }
+
+    .form-control:disabled {
+        background-color: #e9ecef;
+        opacity: 0.65;
+        color: #6c757d;
+    }
+
+    .form-check-input {
+        margin-top: 0.25rem;
+    }
+
+    .form-check-label {
+        font-weight: 600;
+        color: #495057;
+    }
 </style>
 {% endblock %}
 
@@ -206,6 +221,16 @@
         <!-- Contact Information -->
         <div class="form-section">
             <h3>Contact Information</h3>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor">
+                    <label class="form-check-label" for="same_as_requestor">
+                        Contact person is same as requestor
+                    </label>
+                </div>
+                <div class="help-text">Check this if you are the primary contact for this request</div>
+            </div>
             
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -343,6 +368,35 @@ function removeFile(index) {
     fileInput.files = dt.files;
     updateFileList();
 }
+
+// Contact person same as requestor functionality
+const sameAsRequestorCheckbox = document.getElementById('same_as_requestor');
+const contactPersonField = document.getElementById('contact_person');
+const contactEmailField = document.getElementById('contact_email');
+
+sameAsRequestorCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+        // Get current user information (we'll need to pass this from the backend)
+        const requestorName = '{{ user.first_name }} {{ user.last_name }}'.trim() || '{{ user.username }}';
+        const requestorEmail = '{{ user.email }}';
+        
+        // Auto-fill the fields
+        contactPersonField.value = requestorName;
+        contactEmailField.value = requestorEmail;
+        
+        // Disable the fields and grey them out
+        contactPersonField.disabled = true;
+        contactEmailField.disabled = true;
+    } else {
+        // Clear the fields
+        contactPersonField.value = '';
+        contactEmailField.value = '';
+        
+        // Re-enable the fields
+        contactPersonField.disabled = false;
+        contactEmailField.disabled = false;
+    }
+});
 
 // Form validation
 document.getElementById('intakeForm').addEventListener('submit', function(e) {
