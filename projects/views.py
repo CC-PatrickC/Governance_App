@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test, login_not_required
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate, login
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
@@ -179,7 +180,6 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -1208,6 +1208,17 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
+        # Get stage changes for this project
+        stage_changes = project.triage_change_history.filter(field_name='stage').order_by('-changed_at')
+        stage_changes_data = []
+        for change in stage_changes:
+            stage_changes_data.append({
+                'old_value': change.old_value,
+                'new_value': change.new_value,
+                'changed_at': change.changed_at.isoformat(),
+                'changed_by': change.changed_by.get_full_name() or change.changed_by.username
+            })
+        
         # Prepare project data for JSON response with safe date handling
         project_data = {
             'id': project.id,
@@ -1231,6 +1242,7 @@ def project_scoring_details_modal(request, pk):
             'description': project.description,
             'priority': project.priority,
             'stage': project.stage,
+            'stage_changes': stage_changes_data,
         }
         
         # Prepare user score data if it exists
@@ -1635,8 +1647,8 @@ def logout_view(request):
         # Clear the session
         request.session.flush()
     
-    messages.success(request, 'You have been successfully logged out.')
-    return redirect('projects:home')
+    # Redirect to home with logout parameter instead of using messages
+    return HttpResponseRedirect(reverse('projects:home') + '?logged_out=true')
 
 @login_required
 def project_intake_form(request):
@@ -1691,7 +1703,7 @@ def project_intake_form(request):
                     ProjectFile.objects.create(project=project, file=file)
             
             messages.success(request, f'Request "{project.title}" submitted successfully! Your request ID is {project.formatted_id}.')
-            return redirect('projects:project_list')
+            return redirect('projects:my_governance')
             
         except ValueError as e:
             messages.error(request, str(e))
@@ -1726,16 +1738,18 @@ def my_governance(request):
         # Get triage projects for users in Triage Group or Triage Group Lead
         triage_projects = None
         if is_triage_user(request.user) or is_triage_lead_user(request.user):
-            # Get projects in triage stages (excluding closed and user's own projects)
+            # Get projects in triage stages only (excluding deleted and user's own projects)
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
             ).exclude(
                 submitted_by=request.user
+            ).exclude(
+                stage='Deleted'
             ).order_by('-submission_date')
         
-        # Get governance projects for users in Triage Group, AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
+        # Get governance projects for users in AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
         governance_projects = None
-        if (is_triage_user(request.user) or is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
+        if (is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
             is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
             is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
             is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user)):
@@ -1758,22 +1772,11 @@ def my_governance(request):
             if allowed_types:
                 # Governance groups see only their specific project types
                 governance_projects = governance_projects.filter(project_type__in=allowed_types)
-            else:
-                # Triage Group sees ALL governance requests (no exclusions)
-                pass
             
             governance_projects = governance_projects.order_by('-submission_date')
         
-        # Get final governance projects for users in Triage Group
+        # Final governance projects are currently disabled
         final_governance_projects = None
-        if is_triage_user(request.user):
-            # Get all projects that are in final governance review stage
-            final_governance_projects = Project.objects.filter(
-                stage='Under_Review_Final_governance'
-            ).order_by(
-                models.F('final_priority').asc(nulls_last=True), 
-                '-submission_date'
-            )
     
     context = {
         'user_projects': user_projects,
@@ -1810,3 +1813,59 @@ def api_users(request):
         })
     
     return JsonResponse({'users': user_data})
+
+@login_required
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+@require_POST
+def project_delete_request(request, pk):
+    """
+    Mark a project as deleted with a reason.
+    Only triage users can delete projects.
+    """
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        reason = request.POST.get('reason', '').strip()
+        
+        if not reason:
+            return JsonResponse({
+                'success': False,
+                'message': 'A reason for deletion is required.'
+            })
+        
+        # Capture old stage value before changing
+        old_stage = project.stage
+        
+        # Update the project stage to 'Deleted'
+        project.stage = 'Deleted'
+        project.save()
+        
+        # Create a triage note with the deletion reason
+        TriageNote.objects.create(
+            project=project,
+            notes=f"Request deleted by {request.user.get_full_name() or request.user.username}. Reason: {reason}",
+            created_by=request.user
+        )
+        
+        # Create a triage change record
+        TriageChange.objects.create(
+            project=project,
+            changed_by=request.user,
+            field_name='stage',
+            field_label='Stage',
+            old_value=old_stage,
+            new_value='Deleted'
+        )
+        
+        logger.info(f"Project {project.id} ({project.title}) deleted by {request.user.username}. Reason: {reason}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Request has been marked as deleted successfully.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting project {pk}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': 'An error occurred while deleting the request.'
+        })

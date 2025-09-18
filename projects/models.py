@@ -22,6 +22,7 @@ class Project(models.Model):
         ('Under_Review_governance', 'Under Review - Governance'),
         ('Under_Review_Final_governance', 'Under Review - Final Governance'),
         ('Governance_Closure', 'Governance Closed'),
+        ('Deleted', 'Deleted'),
     ]
 
     PRIORITY_CHOICES = [

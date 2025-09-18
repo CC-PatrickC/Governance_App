@@ -26,6 +26,7 @@ urlpatterns = [
     path('<int:pk>/update-status/', views.project_update_status, name='project_update_status'),
     path('<int:pk>/update-type/', views.project_update_type, name='project_update_type'),
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),
+    path('<int:pk>/delete-request/', views.project_delete_request, name='project_delete_request'),
     path('<int:pk>/score/', views.project_scoring, name='project_scoring'),
     path('<int:pk>/final-score/', views.project_final_scoring, name='project_final_scoring'),
     path('<int:pk>/final-score-details/', views.project_final_scoring_details, name='project_final_scoring_details'),
