@@ -346,8 +346,15 @@ def project_triage(request):
 
 @login_required
 def project_update_ajax(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
     # Check if user has permission to edit projects
-    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+    # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+    can_edit = (is_triage_user(request.user) or 
+                is_triage_lead_user(request.user) or 
+                project.submitted_by == request.user)
+    
+    if not can_edit:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'error': 'You do not have permission to edit this request.'})
         else:
@@ -373,7 +380,6 @@ def project_update_ajax(request, pk):
         return render(request, 'projects/project_edit.html', {'project': project})
         
     try:
-        project = get_object_or_404(Project, pk=pk)
         
         # Check if request is in Governance Closed stage (cannot be edited)
         if project.stage == 'Governance_Closure':
@@ -484,13 +490,13 @@ def project_update_ajax(request, pk):
         
         # Handle file uploads
         files = request.FILES.getlist('files')
+        logger.info(f"Processing {len(files)} file upload(s) for project {pk}")
+        
         if files:
-            logger.info(f"\nProcessing {len(files)} files")
             if len(files) > 5:
                 error_msg = 'You can upload a maximum of 5 files.'
                 messages.error(request, error_msg)
                 
-                # Check if this is an AJAX request
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
@@ -500,9 +506,19 @@ def project_update_ajax(request, pk):
                     return render(request, 'projects/project_edit.html', {'project': project})
             
             for file in files:
-                ProjectFile.objects.create(project=project, file=file)
+                try:
+                    project_file = ProjectFile.objects.create(project=project, file=file)
+                    logger.info(f"Successfully saved file: {file.name} (ID: {project_file.id})")
+                except Exception as file_error:
+                    logger.error(f"Error saving file {file.name}: {str(file_error)}")
+                    raise
+            
+            logger.info(f"Successfully processed {len(files)} file(s)")
+        else:
+            logger.info("No files received in request")
         
-        messages.success(request, 'Project updated successfully!')
+        # Don't set Django messages for AJAX requests - they'll be handled by JavaScript
+        # messages.success(request, 'Project updated successfully!')
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -510,7 +526,8 @@ def project_update_ajax(request, pk):
         })
     except ValueError as e:
         logger.error(f"\nValidation error: {str(e)}")
-        messages.error(request, str(e))
+        # Don't set Django messages for AJAX requests - return error in JSON response
+        # messages.error(request, str(e))
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -525,7 +542,8 @@ def project_update_ajax(request, pk):
         logger.error(f"Traceback: {e.__traceback__}")
         import traceback
         logger.error(f"Full traceback: {traceback.format_exc()}")
-        messages.error(request, f'Error updating project: {str(e)}')
+        # Don't set Django messages for AJAX requests - return error in JSON response
+        # messages.error(request, f'Error updating project: {str(e)}')
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -680,25 +698,69 @@ def project_update(request, pk):
 @login_required
 def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
-    # Check if user has permission to edit projects
-    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
-        return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+    try:
+        logger.info(f"Loading edit form for project {pk}")
+        
+        # Check if user has permission to edit projects
+        # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+        project = get_object_or_404(Project, pk=pk)
+        can_edit = (is_triage_user(request.user) or 
+                    is_triage_lead_user(request.user) or 
+                    project.submitted_by == request.user)
+        
+        if not can_edit:
+            logger.warning(f"User {request.user} lacks permission to edit project {pk}")
+            return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+        
+        project = Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by', 'files').get(pk=pk)
+        logger.info(f"Project {pk} loaded successfully, has {project.files.count()} files")
+        
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            logger.info(f"Project {pk} is in Governance_Closure stage, cannot be edited")
+            return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
+        
+        # Get all users for the contact person dropdown
+        from django.contrib.auth.models import User
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        
+        context = {
+            'project': project,
+            'users': users,
+        }
+        logger.info(f"Rendering edit form template for project {pk}")
+        
+        # Debug: Log the template context
+        logger.info(f"Template context - Project: {project.title}, Files count: {project.files.count()}")
+        
+        return render(request, 'projects/project_edit_form.html', context)
+    except Exception as e:
+        logger.error(f"Error loading edit form for project {pk}: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
+        return JsonResponse({'error': f'Error loading form: {str(e)}'}, status=500)
+
+@login_required
+def debug_project_files(request, pk):
+    """Debug endpoint to check project files"""
+    project = get_object_or_404(Project, pk=pk)
+    files = project.files.all()
     
-    project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
+    file_info = []
+    for file in files:
+        file_info.append({
+            'id': file.id,
+            'name': file.file.name,
+            'url': file.file.url,
+            'uploaded_at': file.uploaded_at.isoformat(),
+            'exists': file.file.storage.exists(file.file.name)
+        })
     
-    # Check if request is in Governance Closed stage (cannot be edited)
-    if project.stage == 'Governance_Closure':
-        return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
-    
-    # Get all users for the contact person dropdown
-    from django.contrib.auth.models import User
-    users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
-    
-    context = {
-        'project': project,
-        'users': users,
-    }
-    return render(request, 'projects/project_edit_form.html', context)
+    return JsonResponse({
+        'project_id': pk,
+        'project_title': project.title,
+        'file_count': len(file_info),
+        'files': file_info
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -737,18 +799,37 @@ def project_delete(request, pk):
     return redirect('projects:project_detail', pk=pk)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
 def delete_attachment(request, project_pk, file_pk):
     project = get_object_or_404(Project, pk=project_pk)
     file = get_object_or_404(ProjectFile, pk=file_pk, project=project)
+    
+    # Check if user has permission to delete attachments
+    # Allow if user is staff, triage user, triage lead user, OR if user is the submitter of the request
+    can_delete = (request.user.is_staff or 
+                  is_triage_user(request.user) or 
+                  is_triage_lead_user(request.user) or 
+                  project.submitted_by == request.user)
+    
+    if not can_delete:
+        messages.error(request, 'You do not have permission to delete this attachment.')
+        return redirect('projects:project_update', pk=project_pk)
     
     if request.method == 'POST':
         try:
             file.delete()
             messages.success(request, 'Attachment deleted successfully.')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Attachment deleted successfully.'})
         except Exception as e:
             messages.error(request, f'Error deleting attachment: {str(e)}')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': f'Error deleting attachment: {str(e)}'})
     
+    # For regular page requests, redirect to project update page
     return redirect('projects:project_update', pk=project_pk)
 
 @login_required

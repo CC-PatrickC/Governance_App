@@ -745,7 +745,7 @@ function openEditModal(projectId) {
                 
                 // Add click handler to save button
                 saveBtn.addEventListener('click', function() {
-                    form.dispatchEvent(new Event('submit'));
+                    submitEditForm(form, projectId);
                 });
                 
                 // Add click handler to delete button
@@ -764,6 +764,7 @@ function openEditModal(projectId) {
 
 function submitEditForm(form, projectId) {
     const formData = new FormData(form);
+    
     const saveBtn = document.getElementById('saveProjectBtn');
     const formContainer = document.getElementById('editFormContainer');
     
@@ -792,8 +793,91 @@ function submitEditForm(form, projectId) {
     })
     .then(data => {
         if (data.success) {
-            // Success - reload the page
-            window.location.reload();
+            // Success - reload the form to show updated attachments
+            console.log('Project updated successfully, reloading form...');
+            
+            // Load the updated edit form
+            fetch(`/${projectId}/edit-form/`)
+                .then(response => {
+                    console.log('Edit form response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Replace form content with the clean form HTML
+                    formContainer.innerHTML = html;
+                    
+                    // Get the form element
+                    const form = formContainer.querySelector('form');
+                    
+                    if (form) {
+                        // Remove form action to prevent default submission
+                        form.removeAttribute('action');
+                        form.method = 'POST';
+                        
+                        // Show save and delete buttons
+                        saveBtn.style.display = 'inline-block';
+                        deleteBtn.style.display = 'inline-block';
+                        
+                        // Add form submit handler
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            submitEditForm(form, projectId);
+                        });
+                        
+                        // Add click handler to save button
+                        saveBtn.addEventListener('click', function() {
+                            submitEditForm(form, projectId);
+                        });
+                        
+                        // Add click handler to delete button
+                        deleteBtn.addEventListener('click', function() {
+                            openDeleteModal(projectId);
+                        });
+                        
+                        // Re-enable save button
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = 'Save Changes';
+                        
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show';
+                        successAlert.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>
+                            Project updated successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        formContainer.insertBefore(successAlert, formContainer.firstChild);
+                        
+                        // Auto-dismiss the alert after 3 seconds
+                        setTimeout(() => {
+                            if (successAlert && successAlert.parentNode) {
+                                successAlert.remove();
+                            }
+                        }, 3000);
+                        
+                    } else {
+                        formContainer.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error reloading form:', error);
+                    formContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle me-2"></i>Project Updated Successfully!</h5>
+                            <p>Your changes have been saved, including any new attachments.</p>
+                        </div>
+                        <div class="alert alert-info">
+                            <h6>Next Steps:</h6>
+                            <p>Please close this modal and reopen it to see the updated attachments, or refresh the page.</p>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="window.location.reload()">
+                                <i class="fas fa-refresh me-1"></i>Refresh Page
+                            </button>
+                        </div>
+                    `;
+                });
         } else {
             // Error - show error message and don't reload
             formContainer.innerHTML = `
