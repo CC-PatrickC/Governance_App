@@ -263,7 +263,7 @@
             <div class="file-upload-area" id="fileUploadArea">
                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                 <h5>Upload Supporting Documents</h5>
-                <p class="text-muted">Drag and drop files here or click to browse</p>
+                <p class="text-muted">Drag and drop up to 5 files here or click to browse</p>
                 <input type="file" class="form-control" id="files" name="files" multiple 
                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
                        style="display: none;">
@@ -314,17 +314,47 @@ fileUploadArea.addEventListener('dragleave', () => {
 fileUploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     fileUploadArea.classList.remove('dragover');
-    fileInput.files = e.dataTransfer.files;
-    updateFileList();
+    addFiles(e.dataTransfer.files);
 });
 
-fileInput.addEventListener('change', updateFileList);
+fileInput.addEventListener('change', (e) => {
+    addFiles(e.target.files);
+});
+
+function addFiles(newFiles) {
+    const dt = new DataTransfer();
+    const currentFiles = fileInput.files;
+    
+    // Add existing files first
+    for (let i = 0; i < currentFiles.length; i++) {
+        dt.items.add(currentFiles[i]);
+    }
+    
+    // Add new files, but respect the 5-file limit
+    for (let i = 0; i < newFiles.length; i++) {
+        if (dt.files.length < 5) {
+            dt.items.add(newFiles[i]);
+        } else {
+            alert('You can upload a maximum of 5 files. Some files were not added.');
+            break;
+        }
+    }
+    
+    fileInput.files = dt.files;
+    updateFileList();
+}
 
 function updateFileList() {
     fileList.innerHTML = '';
     const files = fileInput.files;
     
     if (files.length > 0) {
+        // Add file count header
+        const header = document.createElement('div');
+        header.className = 'mb-2 text-muted';
+        header.innerHTML = `<small><strong>Files selected:</strong> ${files.length}/5</small>`;
+        fileList.appendChild(header);
+        
         const list = document.createElement('div');
         list.className = 'list-group';
         

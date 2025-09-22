@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test, login_not_required
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate, login
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
@@ -179,7 +180,6 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -346,8 +346,15 @@ def project_triage(request):
 
 @login_required
 def project_update_ajax(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
     # Check if user has permission to edit projects
-    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+    # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+    can_edit = (is_triage_user(request.user) or 
+                is_triage_lead_user(request.user) or 
+                project.submitted_by == request.user)
+    
+    if not can_edit:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'error': 'You do not have permission to edit this request.'})
         else:
@@ -373,7 +380,6 @@ def project_update_ajax(request, pk):
         return render(request, 'projects/project_edit.html', {'project': project})
         
     try:
-        project = get_object_or_404(Project, pk=pk)
         
         # Check if request is in Governance Closed stage (cannot be edited)
         if project.stage == 'Governance_Closure':
@@ -484,13 +490,13 @@ def project_update_ajax(request, pk):
         
         # Handle file uploads
         files = request.FILES.getlist('files')
+        logger.info(f"Processing {len(files)} file upload(s) for project {pk}")
+        
         if files:
-            logger.info(f"\nProcessing {len(files)} files")
             if len(files) > 5:
                 error_msg = 'You can upload a maximum of 5 files.'
                 messages.error(request, error_msg)
                 
-                # Check if this is an AJAX request
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
@@ -500,9 +506,19 @@ def project_update_ajax(request, pk):
                     return render(request, 'projects/project_edit.html', {'project': project})
             
             for file in files:
-                ProjectFile.objects.create(project=project, file=file)
+                try:
+                    project_file = ProjectFile.objects.create(project=project, file=file)
+                    logger.info(f"Successfully saved file: {file.name} (ID: {project_file.id})")
+                except Exception as file_error:
+                    logger.error(f"Error saving file {file.name}: {str(file_error)}")
+                    raise
+            
+            logger.info(f"Successfully processed {len(files)} file(s)")
+        else:
+            logger.info("No files received in request")
         
-        messages.success(request, 'Project updated successfully!')
+        # Don't set Django messages for AJAX requests - they'll be handled by JavaScript
+        # messages.success(request, 'Project updated successfully!')
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -510,7 +526,8 @@ def project_update_ajax(request, pk):
         })
     except ValueError as e:
         logger.error(f"\nValidation error: {str(e)}")
-        messages.error(request, str(e))
+        # Don't set Django messages for AJAX requests - return error in JSON response
+        # messages.error(request, str(e))
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -525,7 +542,8 @@ def project_update_ajax(request, pk):
         logger.error(f"Traceback: {e.__traceback__}")
         import traceback
         logger.error(f"Full traceback: {traceback.format_exc()}")
-        messages.error(request, f'Error updating project: {str(e)}')
+        # Don't set Django messages for AJAX requests - return error in JSON response
+        # messages.error(request, f'Error updating project: {str(e)}')
         
         # Always return JSON for the update endpoint
         return JsonResponse({
@@ -680,25 +698,69 @@ def project_update(request, pk):
 @login_required
 def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
-    # Check if user has permission to edit projects
-    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
-        return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+    try:
+        logger.info(f"Loading edit form for project {pk}")
+        
+        # Check if user has permission to edit projects
+        # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+        project = get_object_or_404(Project, pk=pk)
+        can_edit = (is_triage_user(request.user) or 
+                    is_triage_lead_user(request.user) or 
+                    project.submitted_by == request.user)
+        
+        if not can_edit:
+            logger.warning(f"User {request.user} lacks permission to edit project {pk}")
+            return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+        
+        project = Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by', 'files').get(pk=pk)
+        logger.info(f"Project {pk} loaded successfully, has {project.files.count()} files")
+        
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            logger.info(f"Project {pk} is in Governance_Closure stage, cannot be edited")
+            return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
+        
+        # Get all users for the contact person dropdown
+        from django.contrib.auth.models import User
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        
+        context = {
+            'project': project,
+            'users': users,
+        }
+        logger.info(f"Rendering edit form template for project {pk}")
+        
+        # Debug: Log the template context
+        logger.info(f"Template context - Project: {project.title}, Files count: {project.files.count()}")
+        
+        return render(request, 'projects/project_edit_form.html', context)
+    except Exception as e:
+        logger.error(f"Error loading edit form for project {pk}: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
+        return JsonResponse({'error': f'Error loading form: {str(e)}'}, status=500)
+
+@login_required
+def debug_project_files(request, pk):
+    """Debug endpoint to check project files"""
+    project = get_object_or_404(Project, pk=pk)
+    files = project.files.all()
     
-    project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
+    file_info = []
+    for file in files:
+        file_info.append({
+            'id': file.id,
+            'name': file.file.name,
+            'url': file.file.url,
+            'uploaded_at': file.uploaded_at.isoformat(),
+            'exists': file.file.storage.exists(file.file.name)
+        })
     
-    # Check if request is in Governance Closed stage (cannot be edited)
-    if project.stage == 'Governance_Closure':
-        return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
-    
-    # Get all users for the contact person dropdown
-    from django.contrib.auth.models import User
-    users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
-    
-    context = {
-        'project': project,
-        'users': users,
-    }
-    return render(request, 'projects/project_edit_form.html', context)
+    return JsonResponse({
+        'project_id': pk,
+        'project_title': project.title,
+        'file_count': len(file_info),
+        'files': file_info
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -737,18 +799,37 @@ def project_delete(request, pk):
     return redirect('projects:project_detail', pk=pk)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
 def delete_attachment(request, project_pk, file_pk):
     project = get_object_or_404(Project, pk=project_pk)
     file = get_object_or_404(ProjectFile, pk=file_pk, project=project)
+    
+    # Check if user has permission to delete attachments
+    # Allow if user is staff, triage user, triage lead user, OR if user is the submitter of the request
+    can_delete = (request.user.is_staff or 
+                  is_triage_user(request.user) or 
+                  is_triage_lead_user(request.user) or 
+                  project.submitted_by == request.user)
+    
+    if not can_delete:
+        messages.error(request, 'You do not have permission to delete this attachment.')
+        return redirect('projects:project_update', pk=project_pk)
     
     if request.method == 'POST':
         try:
             file.delete()
             messages.success(request, 'Attachment deleted successfully.')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Attachment deleted successfully.'})
         except Exception as e:
             messages.error(request, f'Error deleting attachment: {str(e)}')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': f'Error deleting attachment: {str(e)}'})
     
+    # For regular page requests, redirect to project update page
     return redirect('projects:project_update', pk=project_pk)
 
 @login_required
@@ -1208,6 +1289,17 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
+        # Get stage changes for this project
+        stage_changes = project.triage_change_history.filter(field_name='stage').order_by('-changed_at')
+        stage_changes_data = []
+        for change in stage_changes:
+            stage_changes_data.append({
+                'old_value': change.old_value,
+                'new_value': change.new_value,
+                'changed_at': change.changed_at.isoformat(),
+                'changed_by': change.changed_by.get_full_name() or change.changed_by.username
+            })
+        
         # Prepare project data for JSON response with safe date handling
         project_data = {
             'id': project.id,
@@ -1231,6 +1323,7 @@ def project_scoring_details_modal(request, pk):
             'description': project.description,
             'priority': project.priority,
             'stage': project.stage,
+            'stage_changes': stage_changes_data,
         }
         
         # Prepare user score data if it exists
@@ -1635,8 +1728,8 @@ def logout_view(request):
         # Clear the session
         request.session.flush()
     
-    messages.success(request, 'You have been successfully logged out.')
-    return redirect('projects:home')
+    # Redirect to home with logout parameter instead of using messages
+    return HttpResponseRedirect(reverse('projects:home') + '?logged_out=true')
 
 @login_required
 def project_intake_form(request):
@@ -1691,7 +1784,7 @@ def project_intake_form(request):
                     ProjectFile.objects.create(project=project, file=file)
             
             messages.success(request, f'Request "{project.title}" submitted successfully! Your request ID is {project.formatted_id}.')
-            return redirect('projects:project_list')
+            return redirect('projects:my_governance')
             
         except ValueError as e:
             messages.error(request, str(e))
@@ -1726,16 +1819,18 @@ def my_governance(request):
         # Get triage projects for users in Triage Group or Triage Group Lead
         triage_projects = None
         if is_triage_user(request.user) or is_triage_lead_user(request.user):
-            # Get projects in triage stages (excluding closed and user's own projects)
+            # Get projects in triage stages only (excluding deleted and user's own projects)
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
             ).exclude(
                 submitted_by=request.user
+            ).exclude(
+                stage='Deleted'
             ).order_by('-submission_date')
         
-        # Get governance projects for users in Triage Group, AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
+        # Get governance projects for users in AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
         governance_projects = None
-        if (is_triage_user(request.user) or is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
+        if (is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
             is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
             is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
             is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user)):
@@ -1758,22 +1853,11 @@ def my_governance(request):
             if allowed_types:
                 # Governance groups see only their specific project types
                 governance_projects = governance_projects.filter(project_type__in=allowed_types)
-            else:
-                # Triage Group sees ALL governance requests (no exclusions)
-                pass
             
             governance_projects = governance_projects.order_by('-submission_date')
         
-        # Get final governance projects for users in Triage Group
+        # Final governance projects are currently disabled
         final_governance_projects = None
-        if is_triage_user(request.user):
-            # Get all projects that are in final governance review stage
-            final_governance_projects = Project.objects.filter(
-                stage='Under_Review_Final_governance'
-            ).order_by(
-                models.F('final_priority').asc(nulls_last=True), 
-                '-submission_date'
-            )
     
     context = {
         'user_projects': user_projects,
@@ -1810,3 +1894,59 @@ def api_users(request):
         })
     
     return JsonResponse({'users': user_data})
+
+@login_required
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+@require_POST
+def project_delete_request(request, pk):
+    """
+    Mark a project as deleted with a reason.
+    Only triage users can delete projects.
+    """
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        reason = request.POST.get('reason', '').strip()
+        
+        if not reason:
+            return JsonResponse({
+                'success': False,
+                'message': 'A reason for deletion is required.'
+            })
+        
+        # Capture old stage value before changing
+        old_stage = project.stage
+        
+        # Update the project stage to 'Deleted'
+        project.stage = 'Deleted'
+        project.save()
+        
+        # Create a triage note with the deletion reason
+        TriageNote.objects.create(
+            project=project,
+            notes=f"Request deleted by {request.user.get_full_name() or request.user.username}. Reason: {reason}",
+            created_by=request.user
+        )
+        
+        # Create a triage change record
+        TriageChange.objects.create(
+            project=project,
+            changed_by=request.user,
+            field_name='stage',
+            field_label='Stage',
+            old_value=old_stage,
+            new_value='Deleted'
+        )
+        
+        logger.info(f"Project {project.id} ({project.title}) deleted by {request.user.username}. Reason: {reason}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Request has been marked as deleted successfully.'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting project {pk}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': 'An error occurred while deleting the request.'
+        })

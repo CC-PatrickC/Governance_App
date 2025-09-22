@@ -638,6 +638,22 @@
          border: 1px solid #e9ecef;
      }
      
+     .stage-updates-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .stage-update-item {
+         padding: 0.5rem;
+         border-left: 3px solid #D09B2C;
+         background: white;
+         border-radius: 4px;
+         margin-bottom: 0.5rem;
+     }
+     
      .attachment-item {
          display: flex;
          align-items: center;
@@ -832,13 +848,13 @@
             <!-- Meeting Notes and Notifications Section -->
             <div class="cc-content-area">
                 <div class="cc-section-header">
-                    <h2>Meeting Notes & Notifications</h2>
-                    <p class="text-muted">Latest updates and important information</p>
+                    <h2>{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}Meeting Notes & {% endif %}Notifications</h2>
+                    <p class="text-muted">{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}Latest updates and important information{% else %}Recent notifications and updates{% endif %}</p>
                 </div>
                 
                 <div class="row">
                     <!-- Notifications Column -->
-                    <div class="col-md-6 mb-4">
+                    <div class="{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}col-md-6{% else %}col-12{% endif %} mb-4">
                         <div class="cc-notification-card">
                             <div class="cc-notification-header">
                                 <i class="fas fa-bell"></i>
@@ -881,7 +897,8 @@
                         </div>
                     </div>
                     
-                    <!-- Meeting Notes Column -->
+                    <!-- Meeting Notes Column (Only visible for users in groups) -->
+                    {% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
                     <div class="col-md-6 mb-4">
                         <div class="cc-meeting-notes-card">
                             <div class="cc-meeting-notes-header">
@@ -930,6 +947,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -967,10 +985,6 @@
                                     </div>
                                     {% endif %}
                                     <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                                    </div>
-                                    <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
                                         <span class="cc-meta-item">{{ project.get_stage_display }}</span>
                                     </div>
@@ -1006,8 +1020,8 @@
             </div>
             {% endif %}
             
-            <!-- Governance Section (Only visible for Triage Group, AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, and Process Improvement Group Lead users) -->
-            {% if is_triage_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+            <!-- Governance Section (Only visible for AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, and Process Improvement Group Lead users) -->
+            {% if is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
@@ -1039,10 +1053,6 @@
                                         <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
                                     </div>
                                     {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
-                                    </div>
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
                                         <span class="cc-meta-item">{{ project.get_stage_display }}</span>
@@ -1079,8 +1089,8 @@
             </div>
             {% endif %}
             
-            <!-- Final Governance Section (Only visible for Triage Group users) -->
-            {% if is_triage_user %}
+            <!-- Final Governance Section (Currently hidden) -->
+            {% if False %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
@@ -1097,7 +1107,6 @@
                                     <th>Type</th>
                                     <th>Priority</th>
                                     <th>Department</th>
-                                    <th>Status</th>
                                     <th>Final Score</th>
                                     <th>Final Priority</th>
                                 </tr>
@@ -1135,9 +1144,6 @@
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
-                                    </td>
-                                    <td class="cc-project-status-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
                                     </td>
                                     <td class="cc-project-score-cell" onclick="openFinalScoringModal({{ project.id }})">
                                         {% if project.final_score %}
@@ -1223,8 +1229,8 @@
                                     </div>
                                     {% endif %}
                                     <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1293,8 +1299,8 @@
                                     </div>
                                     {% endif %}
                                     <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Status</div>
-                                        <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1342,8 +1348,13 @@
                 <!-- Project details will be loaded here -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none; background-color: #D09B2C; border-color: #D09B2C;">Save Changes</button>
+                <div class="d-flex justify-content-between w-100">
+                    <button type="button" class="btn btn-danger" id="deleteRequestBtn" style="display: none;">Delete Request</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none; background-color: #D09B2C; border-color: #D09B2C;">Save Changes</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1362,6 +1373,32 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Request Modal -->
+<div class="modal fade" id="deleteRequestModal" tabindex="-1" aria-labelledby="deleteRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #dc3545; color: white;">
+                <h5 class="modal-title" id="deleteRequestModalLabel">Delete Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action will mark the request as deleted and cannot be undone.
+                </div>
+                <p><strong>Are you sure you want to delete this request?</strong></p>
+                <div class="mb-3">
+                    <label for="deleteRequestReason" class="form-label">Please provide a reason for deletion:</label>
+                    <textarea class="form-control" id="deleteRequestReason" rows="3" placeholder="Enter reason for deletion..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteRequestBtn">Delete Request</button>
             </div>
         </div>
     </div>
@@ -1390,7 +1427,10 @@ function showProjectDetails(projectId) {
                 saveBtn.style.display = 'none';
                 
                 modalBody.innerHTML = `
-                    <div class="project-title mb-3">${project.title}</div>
+                    <div class="project-title mb-3 d-flex justify-content-between align-items-center">
+                        <span>${project.title}</span>
+                        <span class="text-muted" style="font-size: 0.9em;">#${project.id.toString().padStart(3, '0')}</span>
+                    </div>
                     
                                                               <div class="request-details-section">
                          <div class="row">
@@ -1400,7 +1440,6 @@ function showProjectDetails(projectId) {
                                                                            <div class="detail-content">
                                           <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                                           <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                                          <p><strong>Status:</strong> ${project.status_display}</p>
                                           <p><strong>Priority:</strong> ${project.priority}</p>
                                       </div>
                                  </div>
@@ -1451,8 +1490,22 @@ function showProjectDetails(projectId) {
                                   </div>
                               </div>
                           </div>
+                          
+                          <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Stage Updates</div>
+                                      <div class="detail-content" id="stageUpdatesContent">
+                                          <p class="text-muted">Loading stage updates...</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
                       </div>
                 `;
+                
+                // Populate stage updates immediately after setting modal content
+                populateStageUpdates(project.stage_changes);
                 
                 const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
                 modal.show();
@@ -1472,12 +1525,14 @@ function openTriageEditModal(projectId) {
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
     const saveBtn = document.getElementById('saveChangesBtn');
+    const deleteBtn = document.getElementById('deleteRequestBtn');
     
     // Update modal title
     modalTitle.textContent = 'Edit Request - Triage';
     
-    // Hide save button initially
+    // Hide buttons initially
     saveBtn.style.display = 'none';
+    deleteBtn.style.display = 'none';
     
     // Show loading state
     modalBody.innerHTML = `
@@ -1496,7 +1551,7 @@ function openTriageEditModal(projectId) {
     fetch(`/${projectId}/edit-form/`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
             }
             return response.text();
         })
@@ -1512,11 +1567,14 @@ function openTriageEditModal(projectId) {
                 form.removeAttribute('action');
                 form.method = 'POST';
                 
-                // Show save button
+                // Show save and delete buttons
                 saveBtn.style.display = 'inline-block';
+                deleteBtn.style.display = 'inline-block';
+                
                 
                 // Initialize contact person autocomplete
                 initializeContactPersonAutocomplete();
+                
                 
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
@@ -1526,8 +1584,76 @@ function openTriageEditModal(projectId) {
                 
                 // Add click handler to save button
                 saveBtn.addEventListener('click', function() {
-                    form.dispatchEvent(new Event('submit'));
+                    submitTriageEditForm(form, projectId);
                 });
+                
+                // Add click handler to delete button
+                deleteBtn.addEventListener('click', function() {
+                    openDeleteRequestModal(projectId);
+                });
+                
+                // Add delete attachment functionality
+                window.deleteAttachment = function(projectId, fileId, buttonElement) {
+                    if (!confirm('Are you sure you want to delete this attachment?')) {
+                        return;
+                    }
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    // Show loading state on button
+                    const originalContent = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    buttonElement.disabled = true;
+                    
+                    fetch(`/${projectId}/attachment/${fileId}/delete/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the attachment row from the DOM
+                            const attachmentRow = buttonElement.closest('.list-group-item');
+                            if (attachmentRow) {
+                                attachmentRow.remove();
+                            }
+                            
+                            // Show success message
+                            const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+                            const successDiv = document.createElement('div');
+                            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+                            successDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Success!</strong> ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+                            modalBody.insertBefore(successDiv, modalBody.firstChild);
+                            
+                            // Auto-dismiss success message after 3 seconds
+                            setTimeout(() => {
+                                if (successDiv && successDiv.parentNode) {
+                                    successDiv.remove();
+                                }
+                            }, 3000);
+                        } else {
+                            // Show error message
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting attachment:', error);
+                        alert('Error deleting attachment. Please try again.');
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        buttonElement.innerHTML = originalContent;
+                        buttonElement.disabled = false;
+                    });
+                };
             } else {
                 modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
                 saveBtn.style.display = 'none';
@@ -1543,14 +1669,34 @@ function openTriageEditModal(projectId) {
 // Function to submit triage edit form
 function submitTriageEditForm(form, projectId) {
     const formData = new FormData(form);
+    
+    // Get modal body reference first
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    
     const saveBtn = document.getElementById('saveChangesBtn');
     
     // Hide save button during save process
-    saveBtn.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = 'none';
     
-    // Show loading state
-    modalBody.innerHTML = `
+    // Get CSRF token BEFORE we modify the DOM
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Add loading overlay instead of replacing content
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading-overlay';
+    loadingOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    loadingOverlay.innerHTML = `
         <div class="text-center">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -1558,13 +1704,16 @@ function submitTriageEditForm(form, projectId) {
             <p class="mt-2">Saving changes...</p>
         </div>
     `;
+    modalBody.style.position = 'relative';
+    modalBody.appendChild(loadingOverlay);
+    
     
     fetch(`/${projectId}/update-ajax/`, {
         method: 'POST',
         body: formData,
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': csrfToken ? csrfToken.value : ''
         }
     })
     .then(response => {
@@ -1575,35 +1724,85 @@ function submitTriageEditForm(form, projectId) {
     })
     .then(data => {
         if (data.success) {
-            // Success - show success message and close modal
-            modalBody.innerHTML = `
-                <div class="alert alert-success">
-                    <h5>Success!</h5>
-                    <p>Request updated successfully.</p>
-                </div>
-            `;
+            // Remove loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.remove();
             
-            // Auto-close modal after 2 seconds
-            setTimeout(() => {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
-                if (modal) {
-                    modal.hide();
-                }
-                // Refresh the page to show updated data
-                window.location.reload();
-            }, 2000);
-        } else {
-            // Error - show error message
-            modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5>Error Updating Request</h5>
-                    <p>${data.message || 'An error occurred while saving the request.'}</p>
-                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(${projectId})">
-                        <i class="fas fa-redo"></i> Try Again
-                    </button>
-                </div>
+            // Show success message at top of form
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> Your changes have been saved, including any new attachments.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
-            // Don't show save button on error - user needs to reload form
+            modalBody.insertBefore(successDiv, modalBody.firstChild);
+            
+            // Re-show save button
+            const saveBtn = document.getElementById('saveChangesBtn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            
+            // Reload the form to show updated attachments
+            fetch(`/${projectId}/edit-form/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Replace the form content (but keep the success message)
+                    const formElement = modalBody.querySelector('form');
+                    if (formElement) {
+                        // Create a temporary container to parse the new HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        const newForm = tempDiv.querySelector('form');
+                        
+                        if (newForm) {
+                            // Replace the form content
+                            formElement.innerHTML = newForm.innerHTML;
+                            
+                            // Re-initialize contact person autocomplete
+                            initializeContactPersonAutocomplete();
+                            
+                            // Clear the file input
+                            const fileInput = formElement.querySelector('input[type="file"]');
+                            if (fileInput) {
+                                fileInput.value = '';
+                            }
+                            
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error reloading form:', error);
+                });
+            
+            // Auto-dismiss success message after 5 seconds
+            setTimeout(() => {
+                if (successDiv && successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 5000);
+        } else {
+            // Remove loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.remove();
+            
+            // Show error message at top of form
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger alert-dismissible fade show mb-3';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Error!</strong> ${data.message || 'An error occurred while saving the request.'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            modalBody.insertBefore(errorDiv, modalBody.firstChild);
+            
+            // Re-show save button
+            const saveBtn = document.getElementById('saveChangesBtn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
         }
     })
     .catch(error => {
@@ -1679,7 +1878,6 @@ function openGovernanceScoringModal(projectId) {
                     <div class="info-content compact">
                         <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
                         <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
-                        <p class="mb-2"><strong>Status:</strong> ${project.status_display || 'N/A'}</p>
                         ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
                     </div>
                 </div>
@@ -1714,6 +1912,14 @@ function openGovernanceScoringModal(projectId) {
                                 </a>
                             </div>
                         ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                    </div>
+                </div>
+                
+                <!-- Stage Updates Section -->
+                <div class="stage-updates-section mb-3">
+                    <h6 class="section-header small">Stage Updates</h6>
+                    <div class="info-content compact" id="stageUpdatesContent">
+                        <p class="text-muted mb-0">Loading stage updates...</p>
                     </div>
                 </div>
                 
@@ -2419,6 +2625,116 @@ function initializeContactPersonAutocomplete() {
             suggestion.classList.toggle('active', index === currentFocus);
         });
     }
+}
+
+// Function to open delete request modal
+function openDeleteRequestModal(projectId) {
+    // Hide edit modal
+    const editModal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+    editModal.hide();
+    
+    // Show delete modal
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteRequestModal'));
+    deleteModal.show();
+    
+    // Clear previous reason
+    document.getElementById('deleteRequestReason').value = '';
+    
+    // Add click handler to confirm delete button
+    const confirmDeleteBtn = document.getElementById('confirmDeleteRequestBtn');
+    confirmDeleteBtn.onclick = function() {
+        deleteRequest(projectId);
+    };
+}
+
+// Function to populate stage updates
+function populateStageUpdates(stageChanges) {
+    console.log('DEBUG: populateStageUpdates called with:', stageChanges);
+    const stageUpdatesContent = document.getElementById('stageUpdatesContent');
+    
+    if (!stageUpdatesContent) {
+        console.log('DEBUG: stageUpdatesContent element not found');
+        return;
+    }
+    
+    if (stageChanges && stageChanges.length > 0) {
+        const stageUpdatesHtml = stageChanges.map(change => `
+            <div class="mb-2" style="padding: 0.5rem; border-left: 3px solid #D09B2C; background: white; border-radius: 4px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span>${change.old_value || 'Initial'}</span>
+                        <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                        <span class="fw-bold">${change.new_value || 'N/A'}</span>
+                    </div>
+                    <small class="text-muted">${new Date(change.changed_at).toLocaleString()}</small>
+                </div>
+            </div>
+        `).join('');
+        
+        stageUpdatesContent.innerHTML = stageUpdatesHtml;
+        console.log('DEBUG: Stage updates populated successfully');
+    } else {
+        stageUpdatesContent.innerHTML = '<p class="text-muted">No stage updates available.</p>';
+        console.log('DEBUG: No stage changes found');
+    }
+}
+
+// Function to delete request
+function deleteRequest(projectId) {
+    const deleteReason = document.getElementById('deleteRequestReason').value.trim();
+    const confirmDeleteBtn = document.getElementById('confirmDeleteRequestBtn');
+    
+    // Validate reason
+    if (!deleteReason) {
+        alert('Please provide a reason for deletion.');
+        return;
+    }
+    
+    // Disable button and show loading
+    confirmDeleteBtn.disabled = true;
+    confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('reason', deleteReason);
+    
+    fetch(`/${projectId}/delete-request/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Success - hide modal and reload page
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteRequestModal'));
+            deleteModal.hide();
+            window.location.reload();
+        } else {
+            // Error - show error message
+            alert(data.message || 'An error occurred while deleting the request.');
+            
+            // Re-enable button
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.innerHTML = 'Delete Request';
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting request:', error);
+        alert('An error occurred while deleting the request.');
+        
+        // Re-enable button
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.innerHTML = 'Delete Request';
+    });
 }
 </script>
 {% endblock %}

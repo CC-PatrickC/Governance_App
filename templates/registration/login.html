@@ -211,9 +211,21 @@
                 </form>
             </div>
             
+            {% if request.GET.logged_out %}
+                <div class="alert alert-success text-center" style="margin-top: 15px; padding: 10px; background-color: #d1edff; border-radius: 6px; border: 1px solid #bee5eb; color: #0c5460;">
+                    You have been successfully logged out.
+                </div>
+            {% endif %}
+            
             {% if messages %}
                 {% for message in messages %}
-                    <div class="error-message">{{ message }}</div>
+                    {% if message.tags == 'error' %}
+                        <div class="error-message">{{ message }}</div>
+                    {% elif message.tags == 'success' %}
+                        <div class="alert alert-success text-center" style="margin-top: 15px; padding: 10px; background-color: #d1edff; border-radius: 6px; border: 1px solid #bee5eb; color: #0c5460;">
+                            {{ message }}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
         </div>

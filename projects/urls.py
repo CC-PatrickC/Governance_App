@@ -26,6 +26,7 @@ urlpatterns = [
     path('<int:pk>/update-status/', views.project_update_status, name='project_update_status'),
     path('<int:pk>/update-type/', views.project_update_type, name='project_update_type'),
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),
+    path('<int:pk>/delete-request/', views.project_delete_request, name='project_delete_request'),
     path('<int:pk>/score/', views.project_scoring, name='project_scoring'),
     path('<int:pk>/final-score/', views.project_final_scoring, name='project_final_scoring'),
     path('<int:pk>/final-score-details/', views.project_final_scoring_details, name='project_final_scoring_details'),
@@ -33,6 +34,7 @@ urlpatterns = [
     path('<int:pk>/final-scoring-details-modal/', views.project_final_scoring_details_modal, name='project_final_scoring_details_modal'),
     path('<int:pk>/update-final-priority/', views.update_final_priority, name='update_final_priority'),
     path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
+    path('<int:pk>/debug-files/', views.debug_project_files, name='debug_project_files'),
     path('api/users/', views.api_users, name='api_users'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
 ] 
