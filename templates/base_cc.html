@@ -858,6 +858,29 @@
                     </div>
                     {% if user.is_authenticated %}
                     <div class="header-user">
+                        <div class="user-info-display" style="display: flex; align-items: center; gap: 1rem; margin-right: 1rem;">
+                            <div style="color: white; font-size: 0.9rem; font-weight: 500;">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                {% if user.is_superuser %}
+                                    | SuperUser
+                                {% else %}
+                                    {% load project_tags %}
+                                    {% if is_triage_lead_user or is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                                        {% if is_triage_lead_user %} | Triage Lead{% endif %}
+                                        {% if is_ai_governance_lead_user %} | AI Governance Lead{% endif %}
+                                        {% if is_erp_governance_lead_user %} | ERP Governance Lead{% endif %}
+                                        {% if is_it_governance_lead_user %} | IT Governance Lead{% endif %}
+                                        {% if is_process_improvement_lead_user %} | Process Improvement Lead{% endif %}
+                                    {% elif is_triage_user or is_ai_governance_user or is_erp_governance_user or is_it_governance_user or is_process_improvement_user %}
+                                        {% if is_triage_user %} | Triage{% endif %}
+                                        {% if is_ai_governance_user %} | AI Governance{% endif %}
+                                        {% if is_erp_governance_user %} | ERP Governance{% endif %}
+                                        {% if is_it_governance_user %} | IT Governance{% endif %}
+                                        {% if is_process_improvement_user %} | Process Improvement{% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                         <div class="notification-bell">
                             <button class="notification-toggle" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-bell"></i>
