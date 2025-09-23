@@ -120,6 +120,9 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
         'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 

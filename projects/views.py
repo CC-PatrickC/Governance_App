@@ -1289,16 +1289,21 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
-        # Get stage changes for this project
-        stage_changes = project.triage_change_history.filter(field_name='stage').order_by('-changed_at')
+        # Get stage changes for this project (with backward compatibility)
         stage_changes_data = []
-        for change in stage_changes:
-            stage_changes_data.append({
-                'old_value': change.old_value,
-                'new_value': change.new_value,
-                'changed_at': change.changed_at.isoformat(),
-                'changed_by': change.changed_by.get_full_name() or change.changed_by.username
-            })
+        try:
+            stage_changes = project.triage_change_history.filter(field_name='stage').order_by('-changed_at')
+            for change in stage_changes:
+                stage_changes_data.append({
+                    'old_value': change.old_value,
+                    'new_value': change.new_value,
+                    'changed_at': change.changed_at.isoformat(),
+                    'changed_by': change.changed_by.get_full_name() or change.changed_by.username
+                })
+        except Exception as e:
+            # TriageChange table might not exist in older deployments
+            print(f"WARNING: Could not fetch triage changes: {str(e)}")
+            stage_changes_data = []
         
         # Prepare project data for JSON response with safe date handling
         project_data = {
