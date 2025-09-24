@@ -2,6 +2,59 @@
 {% load tz %}
 
 <style>
+/* Drag and Drop File Upload Styles */
+.file-drop-zone {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover {
+    border-color: #D09B2C;
+    background-color: #fff8e1;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #D09B2C;
+    background-color: #fff3cd;
+    border-style: solid;
+    transform: scale(1.02);
+}
+
+.file-drop-content {
+    pointer-events: none;
+    color: #6c757d;
+}
+
+.file-drop-zone.drag-over .file-drop-content {
+    color: #D09B2C;
+}
+
+.file-drop-zone.drag-over .file-drop-content i {
+    color: #D09B2C;
+    transform: scale(1.1);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-drop-zone i {
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
 .autocomplete-suggestions {
     position: absolute;
     background: white;
@@ -118,8 +171,14 @@
 
     <div class="mb-3">
         <label for="files" class="form-label">Add New Attachments</label>
-        <input type="file" class="form-control" id="files" name="files" multiple>
-        <small class="form-text text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+        <div class="file-drop-zone" id="file-drop-zone">
+            <div class="file-drop-content">
+                <i class="fas fa-cloud-upload-alt fa-2x mb-3"></i>
+                <p class="mb-2">Drag and drop files here or click to browse</p>
+                <small class="text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+            </div>
+            <input type="file" class="form-control file-input" id="files" name="files" multiple>
+        </div>
     </div>
 
     <div class="form-group">
@@ -161,7 +220,7 @@
                     <i class="fas fa-file me-2"></i> {{ file.file.name|cut:"project_files/" }}
                 </a>
                 <div>
-                    <small class="text-muted me-3">Uploaded: {{ file.uploaded_at|date:"M d, Y" }}</small>
+                    <small class="text-muted me-3">Uploaded: {% timezone "America/Denver" %}{{ file.uploaded_at|date:"M d, Y g:i a T" }}{% endtimezone %}</small>
                     <button type="button" class="btn btn-sm btn-danger" onclick="deleteAttachment({{ project.pk }}, {{ file.pk }}, this)">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -201,3 +260,61 @@
     </div>
     {% endif %}
 </form>
+
+<script>
+// Drag and Drop File Upload Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('file-drop-zone');
+    const fileInput = document.getElementById('files');
+    
+    if (dropZone && fileInput) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle click to browse
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        dropZone.classList.add('drag-over');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        // Set the files to the file input
+        fileInput.files = files;
+        
+        // Trigger change event to notify any listeners
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    }
+});
+</script>

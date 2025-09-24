@@ -120,7 +120,7 @@ def track_project_changes(project, form_data, user):
     return changes_made
 
 def is_scoring_user(user):
-    return (user.is_staff or 
+    return (user.is_superuser or user.is_staff or 
             user.groups.filter(name='AI Governance Group').exists() or 
             user.groups.filter(name='AI Governance Group Lead').exists() or
             user.groups.filter(name='ERP Governance Group').exists() or 
@@ -130,6 +130,18 @@ def is_scoring_user(user):
             user.groups.filter(name='Process Improvement Group').exists() or 
             user.groups.filter(name='Process Improvement Group Lead').exists() or
             (not user.groups.filter(name='Cabinet Group').exists() and not user.groups.filter(name='Triage Group').exists()))
+
+def can_modify_final_priority(user):
+    """Check if user can modify final priority ranks in Under Review - Final Governance section.
+    Excludes AI/ERP/IT/Process Improvement Lead groups from modifying final priority."""
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Allow regular governance group members (not leads) to modify final priority
+    return (user.groups.filter(name='AI Governance Group').exists() or 
+            user.groups.filter(name='ERP Governance Group').exists() or
+            user.groups.filter(name='IT Governance Group').exists() or
+            user.groups.filter(name='Process Improvement Group').exists())
 
 def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
@@ -1160,6 +1172,11 @@ def update_final_priority(request, pk):
         print(f"DEBUG: User not allowed for project type {project.project_type}")
         return JsonResponse({'success': False, 'error': 'You do not have permission to access this project.'})
     
+    # Check if user can modify final priority (excludes Lead groups)
+    if not can_modify_final_priority(request.user):
+        print(f"DEBUG: User {request.user} does not have permission to modify final priority")
+        return JsonResponse({'success': False, 'error': 'You do not have permission to modify final priority ranks.'})
+    
     try:
         data = json.loads(request.body)
         final_priority = data.get('final_priority')
@@ -1270,6 +1287,8 @@ def test_modal_view(request):
     print("DEBUG: test_modal_view called!")
     return JsonResponse({'status': 'success', 'message': 'Test modal view working'})
 
+@login_required
+@user_passes_test(is_scoring_user)
 def project_scoring_details_modal(request, pk):
     try:
         print(f"DEBUG: project_scoring_details_modal called with pk={pk}")
@@ -1821,9 +1840,9 @@ def my_governance(request):
             Q(contact_person=user_username)
         ).exclude(submitted_by=request.user).order_by('-submission_date')
     
-        # Get triage projects for users in Triage Group or Triage Group Lead
+        # Get triage projects for users in Triage Group or Triage Group Lead, or superusers
         triage_projects = None
-        if is_triage_user(request.user) or is_triage_lead_user(request.user):
+        if request.user.is_superuser or is_triage_user(request.user) or is_triage_lead_user(request.user):
             # Get projects in triage stages only (excluding deleted and user's own projects)
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
@@ -1833,9 +1852,10 @@ def my_governance(request):
                 stage='Deleted'
             ).order_by('-submission_date')
         
-        # Get governance projects for users in AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, or Process Improvement Group Lead
+        # Get governance projects for users in governance groups or superusers
         governance_projects = None
-        if (is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
+        if (request.user.is_superuser or 
+            is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
             is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
             is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
             is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user)):
@@ -1844,25 +1864,75 @@ def my_governance(request):
                 stage='Under_Review_governance'
             )
             
-            # Filter by project type based on user's group
-            allowed_types = []
-            if is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user):
-                allowed_types.append('ai_governance')
-            if is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user):
-                allowed_types.append('erp_governance')
-            if is_it_governance_user(request.user) or is_it_governance_lead_user(request.user):
-                allowed_types.append('it_governance')
-            if is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user):
-                allowed_types.append('process_improvement')
-            
-            if allowed_types:
-                # Governance groups see only their specific project types
-                governance_projects = governance_projects.filter(project_type__in=allowed_types)
+            # Filter by project type based on user's group (superusers see all types)
+            if not request.user.is_superuser:
+                allowed_types = []
+                if is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user):
+                    allowed_types.append('ai_governance')
+                if is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user):
+                    allowed_types.append('erp_governance')
+                if is_it_governance_user(request.user) or is_it_governance_lead_user(request.user):
+                    allowed_types.append('it_governance')
+                if is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user):
+                    allowed_types.append('process_improvement')
+                
+                if allowed_types:
+                    # Governance groups see only their specific project types
+                    governance_projects = governance_projects.filter(project_type__in=allowed_types)
             
             governance_projects = governance_projects.order_by('-submission_date')
         
-        # Final governance projects are currently disabled
+        # Get final governance projects for scoring users, superusers, or triage users
         final_governance_projects = None
+        if request.user.is_superuser or is_scoring_user(request.user) or is_triage_user(request.user) or is_triage_lead_user(request.user):
+            # Get projects in final governance review stage
+            final_governance_projects = Project.objects.filter(
+                stage='Under_Review_Final_governance'
+            )
+            
+            # Apply group-based filtering if user is not staff or superuser
+            if not request.user.is_staff and not request.user.is_superuser:
+                allowed_types = get_user_allowed_project_types(request.user)
+                if allowed_types is not None:
+                    final_governance_projects = final_governance_projects.filter(project_type__in=allowed_types)
+            
+            final_governance_projects = final_governance_projects.order_by(
+                models.F('final_priority').asc(nulls_last=True), 
+                '-submission_date'
+            )
+    
+    # Determine user's committee/role for display
+    def get_user_committee_display(user):
+        if user.is_superuser:
+            return "SuperUser"
+        
+        committees = []
+        if is_triage_lead_user(user):
+            committees.append("Triage Lead")
+        elif is_triage_user(user):
+            committees.append("Triage")
+            
+        if is_ai_governance_lead_user(user):
+            committees.append("AI Governance Lead")
+        elif is_ai_governance_user(user):
+            committees.append("AI Governance")
+            
+        if is_erp_governance_lead_user(user):
+            committees.append("ERP Governance Lead")
+        elif is_erp_governance_user(user):
+            committees.append("ERP Governance")
+            
+        if is_it_governance_lead_user(user):
+            committees.append("IT Governance Lead")
+        elif is_it_governance_user(user):
+            committees.append("IT Governance")
+            
+        if is_process_improvement_lead_user(user):
+            committees.append("Process Improvement Lead")
+        elif is_process_improvement_user(user):
+            committees.append("Process Improvement")
+        
+        return " | ".join(committees) if committees else "User"
     
     context = {
         'user_projects': user_projects,
@@ -1880,8 +1950,41 @@ def my_governance(request):
         'is_it_governance_lead_user': is_it_governance_lead_user(request.user),
         'is_process_improvement_user': is_process_improvement_user(request.user),
         'is_process_improvement_lead_user': is_process_improvement_lead_user(request.user),
+        'is_scoring_user': is_scoring_user(request.user),
+        'is_superuser': request.user.is_superuser,
+        'can_modify_final_priority': can_modify_final_priority(request.user),
+        'user_committee_display': get_user_committee_display(request.user),
     }
     return render(request, 'projects/my_governance.html', context)
+
+@login_required
+def project_details_readonly(request, pk):
+    """API endpoint to get project details for superuser read-only view"""
+    project = get_object_or_404(Project, pk=pk)
+    
+    # Only allow superusers to access this endpoint
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Prepare project data for read-only display
+    project_data = {
+        'id': project.id,
+        'title': project.title,
+        'description': project.description,
+        'formatted_id': project.formatted_id,
+        'project_type_display': project.get_project_type_display(),
+        'priority_display': project.get_priority_display(),
+        'department': project.department,
+        'stage_display': project.get_stage_display(),
+        'status_display': project.get_status_display(),
+        'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by else project.submitted_by.username if project.submitted_by else 'Unknown',
+        'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else 'N/A',
+        'final_score': project.final_score,
+        'final_priority': project.final_priority,
+        'triage_notes': project.triage_notes,
+    }
+    
+    return JsonResponse({'project': project_data})
 
 @login_required
 def api_users(request):

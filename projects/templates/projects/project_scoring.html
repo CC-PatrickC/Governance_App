@@ -144,7 +144,7 @@
                                         <td>
                                             <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.strategic_alignment|default:1 }}"
+                                                   value="{{ user_score.strategic_alignment|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -161,7 +161,7 @@
                                         <td>
                                             <input type="number" name="cost_benefit" id="cost_benefit" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.cost_benefit|default:1 }}"
+                                                   value="{{ user_score.cost_benefit|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -178,7 +178,7 @@
                                         <td>
                                             <input type="number" name="user_impact" id="user_impact" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.user_impact|default:1 }}"
+                                                   value="{{ user_score.user_impact|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -195,7 +195,7 @@
                                         <td>
                                             <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.ease_of_implementation|default:1 }}"
+                                                   value="{{ user_score.ease_of_implementation|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -212,7 +212,7 @@
                                         <td>
                                             <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.vendor_reputation_support|default:1 }}"
+                                                   value="{{ user_score.vendor_reputation_support|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -229,7 +229,7 @@
                                         <td>
                                             <input type="number" name="security_compliance" id="security_compliance" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.security_compliance|default:1 }}"
+                                                   value="{{ user_score.security_compliance|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -246,7 +246,7 @@
                                         <td>
                                             <input type="number" name="student_centered" id="student_centered" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ user_score.student_centered|default:1 }}"
+                                                   value="{{ user_score.student_centered|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -345,7 +345,7 @@
 
 <script>
     function calculateWeightedScore(input) {
-        const score = parseFloat(input.value) || 1;
+        const score = parseFloat(input.value) || 0;
         let weight = 0.2; // Default weight for strategic alignment and user impact
         
         // Set weight based on the input field
@@ -363,13 +363,13 @@
         weightedScoreElement.textContent = weightedScore.toFixed(2);
         
         // Calculate and update the final score
-        const strategicAlignmentScore = parseFloat(document.getElementById('strategic_alignment').value) || 1;
-        const costBenefitScore = parseFloat(document.getElementById('cost_benefit').value) || 1;
-        const userImpactScore = parseFloat(document.getElementById('user_impact').value) || 1;
-        const easeOfImplementationScore = parseFloat(document.getElementById('ease_of_implementation').value) || 1;
-        const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 1;
-        const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 1;
-        const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 1;
+        const strategicAlignmentScore = parseFloat(document.getElementById('strategic_alignment').value) || 0;
+        const costBenefitScore = parseFloat(document.getElementById('cost_benefit').value) || 0;
+        const userImpactScore = parseFloat(document.getElementById('user_impact').value) || 0;
+        const easeOfImplementationScore = parseFloat(document.getElementById('ease_of_implementation').value) || 0;
+        const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 0;
+        const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 0;
+        const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 0;
         
         const finalScore = (strategicAlignmentScore * 0.2) + 
                           (costBenefitScore * 0.15) + 

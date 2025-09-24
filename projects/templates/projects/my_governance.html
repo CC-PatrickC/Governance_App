@@ -834,6 +834,32 @@
         color: #6c757d;
         margin-left: 8px;
     }
+
+    /* Hide/Show Scorer Names Checkbox Styles */
+    .form-check {
+        margin-bottom: 0;
+    }
+
+    .form-check-input {
+        margin-top: 0.2rem;
+    }
+
+    .form-check-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+
+    .form-check-input:checked {
+        background-color: #D09B2C;
+        border-color: #D09B2C;
+    }
+
+    .form-check-input:focus {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
 </style>
 {% endblock %}
 
@@ -951,8 +977,8 @@
                 </div>
             </div>
             
-            <!-- Triage Section (Only visible for Triage Group and Triage Group Lead users) -->
-            {% if is_triage_user or is_triage_lead_user %}
+            <!-- Triage Section (Visible for Triage Group, Triage Group Lead users, and superusers) -->
+            {% if is_superuser or is_triage_user or is_triage_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Triage Requests ({{ triage_projects.count }})</h2>
@@ -1020,8 +1046,8 @@
             </div>
             {% endif %}
             
-            <!-- Governance Section (Only visible for AI Governance Group, AI Governance Group Lead, ERP Governance Group, ERP Governance Group Lead, IT Governance Group, IT Governance Group Lead, Process Improvement Group, and Process Improvement Group Lead users) -->
-            {% if is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+            <!-- Governance Section (Visible for governance group users and superusers) -->
+            {% if is_superuser %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
@@ -1087,10 +1113,79 @@
                     </div>
                 {% endif %}
             </div>
+            {% else %}
+                {% if is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
+                    <p class="text-muted">Requests currently being reviewed by governance committee</p>
+                </div>
+                
+                {% if governance_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in governance_projects %}
+                        <div class="cc-project-card governance-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="openGovernanceScoringModal({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-gavel"></i>
+                        <h4>No Governance Requests</h4>
+                        <p>There are no requests currently in the governance review phase.</p>
+                    </div>
+                {% endif %}
+            </div>
+                {% endif %}
             {% endif %}
             
-            <!-- Final Governance Section (Currently hidden) -->
-            {% if False %}
+            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
+            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+                {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
@@ -1153,6 +1248,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="cc-project-final-priority-cell">
+                                        {% if can_modify_final_priority %}
                                         <div class="cc-rank-display d-flex align-items-center">
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
@@ -1162,15 +1258,9 @@
                                                     style="padding: 2px 6px; margin-right: 2px;">
                                                 <i class="fas fa-chevron-up"></i>
                                             </button>
-                                            <input type="number" 
-                                                   class="cc-priority-input final-priority-input" 
-                                                   value="{{ project.final_priority|default:'' }}"
-                                                   min="1"
-                                                   data-project-id="{{ project.id }}"
-                                                   placeholder="Rank"
-                                                   onclick="event.stopPropagation();"
-                                                   onkeypress="if(event.key==='Enter') updateFinalPriority({{ project.id }}, this.value);"
-                                                   style="width: 60px; text-align: center; margin: 0 2px;">
+                                            <span class="badge mx-2" style="font-size: 0.8rem; min-width: 30px; text-align: center; background-color: transparent; border: 1px solid #6c757d; color: #6c757d;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
                                                     data-project-id="{{ project.id }}"
@@ -1180,6 +1270,13 @@
                                                 <i class="fas fa-chevron-down"></i>
                                             </button>
                                         </div>
+                                        {% else %}
+                                        <div class="cc-rank-display d-flex align-items-center justify-content-center">
+                                            <span class="badge bg-secondary" style="font-size: 0.8rem;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
+                                        </div>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -1194,6 +1291,7 @@
                     </div>
                 {% endif %}
             </div>
+                {% endif %}
             {% endif %}
             
             <!-- MyRequests Section -->
@@ -1822,8 +1920,8 @@ function submitTriageEditForm(form, projectId) {
 
 // Function to open governance scoring modal
 function openGovernanceScoringModal(projectId) {
-    {% if is_triage_user or is_triage_lead_user %}
-    // Triage users get the edit form instead of scoring modal
+    {% if is_triage_user and not is_superuser or is_triage_lead_user and not is_superuser %}
+    // Triage users (but not superusers) get the edit form instead of scoring modal
     openTriageEditModal(projectId);
     return;
     {% endif %}
@@ -1948,8 +2046,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.strategic_alignment || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.strategic_alignment || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -1965,8 +2064,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="cost_benefit" id="cost_benefit" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.cost_benefit || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.cost_benefit || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="cost_benefit_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -1982,8 +2082,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="user_impact" id="user_impact" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.user_impact || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.user_impact || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -1999,8 +2100,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.ease_of_implementation || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.ease_of_implementation || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="ease_of_implementation_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2016,8 +2118,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.vendor_reputation_support || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2033,8 +2136,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="security_compliance" id="security_compliance" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.security_compliance || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.security_compliance || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2050,8 +2154,9 @@ function openGovernanceScoringModal(projectId) {
                                             <td>
                                                 <input type="number" name="student_centered" id="student_centered" 
                                                        class="form-control score-input" min="1" max="5" 
-                                                       value="${userScore ? userScore.student_centered || 1 : 1}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       value="${userScore ? userScore.student_centered || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
                                             </td>
                                             <td>
                                                 <span id="student_centered_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2070,14 +2175,23 @@ function openGovernanceScoringModal(projectId) {
                             <div class="form-group mb-3">
                                 <label for="scoring_notes">Scoring Notes</label>
                                 <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                                        rows="4" placeholder="Add your detailed scoring notes here...">${userScore ? userScore.scoring_notes || '' : ''}</textarea>
+                                        rows="4" placeholder="Add your detailed scoring notes here..."
+                                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>${userScore ? userScore.scoring_notes || '' : ''}</textarea>
                             </div>
 
                             <input type="hidden" name="final_score" id="final_score" value="${userScore ? userScore.final_score || 0 : 0}">
+                            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Lead User:</strong> You can view the scoring form and other users' scores, but you cannot submit your own scores.
+                            </div>
+                            {% endif %}
                             <div class="d-flex justify-content-between align-items-center">
+                                {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
                                 <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
                                     <i class="fas fa-save me-2"></i>Save Scoring
                                 </button>
+                                {% endif %}
                                 <div id="saveStatus" class="text-muted"></div>
                             </div>
                         </form>
@@ -2087,12 +2201,22 @@ function openGovernanceScoringModal(projectId) {
                 ${condensedScores && condensedScores.length > 0 ? `
                 <!-- Condensed Scores Section for AI Governance Group Lead -->
                 <div class="condensed-scores-section mt-4">
-                    <h6 class="section-header small">AI Governance Group Scores</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
+                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
+                            <label class="form-check-label small" for="hideScorerNames">
+                                Hide scorer names
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
+                        <table class="table table-sm table-bordered" id="scoresTable">
                             <thead>
                                 <tr>
-                                    <th>Scored By</th>
+                                    <th class="scorer-name-column">Scored By</th>
                                     <th>Strategic</th>
                                     <th>Cost</th>
                                     <th>Impact</th>
@@ -2106,7 +2230,7 @@ function openGovernanceScoringModal(projectId) {
                             <tbody>
                                 ${condensedScores.map(score => `
                                     <tr>
-                                        <td class="small">${score.scored_by}</td>
+                                        <td class="small scorer-name-cell">${score.scored_by}</td>
                                         <td class="text-center">${score.strategic_alignment || '-'}</td>
                                         <td class="text-center">${score.cost_benefit || '-'}</td>
                                         <td class="text-center">${score.user_impact || '-'}</td>
@@ -2131,11 +2255,18 @@ function openGovernanceScoringModal(projectId) {
                 ` : ''}
             `;
             
-            // Add event listener for the scoring form
+            // Add event listener for the scoring form (only for non-lead users)
+            {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
             document.getElementById('scoringForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveGovernanceScore(projectId);
             });
+            {% endif %}
+            
+            // Initialize scorer names visibility (checkbox is checked by default)
+            setTimeout(function() {
+                toggleScorerNames();
+            }, 100);
             
             // Initialize tooltips and calculate initial scores
             setTimeout(() => {
@@ -2159,7 +2290,7 @@ function openGovernanceScoringModal(projectId) {
 
 // Function to calculate weighted scores for governance scoring
 function calculateWeightedScore(input) {
-    const score = parseFloat(input.value) || 1;
+    const score = parseFloat(input.value) || 0;
     let weight = 0.2; // Default weight for strategic alignment and user impact
     
     // Determine weight based on field name
@@ -2481,11 +2612,403 @@ function attachPriorityInputListeners() {
     });
 }
 
+// Function to open scoring modal for superusers
+function openSuperuserScoringModal(projectId, modalType) {
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Update modal title based on type
+    if (modalType === 'governance') {
+        modalTitle.textContent = 'Project Scoring - Governance (Superuser)';
+    } else if (modalType === 'final-governance') {
+        modalTitle.textContent = 'Project Scoring - Final Governance (Superuser)';
+    }
+    
+    // Show save button for superuser scoring
+    saveBtn.style.display = 'block';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details and scoring form...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load project details and scoring form (same as regular users but with superuser access)
+    fetch(`/${projectId}/scoring-details-modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const project = data.project;
+            const userScore = data.user_score;
+            const condensedScores = data.condensed_scores;
+            
+            // Create the modal content with project details and scoring form
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h5 class="mb-2">${project.title}</h5>
+                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Project ID:</label>
+                            <p class="mb-0">${project.formatted_id || '#' + project.id}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Type:</label>
+                            <p class="mb-0">${project.project_type_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="mb-0">${project.priority_display || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stage:</label>
+                            <p class="mb-0">${project.stage_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="mb-0">${project.status_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submitted By:</label>
+                            <p class="mb-0">${project.submitted_by_name || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="mb-4">
+                    <h6 class="mb-3">Project Scoring</h6>
+                    <form id="scoringForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="strategic_alignment" class="form-label">Strategic Alignment (1-10)</label>
+                                    <input type="number" class="form-control" id="strategic_alignment" name="strategic_alignment" 
+                                           min="1" max="10" value="${userScore?.strategic_alignment || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cost_benefit" class="form-label">Cost/Benefit Analysis (1-10)</label>
+                                    <input type="number" class="form-control" id="cost_benefit" name="cost_benefit" 
+                                           min="1" max="10" value="${userScore?.cost_benefit || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="user_impact" class="form-label">User Impact (1-10)</label>
+                                    <input type="number" class="form-control" id="user_impact" name="user_impact" 
+                                           min="1" max="10" value="${userScore?.user_impact || ''}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ease_of_implementation" class="form-label">Ease of Implementation (1-10)</label>
+                                    <input type="number" class="form-control" id="ease_of_implementation" name="ease_of_implementation" 
+                                           min="1" max="10" value="${userScore?.ease_of_implementation || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vendor_reputation_support" class="form-label">Vendor Reputation/Support (1-10)</label>
+                                    <input type="number" class="form-control" id="vendor_reputation_support" name="vendor_reputation_support" 
+                                           min="1" max="10" value="${userScore?.vendor_reputation_support || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="security_compliance" class="form-label">Security/Compliance (1-10)</label>
+                                    <input type="number" class="form-control" id="security_compliance" name="security_compliance" 
+                                           min="1" max="10" value="${userScore?.security_compliance || ''}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="scoring_notes" class="form-label">Scoring Notes</label>
+                            <textarea class="form-control" id="scoring_notes" name="scoring_notes" rows="3" 
+                                      placeholder="Add any additional notes about your scoring...">${userScore?.scoring_notes || ''}</textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Superuser Access:</strong> You have full access to score this project as a superuser.
+                        </div>
+                    </form>
+                </div>
+                
+                ${condensedScores && condensedScores.length > 0 ? `
+                <div class="mb-4">
+                    <h6 class="mb-3">Previous Scores</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Scorer</th>
+                                    <th>Strategic</th>
+                                    <th>Cost/Benefit</th>
+                                    <th>User Impact</th>
+                                    <th>Implementation</th>
+                                    <th>Vendor</th>
+                                    <th>Security</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${condensedScores.map(score => `
+                                    <tr>
+                                        <td>${score.scorer_name}</td>
+                                        <td>${score.strategic_alignment || '-'}</td>
+                                        <td>${score.cost_benefit || '-'}</td>
+                                        <td>${score.user_impact || '-'}</td>
+                                        <td>${score.ease_of_implementation || '-'}</td>
+                                        <td>${score.vendor_reputation_support || '-'}</td>
+                                        <td>${score.security_compliance || '-'}</td>
+                                        <td><strong>${score.total_score || '-'}</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Set up form submission handler
+            document.getElementById('scoringForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitScoringForm(projectId);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Unable to load project details. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Function to submit scoring form
+function submitScoringForm(projectId) {
+    const form = document.getElementById('scoringForm');
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Show loading state
+    const saveBtn = document.getElementById('saveChangesBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.disabled = true;
+    
+    fetch(`/${projectId}/score/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Network response was not ok');
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> Your scoring has been saved successfully.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            modalBody.insertBefore(successDiv, modalBody.firstChild);
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (successDiv && successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        } else {
+            alert('Error saving scoring: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error saving scoring:', error);
+        alert('Error saving scoring. Please try again.');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Function to open read-only modal for superusers
+function openSuperuserReadOnlyModal(projectId, modalType) {
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Update modal title based on type
+    if (modalType === 'governance') {
+        modalTitle.textContent = 'Project Details - Governance (Read Only)';
+    } else if (modalType === 'final-governance') {
+        modalTitle.textContent = 'Project Details - Final Governance (Read Only)';
+    }
+    
+    // Hide save button for read-only view
+    saveBtn.style.display = 'none';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load project details (read-only)
+    fetch(`/${projectId}/project-details-readonly/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const project = data.project;
+            
+            // Create read-only modal content
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h5 class="mb-2">${project.title}</h5>
+                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Project ID:</label>
+                            <p class="mb-0">${project.formatted_id || '#' + project.id}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Type:</label>
+                            <p class="mb-0">${project.project_type_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="mb-0">${project.priority_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Department:</label>
+                            <p class="mb-0">${project.department || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stage:</label>
+                            <p class="mb-0">${project.stage_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="mb-0">${project.status_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submitted By:</label>
+                            <p class="mb-0">${project.submitted_by_name || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submission Date:</label>
+                            <p class="mb-0">${project.submission_date_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${project.final_score ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Final Score:</label>
+                            <p class="mb-0">${project.final_score}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${project.final_priority ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Final Priority Rank:</label>
+                            <p class="mb-0">${project.final_priority}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${project.triage_notes ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Triage Notes:</label>
+                            <p class="mb-0">${project.triage_notes}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Read-Only View:</strong> As a superuser, you can view project details but cannot make edits through this interface.
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Unable to load project details. Please try again.
+                </div>
+            `;
+        });
+}
+
 // Function to open final scoring modal
 function openFinalScoringModal(projectId) {
     {% if is_triage_user or is_triage_lead_user %}
     // Triage users get the edit form instead of final scoring modal
     openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    {% if is_superuser %}
+    // Superusers get read-only view of final governance projects
+    openSuperuserReadOnlyModal(projectId, 'final-governance');
     return;
     {% endif %}
     
@@ -2735,6 +3258,23 @@ function deleteRequest(projectId) {
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.innerHTML = 'Delete Request';
     });
+}
+
+// Function to toggle scorer names visibility
+function toggleScorerNames() {
+    const checkbox = document.getElementById('hideScorerNames');
+    const scorerColumns = document.querySelectorAll('.scorer-name-column');
+    const scorerCells = document.querySelectorAll('.scorer-name-cell');
+    
+    if (checkbox.checked) {
+        // Hide scorer names
+        scorerColumns.forEach(col => col.style.display = 'none');
+        scorerCells.forEach(cell => cell.style.display = 'none');
+    } else {
+        // Show scorer names
+        scorerColumns.forEach(col => col.style.display = '');
+        scorerCells.forEach(cell => cell.style.display = '');
+    }
 }
 </script>
 {% endblock %}
