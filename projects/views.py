@@ -150,7 +150,7 @@ def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
 
 def is_cabinet_user(user):
-    return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+    return user.is_superuser or user.groups.filter(name='Cabinet Group').exists()
 
 def is_patrick(user):
     """Check if the user is Patrick (for test dashboard access)"""
@@ -745,10 +745,15 @@ def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
     try:
         logger.info(f"Loading edit form for project {pk}")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"User: {request.user.username}")
+        logger.info(f"Request headers: {dict(request.headers)}")
         
         # Check if user has permission to edit projects
         # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
         project = get_object_or_404(Project, pk=pk)
+        logger.info(f"Found project: {project.title}")
+        
         can_edit = (is_triage_user(request.user) or 
                     is_triage_lead_user(request.user) or 
                     project.submitted_by == request.user)
@@ -756,6 +761,8 @@ def project_update_form_ajax(request, pk):
         if not can_edit:
             logger.warning(f"User {request.user} lacks permission to edit project {pk}")
             return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+        
+        logger.info(f"User has permission to edit project {pk}")
         
         project = Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by', 'files').get(pk=pk)
         logger.info(f"Project {pk} loaded successfully, has {project.files.count()} files")
@@ -772,6 +779,11 @@ def project_update_form_ajax(request, pk):
             is_active=True,
             groups__in=triage_group
         ).distinct().order_by('first_name', 'last_name', 'username')
+
+        # Get all users for the contact person dropdown
+        from django.contrib.auth.models import User
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        logger.info(f"Found {users.count()} active users for contact dropdown")
         
         context = {
             'project': project,
@@ -786,6 +798,7 @@ def project_update_form_ajax(request, pk):
     except Exception as e:
         logger.error(f"Error loading edit form for project {pk}: {str(e)}")
         logger.error(f"Error type: {type(e)}")
+        logger.error(f"Error traceback:", exc_info=True)
         return JsonResponse({'error': f'Error loading form: {str(e)}'}, status=500)
 
 @login_required
@@ -809,6 +822,22 @@ def debug_project_files(request, pk):
         'project_title': project.title,
         'file_count': len(file_info),
         'files': file_info
+    })
+
+@login_required
+def test_ajax_endpoint(request):
+    """Test endpoint to check if AJAX requests work in Azure"""
+    logger.info("Test AJAX endpoint called")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"User: {request.user.username}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    
+    return JsonResponse({
+        'status': 'success',
+        'message': 'AJAX endpoint is working',
+        'user': request.user.username,
+        'method': request.method,
+        'timestamp': timezone.now().isoformat()
     })
 
 @login_required
@@ -1500,7 +1529,7 @@ def project_final_scoring_details_modal(request, pk):
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_cabinet_user)
 def cabinet_dashboard(request):
     # Get all projects for statistics
     projects = Project.objects.all()

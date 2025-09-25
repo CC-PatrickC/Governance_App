@@ -1627,12 +1627,19 @@ function openTriageEditModal(projectId) {
     // Load the edit form via AJAX (same as triage page)
     fetch(`/${projectId}/edit-form/`)
         .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
             if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                // Try to get error details from response
+                return response.text().then(text => {
+                    console.error('Error response body:', text);
+                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Response: ${text}`);
+                });
             }
             return response.text();
         })
         .then(html => {
+            console.log('Successfully received HTML response');
             // Replace modal content with the edit form HTML
             modalBody.innerHTML = html;
             
@@ -1733,7 +1740,14 @@ function openTriageEditModal(projectId) {
         })
         .catch(error => {
             console.error('Error loading edit form:', error);
-            modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+            console.error('Error stack:', error.stack);
+            modalBody.innerHTML = `<div class="alert alert-danger">
+                <h6>Error loading edit form</h6>
+                <p><strong>Error details:</strong> ${error.message}</p>
+                <p><strong>Project ID:</strong> ${projectId}</p>
+                <p><strong>URL:</strong> /${projectId}/edit-form/</p>
+                <p>Please check the browser console for more details.</p>
+            </div>`;
             saveBtn.style.display = 'none';
         });
 }
