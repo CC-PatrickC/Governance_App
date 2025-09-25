@@ -33,6 +33,10 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 # if not DEBUG:
 #     DEBUG = False
 
+# Force DEBUG to False for production safety
+# if not DEBUG:
+#     DEBUG = False
+
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
@@ -65,14 +69,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',
+    # 'cas.middleware.ProxyMiddleware',  # Enable this when CAS is ready
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'cas.middleware.CASMiddleware',
+    # 'cas.middleware.CASMiddleware',  # Enable this when CAS is ready
 ]
 
 PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
@@ -80,7 +84,7 @@ PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
-    'cas.backends.CASBackend',
+    # 'cas.backends.CASBackend',  # Enable this when CAS is ready
 )
 
 CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
@@ -101,6 +105,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'projects.context_processors.user_permissions',
             ],
         },
     },
@@ -112,19 +117,28 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
-        'USER': os.getenv('POSTGRES_USER', 'csmart'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+# Use SQLite for local development, PostgreSQL for production
+if os.getenv('USE_LOCAL_SQLITE', 'false').lower() == 'true' or not os.getenv('POSTGRES_PASSWORD'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
+            'USER': os.getenv('POSTGRES_USER', 'csmart'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
+    }
 
 
 # Password validation
@@ -199,3 +213,49 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'debug.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'projects': {  # This will catch all logs from your projects app
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}

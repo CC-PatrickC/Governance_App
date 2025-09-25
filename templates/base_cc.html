@@ -830,6 +830,14 @@
                                 <span>Requests</span>
                             </a>
                         </li>
+                        {% if is_cabinet_user %}
+                        <li class="nav-item">
+                            <a href="{% url 'projects:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+                                <i class="fas fa-chart-bar nav-icon"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
                 {% endif %}
