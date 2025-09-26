@@ -9,6 +9,21 @@ class Project(models.Model):
         ('rejected', 'Rejected'),
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
+<<<<<<< Updated upstream
+=======
+        ('archived', 'Archived'),
+        ('on_hold', 'On Hold'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    STAGE_CHOICES = [
+        ('Pending_Review', 'Pending Review'),
+        ('Under_Review_Triage', 'Under Review - Triage'),
+        ('Under_Review_governance', 'Under Review - Governance'),
+        ('Under_Review_Final_governance', 'Under Review - Final Governance'),
+        ('Governance_Closure', 'Governance Closed'),
+        ('Deleted', 'Deleted'), 
+>>>>>>> Stashed changes
     ]
 
     PRIORITY_CHOICES = [
