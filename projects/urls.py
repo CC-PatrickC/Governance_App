@@ -19,6 +19,7 @@ urlpatterns = [
     path('new/', views.project_create, name='project_create'),
     path('intake/', views.project_intake_form, name='project_intake_form'),
     path('my-governance/', views.my_governance, name='my_governance'),
+    path('my-governance-superuser/', views.my_governance_superuser, name='my_governance_superuser'),
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/edit-form/', views.project_update_form_ajax, name='project_update_form_ajax'),
     path('<int:pk>/update/', views.project_update_ajax, name='project_update_ajax'),

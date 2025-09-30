@@ -1812,6 +1812,54 @@ def project_intake_form(request):
     
     return render(request, 'projects/intake_form.html')
 
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def my_governance_superuser(request):
+    """MyGovernance page specifically for SuperUsers - test page"""
+    # Get all projects for SuperUser dashboard
+    all_projects = Project.objects.all().order_by('-submission_date')
+    
+    # Get statistics
+    total_projects = all_projects.count()
+    pending_projects = all_projects.filter(stage='Pending_Review').count()
+    triage_projects = all_projects.filter(stage='Under_Review_Triage').count()
+    governance_projects = all_projects.filter(stage='Under_Review_governance').count()
+    final_governance_projects = all_projects.filter(stage='Under_Review_Final_governance').count()
+    closed_projects = all_projects.filter(stage='Governance_Closure').count()
+    
+    # Get recent projects
+    recent_projects = all_projects[:10]
+    
+    # Get projects by priority
+    priority_stats = {
+        'Top': all_projects.filter(priority='Top').count(),
+        'High': all_projects.filter(priority='High').count(),
+        'Normal': all_projects.filter(priority='Normal').count(),
+        'Low': all_projects.filter(priority='Low').count(),
+    }
+    
+    # Get projects by type
+    type_stats = {}
+    for type_code, type_name in Project.PROJECT_TYPE_CHOICES:
+        count = all_projects.filter(project_type=type_code).count()
+        if count > 0:
+            type_stats[type_name] = count
+    
+    context = {
+        'total_projects': total_projects,
+        'pending_projects': pending_projects,
+        'triage_projects': triage_projects,
+        'governance_projects': governance_projects,
+        'final_governance_projects': final_governance_projects,
+        'closed_projects': closed_projects,
+        'recent_projects': recent_projects,
+        'priority_stats': priority_stats,
+        'type_stats': type_stats,
+        'all_projects': all_projects,
+    }
+    
+    return render(request, 'projects/my_governance_superuser.html', context)
+
 def my_governance(request):
     """My Governance page - shows user's submitted requests and contact requests"""
     # Handle anonymous users
