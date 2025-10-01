@@ -18,8 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+import cas.views
 
 urlpatterns = [
+    # CAS login/logout must come BEFORE admin URLs to override them
+    path('admin/login/', cas.views.login, name='admin_login'),
+    path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('', include('projects.urls')),

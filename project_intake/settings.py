@@ -69,14 +69,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'cas.middleware.ProxyMiddleware',  # Enable this when CAS is ready
+    'cas.middleware.ProxyMiddleware',  # Enable this when CAS is ready
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    # 'cas.middleware.CASMiddleware',  # Enable this when CAS is ready
+    'cas.middleware.CASMiddleware',  # Enable this when CAS is ready
 ]
 
 PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
@@ -84,7 +84,7 @@ PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
-    # 'cas.backends.CASBackend',  # Enable this when CAS is ready
+    'cas.backends.CASBackend',  # Enable this when CAS is ready
 )
 
 CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
