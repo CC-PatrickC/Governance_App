@@ -19,8 +19,12 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+import cas.views
 
 urlpatterns = [
+    # CAS login/logout must come BEFORE admin URLs to override them
+    path('admin/login/', cas.views.login, name='admin_login'),
+    path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
