@@ -38,7 +38,9 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 #     DEBUG = False
 
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
+# Add both Azure default domain and custom domain
+DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
 
 # Helpful for Azure (avoids CSRF issues on the cloud hostname)
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ("localhost", "127.0.0.1")]
