@@ -15,4 +15,5 @@ sqlparse==0.5.3
 tzdata==2025.2
 urllib3==2.4.0
 whitenoise==6.9.0
+django-cas-client==1.5.3
 
