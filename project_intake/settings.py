@@ -66,14 +66,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'cas.middleware.ProxyMiddleware',  # Temporarily disabled - causing timeout/hanging
+    'cas.middleware.ProxyMiddleware',  # Re-enabled - network access issue identified
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    # 'cas.middleware.CASMiddleware',  # Temporarily disabled - causing timeout/hanging
+    'cas.middleware.CASMiddleware',  # Re-enabled - network access issue identified
 ]
 
 PROXY_DOMAIN = 'governance.coloradocollege.app'
@@ -82,7 +82,6 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
     'cas.backends.CASBackend',  # Enable this when CAS is ready
-
 )
 
 CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
