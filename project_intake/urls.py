@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-import cas.views  # Re-enabled - network access issue identified
+import cas.views  # Re-enabled - but need to fix package installation
 
 urlpatterns = [
     # CAS login/logout must come BEFORE admin URLs to override them
@@ -26,6 +26,6 @@ urlpatterns = [
     path('admin/logout/', cas.views.logout, name='admin_logout'),  # Re-enabled
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
-    path('cas/', include('cas.urls')),  # Re-enabled - network access issue identified
+    # path('cas/', include('cas.urls')),  # Temporarily disabled - ModuleNotFoundError: No module named 'cas.urls'
     path('', include('projects.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
