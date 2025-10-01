@@ -21,6 +21,8 @@ from django.conf.urls.static import static
 import cas.views  # Re-enabled - but need to fix package installation
 
 urlpatterns = [
+    # Simple CAS login view for testing
+    path('cas-login/', cas.views.login, name='cas_login_simple'),
     # CAS login/logout must come BEFORE admin URLs to override them
     path('admin/login/', cas.views.login, name='admin_login'),  # Re-enabled
     path('admin/logout/', cas.views.logout, name='admin_logout'),  # Re-enabled

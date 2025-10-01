@@ -98,6 +98,10 @@ CAS_ADMIN_PREFIX = "/admin"
 CAS_CREATE_USER = True  # Automatically create users from CAS
 CAS_LOGIN_MSG = None
 CAS_LOGGED_MSG = None
+CAS_AUTO_CREATE_USERS = True  # Additional setting for user creation
+CAS_IGNORE_REFERER = True  # Helps with redirect issues
+CAS_REDIRECT_URL = 'https://governance.coloradocollege.app'  # Explicit redirect URL
+CAS_LOGIN_URL_NAME = 'cas_ng_login'  # Specific login URL name
 
 # CAS Attribute Mapping (Updated with actual CAS attributes)
 CAS_RENAME_ATTRIBUTES = {
@@ -277,3 +281,26 @@ LOGGING = {
         },
     },
 }
+
+# Session and Cookie settings for CAS
+SESSION_COOKIE_SECURE = True  # Use secure cookies over HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
+SESSION_COOKIE_SAMESITE = 'Lax'  # Help prevent CSRF attacks
+SESSION_COOKIE_AGE = 3600  # 1 hour session timeout
+SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
+
+# CSRF settings for CAS
+CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookies
+CSRF_COOKIE_SAMESITE = 'Lax'  # Help prevent CSRF attacks
+CSRF_TRUSTED_ORIGINS.extend([
+    'https://cas.coloradocollege.edu',  # Trust the CAS server for redirects
+])
+
+# Additional CAS debugging
+if DEBUG:
+    LOGGING['loggers']['cas'] = {
+        'handlers': ['file', 'console'],
+        'level': 'DEBUG',
+        'propagate': True,
+    }
