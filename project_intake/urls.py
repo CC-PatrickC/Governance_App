@@ -26,5 +26,6 @@ urlpatterns = [
     path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
+    path('cas/', include('cas.urls')),  # Include all CAS URLs
     path('', include('projects.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
