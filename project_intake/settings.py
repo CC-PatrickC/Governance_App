@@ -66,14 +66,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'cas.middleware.ProxyMiddleware',  # Temporarily disabled - causing server error
+    'cas.middleware.ProxyMiddleware',  # Re-enabled - CAS admin has configured the app
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    # 'cas.middleware.CASMiddleware',  # Temporarily disabled - causing server error
+    'cas.middleware.CASMiddleware',  # Re-enabled - CAS admin has configured the app
 ]
 
 PROXY_DOMAIN = 'governance.coloradocollege.app'
