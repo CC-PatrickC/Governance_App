@@ -18,14 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-import cas.views  # Re-enabled - CAS admin has configured the app
+# import cas.views  # Temporarily disabled - causing timeout/hanging
 
 urlpatterns = [
     # CAS login/logout must come BEFORE admin URLs to override them
-    path('admin/login/', cas.views.login, name='admin_login'),  # Re-enabled
-    path('admin/logout/', cas.views.logout, name='admin_logout'),  # Re-enabled
+    # path('admin/login/', cas.views.login, name='admin_login'),  # Temporarily disabled
+    # path('admin/logout/', cas.views.logout, name='admin_logout'),  # Temporarily disabled
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
-    path('cas/', include('cas.urls')),  # Re-enabled - CAS admin has configured the app
+    # path('cas/', include('cas.urls')),  # Temporarily disabled - causing timeout/hanging
     path('', include('projects.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
