@@ -38,9 +38,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 #     DEBUG = False
 
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-# Add both Azure default domain and custom domain
-DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
 # Helpful for Azure (avoids CSRF issues on the cloud hostname)
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ("localhost", "127.0.0.1")]
@@ -73,17 +71,16 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'cas.middleware.ProxyMiddleware',  # Emergency disable - app crash
+    # 'cas.middleware.ProxyMiddleware',  # Enable this when CAS is ready
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'allauth.account.middleware.AccountMiddleware',  # Emergency disable - django-allauth removed from requirements.txt
-    # 'cas.middleware.CASMiddleware',  # Emergency disable - app crash
+    # 'cas.middleware.CASMiddleware',  # Enable this when CAS is ready
 ]
 
-PROXY_DOMAIN = 'governance.coloradocollege.app'
+PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -99,27 +96,7 @@ AUTHENTICATION_BACKENDS = (
 CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_GATEWAY = False  # Changed to False for better login flow
-CAS_VERSION = '3'  # Use CAS 3.0 for attribute support
-CAS_ADMIN_PREFIX = "/admin"
-CAS_CREATE_USER = True  # Automatically create users from CAS
-CAS_LOGIN_MSG = None
-CAS_LOGGED_MSG = None
-CAS_AUTO_CREATE_USERS = True  # Additional setting for user creation
-CAS_IGNORE_REFERER = True  # Helps with redirect issues
-CAS_REDIRECT_URL = 'https://governance.coloradocollege.app'  # Explicit redirect URL
-CAS_LOGIN_URL_NAME = 'cas_ng_login'  # Specific login URL name
-
-# CAS Attribute Mapping (Updated with actual CAS attributes)
-CAS_RENAME_ATTRIBUTES = {
-    'msDS-cloudExtensionAttribute1': 'username',  # ID or INID
-    'mail': 'email', 
-    'givenName': 'first_name',
-    'sn': 'last_name',
-    'fullName': 'full_name',
-    'title': 'title',
-    'department': 'department',
-}
+CAS_GATEWAY = True
 
 ROOT_URLCONF = 'project_intake.urls'
 
@@ -283,26 +260,3 @@ LOGGING = {
         },
     },
 }
-
-# Session and Cookie settings for CAS
-SESSION_COOKIE_SECURE = True  # Use secure cookies over HTTPS
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies
-SESSION_COOKIE_SAMESITE = 'Lax'  # Help prevent CSRF attacks
-SESSION_COOKIE_AGE = 3600  # 1 hour session timeout
-SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
-
-# CSRF settings for CAS
-CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies
-CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookies
-CSRF_COOKIE_SAMESITE = 'Lax'  # Help prevent CSRF attacks
-CSRF_TRUSTED_ORIGINS.extend([
-    'https://cas.coloradocollege.edu',  # Trust the CAS server for redirects
-])
-
-# Additional CAS debugging
-if DEBUG:
-    LOGGING['loggers']['cas'] = {
-        'handlers': ['file', 'console'],
-        'level': 'DEBUG',
-        'propagate': True,
-    }
