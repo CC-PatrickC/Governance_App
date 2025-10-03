@@ -66,14 +66,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',  # Re-enabled - network access issue identified
+    # 'cas.middleware.ProxyMiddleware',  # Emergency disable - app crash
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'cas.middleware.CASMiddleware',  # Re-enabled - network access issue identified
+    # 'cas.middleware.CASMiddleware',  # Emergency disable - app crash
 ]
 
 PROXY_DOMAIN = 'governance.coloradocollege.app'

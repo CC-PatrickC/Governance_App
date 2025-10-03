@@ -19,19 +19,19 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
-import cas.views  # Now confirmed working in Azure
+# import cas.views  # Emergency disable - app crash
 
 urlpatterns = [
-    # CAS login URLs - now that import is confirmed working
-    path('cas-login/', cas.views.login, name='cas_login_simple'),
-    path('cas-logout/', cas.views.logout, name='cas_logout_simple'),
-    # CAS admin overrides
-    path('admin/login/', cas.views.login, name='admin_login'),
-    path('admin/logout/', cas.views.logout, name='admin_logout'),
+    # CAS login URLs - temporarily disabled due to app crash
+    # path('cas-login/', cas.views.login, name='cas_login_simple'),
+    # path('cas-logout/', cas.views.logout, name='cas_logout_simple'),
+    # CAS admin overrides - temporarily disabled
+    # path('admin/login/', cas.views.login, name='admin_login'),
+    # path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/', include('allauth.urls')),
-    path('cas/', include('cas.urls')),  # Re-enable full CAS URLs now that package works
+    # path('cas/', include('cas.urls')),  # Emergency disable - app crash
     path('', include('projects.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
