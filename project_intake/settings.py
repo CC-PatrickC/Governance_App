@@ -58,13 +58,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'projects',
-    'cas',
+    # 'cas',  # Emergency disable - ModuleNotFoundError: No module named 'cas'
     'crispy_forms',
     'crispy_bootstrap5',
     'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
+    # 'allauth',  # Emergency disable - django-allauth removed from requirements.txt
+    # 'allauth.account',  # Emergency disable - django-allauth removed from requirements.txt
+    # 'allauth.socialaccount',  # Emergency disable - django-allauth removed from requirements.txt
 ]
 
 MIDDLEWARE = [
@@ -77,7 +77,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
+    # 'allauth.account.middleware.AccountMiddleware',  # Emergency disable - django-allauth removed from requirements.txt
     # 'cas.middleware.CASMiddleware',  # Emergency disable - app crash
 ]
 
@@ -85,7 +85,7 @@ PROXY_DOMAIN = 'governance.coloradocollege.app'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    # 'allauth.account.auth_backends.AuthenticationBackend',  # Emergency disable - django-allauth removed from requirements.txt
     # 'cas.backends.CASBackend',  # Emergency disable - app crash
 )
 
