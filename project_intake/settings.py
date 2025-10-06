@@ -77,7 +77,7 @@ MIDDLEWARE = [
     'cas.middleware.CASMiddleware',
 ]
 
-PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
+PROXY_DOMAIN = 'governance.coloradocollege.app'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -88,10 +88,10 @@ AUTHENTICATION_BACKENDS = (
 CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_GATEWAY = True
 # Force CAS to use custom domain instead of Azure default domain
 CAS_SERVICE_URL = "https://governance.coloradocollege.app"
 CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
+CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
 
 ROOT_URLCONF = 'project_intake.urls'
 
