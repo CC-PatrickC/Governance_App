@@ -96,6 +96,9 @@ CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your ins
 CAS_LOGOUT_COMPLETELY = True
 CAS_PROVIDE_URL_TO_LOGOUT = True
 CAS_GATEWAY = True
+# Force CAS to use custom domain instead of Azure default domain
+CAS_SERVICE_URL = "https://governance.coloradocollege.app"
+CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
 
 ROOT_URLCONF = 'project_intake.urls'
 
