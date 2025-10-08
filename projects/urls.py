@@ -1,11 +1,16 @@
 from django.urls import path
 from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
 from . import views
 
 app_name = 'projects'
 
+def redirect_to_cas(request):
+    """Redirect home page visitors directly to CAS login"""
+    return HttpResponseRedirect('/cas-login/')
+
 urlpatterns = [
-    path('', views.custom_login_view, name='home'),
+    path('', redirect_to_cas, name='home'),
     path('requests/', views.project_list, name='project_list'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
