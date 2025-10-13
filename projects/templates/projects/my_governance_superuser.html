@@ -74,7 +74,7 @@
                             <table class="table table-striped table-hover">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>Request ID</th>
+                                    <th style="width: 125px; max-width: 125px;">Request ID</th>
                                     <th>Title</th>
                                     <th>Requester</th>
                                     <th>Triage Team Member</th>
@@ -86,7 +86,7 @@
                             <tbody>
                                 {% for project in all_projects %}
                                 <tr>
-                                    <td>
+                                    <td style="width: 125px; max-width: 125px;">
                                         <span class="badge bg-primary">{{ project.formatted_id }}</span>
                                     </td>
                                     <td style="width: 200px; max-width: 200px; word-wrap: break-word; white-space: normal;">
