@@ -45,6 +45,144 @@
         max-width: none !important;
         width: 100% !important;
     }
+    
+    /* Make table rows clickable */
+    tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    /* Custom Modal Styles */
+    .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        height: 90vh;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .custom-modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: white;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-close:hover {
+        color: #333;
+    }
+    
+    .custom-modal-body {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-footer {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+    
+    /* Tab Styles */
+    .modal-tabs {
+        display: flex;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 20px;
+        gap: 5px;
+    }
+    
+    .modal-tab {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        margin-bottom: -2px;
+    }
+    
+    .modal-tab:hover {
+        color: #D09B2C;
+        background-color: #f8f9fa;
+    }
+    
+    .modal-tab.active {
+        color: #D09B2C;
+        border-bottom-color: #D09B2C;
+        font-weight: 600;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -89,7 +227,7 @@
                                     <th style="width: 125px; max-width: 125px;">Request ID</th>
                                     <th>Title</th>
                                     <th>Requester</th>
-                                    <th>Triage Team Member</th>
+                                    <th>Technician</th>
                                     <th>Committee</th>
                                     <th>Stage</th>
                                     <th>Created Date</th>
@@ -97,7 +235,7 @@
                             </thead>
                             <tbody>
                                 {% for project in all_projects %}
-                                <tr>
+                                <tr onclick="openRequestModal({{ project.id }}, '{{ project.title|escapejs }}', '{{ project.formatted_id|escapejs }}', '{{ project.priority|default:"Not Set" }}', '{% if project.submitted_by %}{{ project.submitted_by.get_full_name|default:project.submitted_by.username|escapejs }}{% else %}Unknown{% endif %}', '{{ project.submission_date|date:"M d, Y g:i A"|escapejs }}', '{{ project.get_status_display|escapejs }}', '{% if project.triaged_by %}{{ project.triaged_by.get_full_name|default:project.triaged_by.username|escapejs }}{% else %}Not Assigned{% endif %}', '{{ project.department|default:"Not Specified"|escapejs }}', '{{ project.contact_email|default:"Not Specified"|escapejs }}', '{{ project.contact_phone|default:"Not Specified"|escapejs }}', '{{ project.description|escapejs }}')">
                                     <td style="width: 125px; max-width: 125px;">
                                         <span class="badge" style="background-color: #D09B2C; color: white;">{{ project.formatted_id }}</span>
                                     </td>
@@ -172,4 +310,131 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Request Detail Modal -->
+<div id="customRequestModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-overlay" onclick="closeCustomModal()"></div>
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title" id="requestTitleText">Request Details</h5>
+            <button type="button" class="custom-modal-close" onclick="closeCustomModal()">&times;</button>
+        </div>
+        <div class="custom-modal-body" id="customRequestModalBody">
+            <div id="requestMetadata" style="margin-bottom: 10px; padding-bottom: 10px; color: #666; font-size: 0.95rem;">
+                <!-- Request ID | Priority | Requested by | Date will be displayed here -->
+            </div>
+            
+            <div id="requestStatusInfo" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6; color: #666; font-size: 0.95rem;">
+                <!-- Status | Technician will be displayed here -->
+            </div>
+            
+            <!-- Tabs -->
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('conversations')">Conversations</button>
+                <button class="modal-tab" onclick="switchTab('details')">Details</button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div id="conversations-tab" class="tab-content active">
+                <!-- Conversations content will be added here -->
+            </div>
+            
+            <div id="details-tab" class="tab-content">
+                <div class="details-section" style="margin-bottom: 25px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #D09B2C;">
+                        Requester Information
+                    </h6>
+                    <div id="requesterInfo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <!-- Requester information will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="details-section" style="margin-bottom: 25px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #D09B2C;">
+                        Request Description
+                    </h6>
+                    <div id="requestDescription" style="color: #495057; line-height: 1.6; white-space: pre-wrap;">
+                        <!-- Request description will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCustomModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openRequestModal(requestId, requestTitle, formattedId, priority, requestedBy, submissionDate, status, technician, department, contactEmail, contactPhone, description) {
+    console.log('Opening modal for request:', requestId, requestTitle);
+    
+    // Update modal title with the request name
+    document.getElementById('requestTitleText').textContent = requestTitle;
+    
+    // Update metadata line with ID at the beginning
+    const metadataHtml = `<strong>Request ID:</strong> ${formattedId} | <strong>Priority:</strong> ${priority} | <strong>Requested by:</strong> ${requestedBy} | <strong>Date:</strong> ${submissionDate} MST`;
+    document.getElementById('requestMetadata').innerHTML = metadataHtml;
+    
+    // Update status info line
+    const statusInfoHtml = `<strong>Status:</strong> ${status} | <strong>Technician:</strong> ${technician}`;
+    document.getElementById('requestStatusInfo').innerHTML = statusInfoHtml;
+    
+    // Update requester information in Details tab
+    const requesterInfoHtml = `
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Submitted By</div>
+            <div style="color: #6c757d;">${requestedBy}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Submitted Date</div>
+            <div style="color: #6c757d;">${submissionDate} MST</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Department</div>
+            <div style="color: #6c757d;">${department}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Contact Email</div>
+            <div style="color: #6c757d;">${contactEmail}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Contact Phone</div>
+            <div style="color: #6c757d;">${contactPhone}</div>
+        </div>
+    `;
+    document.getElementById('requesterInfo').innerHTML = requesterInfoHtml;
+    
+    // Update request description
+    document.getElementById('requestDescription').textContent = description;
+    
+    // Simply show the modal (blank for now)
+    document.getElementById('customRequestModal').style.display = 'flex';
+}
+
+function closeCustomModal() {
+    document.getElementById('customRequestModal').style.display = 'none';
+}
+
+function switchTab(tabName) {
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.modal-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+    
+    // Activate the selected tab
+    event.target.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+}
+
+// Close modal when pressing ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeCustomModal();
+    }
+});
+</script>
 {% endblock %}
