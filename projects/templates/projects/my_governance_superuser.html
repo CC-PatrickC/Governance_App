@@ -66,7 +66,19 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">All Requests</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-link dropdown-toggle p-0 text-decoration-none" type="button" id="requestsDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="color: #D09B2C; font-size: 1.25rem; font-weight: 500;">
+                            All Requests
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="requestsDropdown">
+                            <li><a class="dropdown-item" href="#">All Requests</a></li>
+                            <li><a class="dropdown-item" href="#">My Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Assigned Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Triage Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Governance Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Final Governance Requests</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="card-body">
                         {% if all_projects %}
