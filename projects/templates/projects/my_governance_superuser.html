@@ -87,7 +87,7 @@
                                 {% for project in all_projects %}
                                 <tr>
                                     <td style="width: 125px; max-width: 125px;">
-                                        <span class="badge bg-primary">{{ project.formatted_id }}</span>
+                                        <span class="badge" style="background-color: #D09B2C; color: white;">{{ project.formatted_id }}</span>
                                     </td>
                                     <td style="width: 200px; max-width: 200px; word-wrap: break-word; white-space: normal;">
                                         {{ project.title }}
@@ -108,34 +108,34 @@
                                     </td>
                                     <td>
                                         {% if project.project_type == 'ai_governance' %}
-                                            <span class="badge bg-info">AI Governance</span>
+                                            <span>AI Governance</span>
                                         {% elif project.project_type == 'erp_governance' %}
-                                            <span class="badge bg-warning">ERP Governance</span>
+                                            <span>ERP Governance</span>
                                         {% elif project.project_type == 'it_governance' %}
-                                            <span class="badge bg-success">IT Governance</span>
+                                            <span>IT Governance</span>
                                         {% elif project.project_type == 'process_improvement' %}
-                                            <span class="badge bg-secondary">Process Improvement</span>
+                                            <span>Process Improvement</span>
                                         {% elif project.project_type == 'data_governance' %}
-                                            <span class="badge bg-dark">Data Governance</span>
+                                            <span>Data Governance</span>
                                         {% else %}
-                                            <span class="badge bg-light text-dark">{{ project.get_project_type_display }}</span>
+                                            <span>{{ project.get_project_type_display }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if project.stage == 'Pending_Review' %}
-                                            <span class="badge bg-warning">Pending Review</span>
+                                            <span>Pending Review</span>
                                         {% elif project.stage == 'Under_Review_Triage' %}
-                                            <span class="badge bg-info">Under Review - Triage</span>
+                                            <span>Under Review - Triage</span>
                                         {% elif project.stage == 'Under_Review_governance' %}
-                                            <span class="badge bg-primary">Under Review - Governance</span>
+                                            <span>Under Review - Governance</span>
                                         {% elif project.stage == 'Under_Review_Final_governance' %}
-                                            <span class="badge bg-success">Under Review - Final Governance</span>
+                                            <span>Under Review - Final Governance</span>
                                         {% elif project.stage == 'Governance_Closure' %}
-                                            <span class="badge bg-secondary">Governance Closed</span>
+                                            <span>Governance Closed</span>
                                         {% elif project.stage == 'Deleted' %}
-                                            <span class="badge bg-danger">Deleted</span>
+                                            <span>Deleted</span>
                                         {% else %}
-                                            <span class="badge bg-light text-dark">{{ project.get_stage_display }}</span>
+                                            <span>{{ project.get_stage_display }}</span>
                                         {% endif %}
                                     </td>
                                     <td style="white-space: nowrap;">
