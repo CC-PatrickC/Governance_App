@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange
+from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -2101,3 +2101,55 @@ def project_delete_request(request, pk):
             'success': False,
             'message': 'An error occurred while deleting the request.'
         })
+
+@login_required
+def get_project_conversations(request, pk):
+    """Get all conversations for a specific project"""
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        conversations = project.conversations.all()
+        
+        data = [{
+            'id': conv.id,
+            'message': conv.message,
+            'created_by': conv.created_by.get_full_name() or conv.created_by.username,
+            'created_at': conv.created_at.strftime('%b %d, %Y %I:%M %p'),
+            'is_internal': conv.is_internal,
+        } for conv in conversations]
+        
+        return JsonResponse({'conversations': data, 'success': True})
+    except Exception as e:
+        logger.error(f"Error fetching conversations for project {pk}: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def add_project_conversation(request, pk):
+    """Add a new conversation/note to a project"""
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        message = request.POST.get('message', '').strip()
+        
+        if not message:
+            return JsonResponse({'success': False, 'error': 'Message cannot be empty'}, status=400)
+        
+        conversation = Conversation.objects.create(
+            project=project,
+            message=message,
+            created_by=request.user,
+            is_internal=True
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'conversation': {
+                'id': conversation.id,
+                'message': conversation.message,
+                'created_by': conversation.created_by.get_full_name() or conversation.created_by.username,
+                'created_at': conversation.created_at.strftime('%b %d, %Y %I:%M %p'),
+                'is_internal': conversation.is_internal,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error adding conversation to project {pk}: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

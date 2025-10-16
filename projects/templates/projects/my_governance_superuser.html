@@ -183,10 +183,67 @@
     .tab-content.active {
         display: block;
     }
+    
+    /* Conversation Styles */
+    .conversation-item {
+        padding: 12px 15px;
+        border-left: 3px solid #D09B2C;
+        background: #f8f9fa;
+        margin-bottom: 12px;
+        border-radius: 4px;
+    }
+    
+    .conversation-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .conversation-author {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .conversation-date {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .conversation-message {
+        color: #495057;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+    
+    .no-conversations {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+    
+    /* Icon Button Styles */
+    #toggleNoteBtn:hover {
+        background-color: #B8860B !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    #replyBtn:hover:not(:disabled) {
+        background-color: #5a6268 !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    #replyBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -336,7 +393,36 @@
             
             <!-- Tab Content -->
             <div id="conversations-tab" class="tab-content active">
-                <!-- Conversations content will be added here -->
+                <!-- Action Buttons -->
+                <div style="margin-bottom: 15px; display: flex; gap: 8px;">
+                    <button id="toggleNoteBtn" onclick="toggleNoteForm()" class="btn btn-sm" style="background-color: #D09B2C; color: white; border: none; width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;" title="Add Note">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button id="replyBtn" class="btn btn-sm" style="background-color: #6c757d; color: white; border: none; width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;" title="Reply (Coming Soon)" disabled>
+                        <i class="fas fa-reply"></i>
+                    </button>
+                </div>
+                
+                <!-- Add New Note Form (Hidden by default) -->
+                <div id="addNoteSection" class="add-note-section" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 10px;">Add Note</h6>
+                    <form id="addNoteForm" onsubmit="addNote(event)">
+                        <textarea id="noteMessage" class="form-control" rows="3" placeholder="Type your note here..." style="margin-bottom: 10px; resize: vertical;"></textarea>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" class="btn btn-sm" style="background-color: #D09B2C; color: white; border: none;">
+                                <i class="fas fa-paper-plane"></i> Submit Note
+                            </button>
+                            <button type="button" onclick="toggleNoteForm()" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Conversations List -->
+                <div id="conversationsList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Conversations will be loaded here -->
+                </div>
             </div>
             
             <div id="details-tab" class="tab-content">
@@ -366,8 +452,12 @@
 </div>
 
 <script>
+let currentRequestId = null;
+
 function openRequestModal(requestId, requestTitle, formattedId, priority, requestedBy, submissionDate, status, technician, department, contactEmail, contactPhone, description) {
     console.log('Opening modal for request:', requestId, requestTitle);
+    
+    currentRequestId = requestId;
     
     // Update modal title with the request name
     document.getElementById('requestTitleText').textContent = requestTitle;
@@ -408,12 +498,136 @@ function openRequestModal(requestId, requestTitle, formattedId, priority, reques
     // Update request description
     document.getElementById('requestDescription').textContent = description;
     
-    // Simply show the modal (blank for now)
+    // Load conversations
+    loadConversations(requestId);
+    
+    // Show the modal
     document.getElementById('customRequestModal').style.display = 'flex';
+}
+
+function loadConversations(requestId) {
+    fetch(`/${requestId}/conversations/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayConversations(data.conversations);
+            } else {
+                console.error('Error loading conversations:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching conversations:', error);
+        });
+}
+
+function displayConversations(conversations) {
+    const conversationsList = document.getElementById('conversationsList');
+    
+    if (conversations.length === 0) {
+        conversationsList.innerHTML = '<div class="no-conversations"><i class="fas fa-comments fa-2x mb-2"></i><p>No notes yet. Be the first to add one!</p></div>';
+        return;
+    }
+    
+    const conversationsHtml = conversations.map(conv => `
+        <div class="conversation-item">
+            <div class="conversation-header">
+                <span class="conversation-author">${conv.created_by}</span>
+                <span class="conversation-date">${conv.created_at}</span>
+            </div>
+            <div class="conversation-message">${conv.message}</div>
+        </div>
+    `).join('');
+    
+    conversationsList.innerHTML = conversationsHtml;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function addNote(event) {
+    event.preventDefault();
+    
+    const messageTextarea = document.getElementById('noteMessage');
+    const message = messageTextarea.value.trim();
+    
+    if (!message) {
+        alert('Please enter a note message');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    
+    // Get CSRF token from cookie
+    const csrfToken = getCookie('csrftoken');
+    
+    fetch(`/${currentRequestId}/conversations/add/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Clear the textarea
+            messageTextarea.value = '';
+            // Hide the form and show the button
+            toggleNoteForm();
+            // Reload conversations
+            loadConversations(currentRequestId);
+        } else {
+            console.error('Server error:', data.error);
+            alert('Error adding note: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error adding note:', error);
+        alert('Error adding note: ' + error.message + '. Please check the console for details.');
+    });
+}
+
+function toggleNoteForm() {
+    const noteSection = document.getElementById('addNoteSection');
+    const toggleBtn = document.getElementById('toggleNoteBtn');
+    
+    if (noteSection.style.display === 'none') {
+        noteSection.style.display = 'block';
+        toggleBtn.style.display = 'none';
+        // Focus on the textarea when opening
+        document.getElementById('noteMessage').focus();
+    } else {
+        noteSection.style.display = 'none';
+        toggleBtn.style.display = 'inline-block';
+        // Clear the textarea when closing
+        document.getElementById('noteMessage').value = '';
+    }
 }
 
 function closeCustomModal() {
     document.getElementById('customRequestModal').style.display = 'none';
+    // Reset the note form when closing modal
+    document.getElementById('addNoteSection').style.display = 'none';
+    document.getElementById('toggleNoteBtn').style.display = 'inline-block';
+    document.getElementById('noteMessage').value = '';
 }
 
 function switchTab(tabName) {
