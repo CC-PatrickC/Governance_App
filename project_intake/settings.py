@@ -95,15 +95,11 @@ CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
 
 # CAS User Attribute Mapping - captures email and other info from CAS response
 # Based on Colorado College CAS admin specifications
+# Mapping to Django User model fields only
 CAS_RENAME_ATTRIBUTES = {
     'mail': 'email',           # Email address
     'givenName': 'first_name', # First Name  
     'sn': 'last_name',        # Last Name
-    'fullName': 'full_name',   # Full Name (corrected from displayName)
-    # Additional attributes from CAS:
-    'msDS-cloudExtensionAttribute1': 'employee_id',  # ID or INID
-    'title': 'job_title',                           # Job Title
-    'department': 'department',                     # Department
 }
 
 # Auto-create user accounts with attributes from CAS
