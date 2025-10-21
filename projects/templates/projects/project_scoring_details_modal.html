@@ -5,7 +5,7 @@
         <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Project Details</h5>
+                    <h5 class="mb-0">Request Details</h5>
                     <span class="badge">
                         {{ project.get_status_display }}
                     </span>
@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="section-header mb-3"><strong>Project Information</strong></h6>
+                            <h6 class="section-header mb-3"><strong>Request Information</strong></h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                             <p><strong>Request Type:</strong> 
                                 <span>

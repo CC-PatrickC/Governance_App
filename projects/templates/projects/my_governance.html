@@ -1463,7 +1463,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
-                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Request Scoring Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="finalScoringModalBody">
@@ -1549,9 +1549,9 @@ function showProjectDetails(projectId) {
                                  <div class="detail-card">
                                      <div class="detail-title">Contact Information</div>
                                      <div class="detail-content">
-                                         <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
-                                         <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                                         <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                         <p><strong>Submitted By:</strong> ${project.submitted_by || 'N/A'}</p>
+                                         <p><strong>Email:</strong> ${project.submitted_by_email || 'N/A'}</p>
+                                         <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                                          <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
                                      </div>
                                  </div>
@@ -1932,7 +1932,7 @@ function openGovernanceScoringModal(projectId) {
     const saveBtn = document.getElementById('saveChangesBtn');
     
     // Update modal title
-    modalTitle.textContent = 'Project Scoring - Governance';
+    modalTitle.textContent = 'Request Scoring - Governance';
     
     // Hide save button for scoring modal
     saveBtn.style.display = 'none';
@@ -1984,9 +1984,9 @@ function openGovernanceScoringModal(projectId) {
                 <div class="contact-info-section mb-3">
                     <h6 class="section-header small">Contact Information</h6>
                     <div class="info-content compact">
-                        <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                        <p class="mb-2"><strong>Submitted By:</strong> ${project.submitted_by || 'N/A'}</p>
+                        <p class="mb-2"><strong>Email:</strong> ${project.submitted_by_email || 'N/A'}</p>
+                        <p class="mb-2"><strong>Department:</strong> ${project.department || 'N/A'}</p>
                     </div>
                 </div>
                 
@@ -2621,9 +2621,9 @@ function openSuperuserScoringModal(projectId, modalType) {
     
     // Update modal title based on type
     if (modalType === 'governance') {
-        modalTitle.textContent = 'Project Scoring - Governance (Superuser)';
+        modalTitle.textContent = 'Request Scoring - Governance (Superuser)';
     } else if (modalType === 'final-governance') {
-        modalTitle.textContent = 'Project Scoring - Final Governance (Superuser)';
+        modalTitle.textContent = 'Request Scoring - Final Governance (Superuser)';
     }
     
     // Show save button for superuser scoring
