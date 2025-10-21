@@ -211,5 +211,9 @@ class SystemNotification(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
+<<<<<<< Updated upstream
+        return f"{self.get_notification_type_display()}: {self.title}"
+>>>>>>> Stashed changes
+=======
         return f"{self.get_notification_type_display()}: {self.title}"
 >>>>>>> Stashed changes

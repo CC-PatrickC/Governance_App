@@ -10,6 +10,9 @@ from .models import Project, ProjectFile
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation, SystemNotification
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 from .forms import ProjectForm
 import json
@@ -1015,4 +1018,7 @@ def delete_notification(request, pk):
     except Exception as e:
         logger.error(f"Error deleting notification {pk}: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

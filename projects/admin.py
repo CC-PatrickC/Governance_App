@@ -1,6 +1,10 @@
 from django.contrib import admin
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from .models import Project
+=======
+from .models import Project, Conversation, SystemNotification
+>>>>>>> Stashed changes
 =======
 from .models import Project, Conversation, SystemNotification
 >>>>>>> Stashed changes
@@ -32,4 +36,7 @@ class SystemNotificationAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
