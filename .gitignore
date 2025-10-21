@@ -167,3 +167,8 @@ Thumbs.db
 *.backup
 *.bak
 
+*.pyc
+*.pyc
+*.pyc
+/project_intake/__pycache__
+*.pyc
