@@ -94,11 +94,16 @@ CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
 CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
 
 # CAS User Attribute Mapping - captures email and other info from CAS response
+# Based on Colorado College CAS admin specifications
 CAS_RENAME_ATTRIBUTES = {
-    'mail': 'email',
-    'givenName': 'first_name', 
-    'sn': 'last_name',
-    'displayName': 'full_name',
+    'mail': 'email',           # Email address
+    'givenName': 'first_name', # First Name  
+    'sn': 'last_name',        # Last Name
+    'fullName': 'full_name',   # Full Name (corrected from displayName)
+    # Additional attributes available from CAS:
+    # 'msDS-cloudExtensionAttribute1': 'employee_id',  # ID or INID (if needed)
+    # 'title': 'job_title',                           # Job Title (if needed)
+    # 'department': 'department',                     # Department (if needed)
 }
 
 # Auto-create user accounts with attributes from CAS
