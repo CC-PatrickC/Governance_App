@@ -6,8 +6,13 @@ from . import views
 app_name = 'projects'
 
 def redirect_to_cas(request):
-    """Redirect home page visitors directly to CAS login"""
-    return HttpResponseRedirect('/cas-login/')
+    """Redirect home page visitors to CAS login, or to app if already authenticated"""
+    if request.user.is_authenticated:
+        # User is already logged in, send them to the main app
+        return HttpResponseRedirect('/requests/')
+    else:
+        # User not logged in, send them to CAS
+        return HttpResponseRedirect('/cas-login/')
 
 urlpatterns = [
     path('', redirect_to_cas, name='home'),
