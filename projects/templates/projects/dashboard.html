@@ -1,0 +1,834 @@
+{% extends 'base_cc.html' %}
+{% load static %}
+{% load project_tags %}
+
+{% block title %}Governance Data Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="mb-4">Governance Data Dashboard</h1>
+    
+    <!-- Latest 5 Requests -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Latest Requests</h5>
+                    {% if recent_projects %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                    <tr>
+                                        <th>Project #</th>
+                                        <th>Title</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requestsTableBody">
+                                    {% for project in recent_projects %}
+                                    <tr>
+                                        <td>{{ project.formatted_id }}</td>
+                                        <td>{{ project.title }}</td>
+                                        <td>{{ project.department }}</td>
+                                        <td>{{ project.get_status_display }}</td>
+                                        <td>{{ project.submission_date|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Requests per Department Bar Graph -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Requests per Department</h5>
+                    <div style="height: 400px;">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Distribution Pie Chart -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Request Status Distribution</h5>
+                    <div style="height: 400px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Priority Projects Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Priority Requests</h5>
+                    {% if priority_sorted_projects %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                    <tr>
+                                        <th>Project #</th>
+                                        <th>Title</th>
+                                        <th>Department</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="priorityTableBody">
+                                    {% for project in priority_sorted_projects %}
+                                    <tr>
+                                        <td>{{ project.formatted_id }}</td>
+                                        <td>{{ project.title }}</td>
+                                        <td>{{ project.department }}</td>
+                                        <td>{{ project.priority }}</td>
+                                        <td>{{ project.get_status_display }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No priority requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Daily Requests Line Chart -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0" id="requestsChartTitle">Requests per Day</h5>
+                        <div class="btn-group" role="group" aria-label="Time period filters">
+                            <button type="button" class="btn btn-sm active" id="btn12Months" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
+                                12 Months
+                            </button>
+                            <button type="button" class="btn btn-sm" id="btn30Days" style="border-color: #D09B2C; color: #D09B2C;">
+                                30 Days
+                            </button>
+                            <button type="button" class="btn btn-sm" id="btn7Days" style="border-color: #D09B2C; color: #D09B2C;">
+                                7 Days
+                            </button>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                    <div style="height: 400px;">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empty space for future content -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Future Content</h5>
+                    <p class="text-muted">Additional dashboard content will be added here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area - Ready for items to be added one by one -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Dashboard Content</h5>
+                    <p class="text-muted">Main dashboard content will be added here.</p>
+                    <!-- Content will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Department Chart
+    console.log('Starting chart creation...');
+    
+    // Simple test to see if Chart.js is working
+    console.log('Chart.js available:', typeof Chart !== 'undefined');
+    console.log('Department chart canvas:', document.getElementById('departmentChart'));
+    
+    try {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js not loaded');
+        }
+        
+        // Get the canvas element
+        const canvas = document.getElementById('departmentChart');
+        if (!canvas) {
+            throw new Error('Canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            console.log('Destroying existing chart');
+            existingChart.destroy();
+        }
+        
+        // Department data from Django
+        const departmentData = {{ department_counts|safe }};
+        console.log('Department data:', departmentData);
+        
+        const departments = Object.keys(departmentData);
+        const counts = Object.values(departmentData);
+        
+        console.log('Departments:', departments);
+        console.log('Counts:', counts);
+        
+        if (departments.length === 0) {
+            throw new Error('No department data available');
+        }
+        
+        // Create the chart
+        const ctx = canvas.getContext('2d');
+        console.log('Canvas context:', ctx);
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: departments,
+                datasets: [{
+                    label: 'Active Requests',
+                    data: counts,
+                    backgroundColor: '#D09B2C',
+                    borderColor: '#D09B2C',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        console.log('Chart created successfully:', chart);
+        
+    } catch (error) {
+        console.error('Chart creation error:', error);
+        const chartContainer = document.getElementById('departmentChart');
+        if (chartContainer && chartContainer.parentElement) {
+            chartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find chart container to show error message');
+        }
+    }
+    
+    // Daily Requests Line Chart
+    console.log('Starting daily chart creation...');
+    
+    try {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js not loaded');
+        }
+        
+        // Get the canvas element
+        const dailyCanvas = document.getElementById('dailyChart');
+        if (!dailyCanvas) {
+            throw new Error('Daily chart canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingDailyChart = Chart.getChart(dailyCanvas);
+        if (existingDailyChart) {
+            console.log('Destroying existing daily chart');
+            existingDailyChart.destroy();
+        }
+        
+        // Daily data from Django
+        const dailyData = {{ daily_data|safe }};
+        console.log('Daily data:', dailyData);
+        
+        // Function to get 12 months of data
+        function get12MonthsData() {
+            const endDate = new Date(); // Current date
+            const startDate = new Date();
+            startDate.setMonth(endDate.getMonth() - 11); // 12 months back from current date
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            return filteredData;
+        }
+        
+        // Function to get 30 days of data
+        function get30DaysData() {
+            const endDate = new Date(); // Current date
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 29); // 30 days back from current date
+            
+            console.log('30 Days Filter - Start Date:', startDate.toISOString().split('T')[0]);
+            console.log('30 Days Filter - End Date:', endDate.toISOString().split('T')[0]);
+            console.log('Available data dates:', Object.keys(dailyData));
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            
+            console.log('30 Days Filtered Data:', filteredData);
+            console.log('30 Days Filtered Data Count:', Object.keys(filteredData).length);
+            
+            // If no data in the last 30 days, return the most recent 30 days of available data
+            if (Object.keys(filteredData).length === 0) {
+                console.log('No data in last 30 days, getting most recent 30 days of available data');
+                const availableDates = Object.keys(dailyData).sort();
+                if (availableDates.length > 0) {
+                    // Get the most recent date and work backwards
+                    const mostRecentDate = new Date(availableDates[availableDates.length - 1]);
+                    const adjustedStartDate = new Date(mostRecentDate);
+                    adjustedStartDate.setDate(mostRecentDate.getDate() - 29);
+                    
+                    availableDates.forEach(dateStr => {
+                        const date = new Date(dateStr);
+                        if (date >= adjustedStartDate && date <= mostRecentDate) {
+                            filteredData[dateStr] = dailyData[dateStr];
+                        }
+                    });
+                    
+                    console.log('Adjusted 30 Days Filtered Data:', filteredData);
+                    console.log('Adjusted 30 Days Filtered Data Count:', Object.keys(filteredData).length);
+                }
+            }
+            
+            return filteredData;
+        }
+        
+        // Function to get 7 days of data
+        function get7DaysData() {
+            const endDate = new Date(); // Current date
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 6); // 7 days back from current date
+            
+            console.log('7 Days Filter - Start Date:', startDate.toISOString().split('T')[0]);
+            console.log('7 Days Filter - End Date:', endDate.toISOString().split('T')[0]);
+            
+            const filteredData = {};
+            Object.keys(dailyData).forEach(dateStr => {
+                const date = new Date(dateStr);
+                if (date >= startDate && date <= endDate) {
+                    filteredData[dateStr] = dailyData[dateStr];
+                }
+            });
+            
+            console.log('7 Days Filtered Data:', filteredData);
+            console.log('7 Days Filtered Data Count:', Object.keys(filteredData).length);
+            
+            // If no data in the last 7 days, return the most recent 7 days of available data
+            if (Object.keys(filteredData).length === 0) {
+                console.log('No data in last 7 days, getting most recent 7 days of available data');
+                const availableDates = Object.keys(dailyData).sort();
+                if (availableDates.length > 0) {
+                    // Get the most recent date and work backwards
+                    const mostRecentDate = new Date(availableDates[availableDates.length - 1]);
+                    const adjustedStartDate = new Date(mostRecentDate);
+                    adjustedStartDate.setDate(mostRecentDate.getDate() - 6);
+                    
+                    availableDates.forEach(dateStr => {
+                        const date = new Date(dateStr);
+                        if (date >= adjustedStartDate && date <= mostRecentDate) {
+                            filteredData[dateStr] = dailyData[dateStr];
+                        }
+                    });
+                    
+                    console.log('Adjusted 7 Days Filtered Data:', filteredData);
+                    console.log('Adjusted 7 Days Filtered Data Count:', Object.keys(filteredData).length);
+                }
+            }
+            
+            return filteredData;
+        }
+        
+        // Function to create chart with filtered data
+        function createDailyChart(data, timePeriod = '12months') {
+            let labels, counts;
+            
+            if (timePeriod === '12months') {
+                // Aggregate data by month-year for 12 months view
+                const monthlyData = {};
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                Object.keys(data).forEach(dateStr => {
+                    const date = new Date(dateStr);
+                    const month = date.getMonth();
+                    const year = date.getFullYear();
+                    const monthKey = `${month}-${year}`;
+                    const monthLabel = `${monthNames[month]} ${year}`;
+                    
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {
+                            label: monthLabel,
+                            count: 0
+                        };
+                    }
+                    monthlyData[monthKey].count += data[dateStr] || 0;
+                });
+                
+                // Use current date as end date for 12 months view
+                const endDate = new Date();
+                
+                // Calculate start date (12 months back from current date)
+                const startDate = new Date(endDate);
+                startDate.setMonth(endDate.getMonth() - 11);
+                
+                // Generate all 12 months from start to end date
+                const allMonths = [];
+                const currentDate = new Date(startDate);
+                
+                for (let i = 0; i < 12; i++) {
+                    const month = currentDate.getMonth();
+                    const year = currentDate.getFullYear();
+                    const monthKey = `${month}-${year}`;
+                    const monthLabel = `${monthNames[month]} ${year}`;
+                    
+                    allMonths.push({
+                        key: monthKey,
+                        label: monthLabel,
+                        count: monthlyData[monthKey] ? monthlyData[monthKey].count : 0
+                    });
+                    
+                    // Move to next month
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                }
+                
+                labels = allMonths.map(month => month.label);
+                counts = allMonths.map(month => month.count);
+            } else {
+                // For 30 days and 7 days views, generate all dates in the range
+                const endDate = new Date();
+                const startDate = new Date();
+                
+                if (timePeriod === '30days') {
+                    startDate.setDate(endDate.getDate() - 29); // 30 days back
+                } else if (timePeriod === '7days') {
+                    startDate.setDate(endDate.getDate() - 6); // 7 days back
+                }
+                
+                // Generate all dates in the range
+                const allDates = [];
+                const currentDate = new Date(startDate);
+                
+                while (currentDate <= endDate) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    allDates.push({
+                        date: dateStr,
+                        count: data[dateStr] || 0
+                    });
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                labels = allDates.map(item => item.date);
+                counts = allDates.map(item => item.count);
+            }
+            
+            if (labels.length === 0) {
+                throw new Error('No data available for selected time period');
+            }
+            
+            // Create the line chart
+            const dailyCtx = dailyCanvas.getContext('2d');
+            console.log('Daily canvas context:', dailyCtx);
+            
+            const dailyChart = new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Requests',
+                        data: counts,
+                        borderColor: '#D09B2C',
+                        backgroundColor: 'rgba(208, 155, 44, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            console.log('Daily chart created successfully:', dailyChart);
+            return dailyChart;
+        }
+        
+        // Initialize with 12 months data
+        let currentDailyChart = createDailyChart(get12MonthsData(), '12months');
+        let currentTimePeriod = '12months'; // Track current time period
+        
+        console.log('Setting up button event listeners...');
+        
+        // Add event listener for 12 Months button
+        const btn12Months = document.getElementById('btn12Months');
+        console.log('12 Months button found:', btn12Months);
+        if (btn12Months) {
+            btn12Months.addEventListener('click', function() {
+                console.log('12 Months button clicked!');
+                console.log('Switching to 12 months view...');
+                currentTimePeriod = '12months';
+                
+                // Update button states
+                document.getElementById('btn12Months').classList.add('active');
+                document.getElementById('btn12Months').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn12Months').style.color = 'white';
+                document.getElementById('btn30Days').classList.remove('active');
+                document.getElementById('btn30Days').style.backgroundColor = '';
+                document.getElementById('btn30Days').style.color = '#D09B2C';
+                document.getElementById('btn7Days').classList.remove('active');
+                document.getElementById('btn7Days').style.backgroundColor = '';
+                document.getElementById('btn7Days').style.color = '#D09B2C';
+                
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests by Month';
+                
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
+                }
+                
+                // Recreate chart with 12 months data
+                try {
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(get12MonthsData(), '12months');
+                } catch (error) {
+                    console.error('Error creating 12 months chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 12 months</p>`;
+                    }
+                }
+            });
+        } else {
+            console.warn('12 Months button not found');
+        }
+        
+        // Add event listener for 30 Days button
+        const btn30Days = document.getElementById('btn30Days');
+        console.log('30 Days button found:', btn30Days);
+        if (btn30Days) {
+            btn30Days.addEventListener('click', function() {
+                console.log('30 Days button clicked!');
+                console.log('Switching to 30 days view...');
+                currentTimePeriod = '30days';
+                
+                // Update button states
+                document.getElementById('btn30Days').classList.add('active');
+                document.getElementById('btn30Days').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn30Days').style.color = 'white';
+                document.getElementById('btn12Months').classList.remove('active');
+                document.getElementById('btn12Months').style.backgroundColor = '';
+                document.getElementById('btn12Months').style.color = '#D09B2C';
+                document.getElementById('btn7Days').classList.remove('active');
+                document.getElementById('btn7Days').style.backgroundColor = '';
+                document.getElementById('btn7Days').style.color = '#D09B2C';
+                
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests per Day';
+                
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
+                }
+                
+                // Get 30 days data and log it
+                const thirtyDaysData = get30DaysData();
+                console.log('30 Days data for chart:', thirtyDaysData);
+                
+                // Recreate chart with 30 days data
+                try {
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(thirtyDaysData, '30days');
+                } catch (error) {
+                    console.error('Error creating 30 days chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 30 days</p>`;
+                    }
+                }
+            });
+        } else {
+            console.warn('30 Days button not found');
+        }
+        
+        // Add event listener for 7 Days button
+        const btn7Days = document.getElementById('btn7Days');
+        console.log('7 Days button found:', btn7Days);
+        if (btn7Days) {
+            btn7Days.addEventListener('click', function() {
+                console.log('7 Days button clicked!');
+                console.log('Switching to 7 days view...');
+                currentTimePeriod = '7days';
+                
+                // Update button states
+                document.getElementById('btn7Days').classList.add('active');
+                document.getElementById('btn7Days').style.backgroundColor = '#D09B2C';
+                document.getElementById('btn7Days').style.color = 'white';
+                document.getElementById('btn12Months').classList.remove('active');
+                document.getElementById('btn12Months').style.backgroundColor = '';
+                document.getElementById('btn12Months').style.color = '#D09B2C';
+                document.getElementById('btn30Days').classList.remove('active');
+                document.getElementById('btn30Days').style.backgroundColor = '';
+                document.getElementById('btn30Days').style.color = '#D09B2C';
+                
+                // Update chart title
+                document.getElementById('requestsChartTitle').textContent = 'Requests per Day';
+                
+                // Destroy existing chart
+                if (currentDailyChart) {
+                    currentDailyChart.destroy();
+                }
+                
+                // Get 7 days data and log it
+                const sevenDaysData = get7DaysData();
+                console.log('7 Days data for chart:', sevenDaysData);
+                
+                // Recreate chart with 7 days data
+                try {
+                    // Ensure the canvas element exists
+                    let dailyChartContainer = document.getElementById('dailyChart');
+                    if (!dailyChartContainer || dailyChartContainer.tagName !== 'CANVAS') {
+                        // Find the parent container by looking for the div that contains the canvas
+                        const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                        if (chartDiv) {
+                            chartDiv.innerHTML = '<canvas id="dailyChart"></canvas>';
+                            dailyChartContainer = document.getElementById('dailyChart');
+                        } else {
+                            console.error('Could not find chart container');
+                            return;
+                        }
+                    }
+                    
+                                         currentDailyChart = createDailyChart(sevenDaysData, '7days');
+                } catch (error) {
+                    console.error('Error creating 7 days chart:', error);
+                    // Show error message on the chart
+                    const chartDiv = document.querySelector('.card-body div[style*="height: 400px"]');
+                    if (chartDiv) {
+                        chartDiv.innerHTML = `<p class="text-muted text-center mt-4">No data available for the last 7 days</p>`;
+                    }
+                }
+            });
+        } else {
+            console.warn('7 Days button not found');
+        }
+        
+
+        
+
+        
+
+        
+        
+    } catch (error) {
+        console.error('Daily chart creation error:', error);
+        const dailyChartContainer = document.getElementById('dailyChart');
+        if (dailyChartContainer && dailyChartContainer.parentElement) {
+            dailyChartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading daily chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find daily chart container to show error message');
+        }
+    }
+    
+    // Status Pie Chart
+    console.log('Starting status pie chart creation...');
+    
+    try {
+        // Get the canvas element for status chart
+        const statusCanvas = document.getElementById('statusChart');
+        if (!statusCanvas) {
+            throw new Error('Status chart canvas element not found');
+        }
+        
+        // Destroy any existing chart on this canvas
+        const existingStatusChart = Chart.getChart(statusCanvas);
+        if (existingStatusChart) {
+            console.log('Destroying existing status chart');
+            existingStatusChart.destroy();
+        }
+        
+        // Status data from Django
+        const statusData = {{ status_counts|safe }};
+        console.log('Status data:', statusData);
+        
+        const statuses = Object.keys(statusData);
+        const statusCounts = Object.values(statusData);
+        
+        // Add count to each status label
+        const statusLabelsWithCount = statuses.map((status, index) => {
+            return `${status} (${statusCounts[index]})`;
+        });
+        
+        console.log('Statuses:', statuses);
+        console.log('Status counts:', statusCounts);
+        console.log('Status labels with count:', statusLabelsWithCount);
+        
+        if (statuses.length === 0) {
+            throw new Error('No status data available');
+        }
+        
+        // Create the pie chart
+        const statusCtx = statusCanvas.getContext('2d');
+        console.log('Status canvas context:', statusCtx);
+        
+        // Define colors for different statuses
+        const statusColors = [
+            '#D09B2C', // CC Gold
+            '#28a745', // Green
+            '#dc3545', // Red
+            '#ffc107', // Yellow
+            '#17a2b8', // Blue
+            '#6c757d'  // Gray
+        ];
+        
+        const statusChart = new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: statusLabelsWithCount,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: statusColors.slice(0, statuses.length),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Status chart created successfully:', statusChart);
+        
+    } catch (error) {
+        console.error('Status chart creation error:', error);
+        const statusChartContainer = document.getElementById('statusChart');
+        if (statusChartContainer && statusChartContainer.parentElement) {
+            statusChartContainer.parentElement.innerHTML = `<p class="text-muted text-center mt-4">Error loading status chart: ${error.message}</p>`;
+        } else {
+            console.error('Could not find status chart container to show error message');
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,12 +1,13 @@
-{% extends "base.html" %}
+{% extends "base_cc.html" %}
 {% load static %}
+{% load project_tags %}
 
 {% block title %}Score Project - {{ project.title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ project.title }}</h2>
+        <h2>{{ project.title }} - Scoring Details</h2>
         <div>
             <a href="{% url 'projects:project_scoring_list' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Scoring
@@ -25,55 +26,90 @@
     {% endif %}
 
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Project Details</h5>
-                    <span class="badge {% if project.status == 'approved' %}bg-success
-                                     {% elif project.status == 'rejected' %}bg-danger
-                                     {% elif project.status == 'in_progress' %}bg-primary
-                                     {% elif project.status == 'completed' %}bg-secondary
-                                     {% else %}bg-warning{% endif %}">
+                    <span class="badge">
                         {{ project.get_status_display }}
                     </span>
                 </div>
                 <div class="card-body">
-                    <h5 class="card-title">Description</h5>
-                    <p class="card-text">{{ project.description }}</p>
-                    
-                    <h5 class="card-title mt-4">Project Details</h5>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <h6 class="section-header mb-3"><strong>Project Information</strong></h6>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
-                            <p><strong>Project Type:</strong> 
-                                <span class="badge bg-info">
+                            <p><strong>Request Type:</strong> 
+                                <span>
                                     {{ project.get_project_type_display }}
                                 </span>
                             </p>
                             <p><strong>Priority:</strong> 
-                                <span class="badge {% if project.priority == 'Top' %}bg-dark-red
-                                                 {% elif project.priority == 'High' %}bg-danger
-                                                 {% elif project.priority == 'Normal' %}bg-warning
-                                                 {% else %}bg-success{% endif %}">
+                                <span>
                                     {{ project.priority }}
                                 </span>
                             </p>
+
+                            {% if project.files.all %}
+                            <div class="mt-3">
+                                <h6 class="mb-2"><strong>Attachments:</strong></h6>
+                                <div class="list-group">
+                                    {% for file in project.files.all %}
+                                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
+                                        <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>Submitted By:</strong> {{ project.submitted_by.username }}</p>
+                        <div class="col-md-4">
+                            <h6 class="section-header mb-3"><strong>Contact Information</strong></h6>
+                            <p><strong>Submitted By:</strong> 
+                                {% if project.submitted_by.first_name and project.submitted_by.last_name %}
+                                    {{ project.submitted_by.get_full_name }}
+                                {% else %}
+                                    {{ project.submitted_by.username }}
+                                {% endif %}
+                            </p>
+                            <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                            <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="section-header mb-3"><strong>Timeline</strong></h6>
                             <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
-                            <p><strong>Triage Notes:</strong> {{ project.triage_notes|default:"No triage notes" }}</p>
+                            <p><strong>Last Updated:</strong> {{ project.updated_at|date:"F j, Y" }}</p>
+                            {% if project.triage_date %}
+                            <p><strong>Triage Date:</strong> {{ project.triage_date|date:"F j, Y" }}</p>
+                            {% endif %}
                         </div>
                     </div>
 
-                    {% if project.files.all %}
-                    <h5 class="card-title mt-4">Attachments</h5>
-                    <div class="list-group">
-                        {% for file in project.files.all %}
-                        <a href="{{ file.file.url }}" class="list-group-item list-group-item-action" target="_blank">
-                            <i class="fas fa-file"></i> {{ file.file.name|cut:"project_files/" }}
-                        </a>
-                        {% endfor %}
+                    <h5 class="card-title mt-4 fw-bold">Description</h5>
+                    <p class="card-text">{{ project.description }}</p>
+
+                    {% if project.triage_note_history.exists %}
+                    <div class="mt-4">
+                        <h6 class="mb-3"><strong>Triage Note History:</strong></h6>
+                        <div class="list-group">
+                            {% for note in project.triage_note_history.all|dictsortreversed:"created_at" %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> 
+                                        {% if note.created_by.first_name and note.created_by.last_name %}
+                                            {{ note.created_by.get_full_name }}
+                                        {% else %}
+                                            {{ note.created_by.username }}
+                                        {% endif %}
+                                        <i class="fas fa-clock ms-2"></i> 
+                                        {{ note.created_at|date:"F j, Y, g:i a" }}
+                                    </small>
+                                </div>
+                                <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -93,18 +129,22 @@
                                     <tr>
                                         <th>Criteria</th>
                                         <th>Weight</th>
-                                        <th>Score (1-5)</th>
+                                        <th>Your Score (1-5)</th>
                                         <th>Weighted Score</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Strategic Alignment</td>
+                                        <td>
+                                            Strategic Alignment
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures how well the project aligns with institutional strategic goals and priorities. Consider the project's impact on key strategic initiatives and its contribution to long-term objectives."></i>
+                                        </td>
                                         <td>20%</td>
                                         <td>
                                             <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.strategic_alignment|default:1 }}"
+                                                   value="{{ user_score.strategic_alignment|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -112,12 +152,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Cost Benefit</td>
+                                        <td>
+                                            Cost Benefit
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the financial viability and return on investment. Consider both direct and indirect costs, potential savings, and the overall value proposition."></i>
+                                        </td>
                                         <td>15%</td>
                                         <td>
                                             <input type="number" name="cost_benefit" id="cost_benefit" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.cost_benefit|default:1 }}"
+                                                   value="{{ user_score.cost_benefit|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -125,12 +169,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>User Impact and Adoption</td>
+                                        <td>
+                                            User Impact and Adoption
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the potential impact on users and the likelihood of successful adoption. Consider user needs, training requirements, and change management implications."></i>
+                                        </td>
                                         <td>20%</td>
                                         <td>
                                             <input type="number" name="user_impact" id="user_impact" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.user_impact|default:1 }}"
+                                                   value="{{ user_score.user_impact|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -138,12 +186,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Ease of Implementation</td>
+                                        <td>
+                                            Ease of Implementation
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the complexity and feasibility of implementation. Consider technical requirements, resource needs, timeline, and potential risks."></i>
+                                        </td>
                                         <td>15%</td>
                                         <td>
                                             <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.ease_of_implementation|default:1 }}"
+                                                   value="{{ user_score.ease_of_implementation|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -151,12 +203,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Vendor Reputation and Support</td>
+                                        <td>
+                                            Vendor Reputation and Support
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the vendor's track record, reliability, and support capabilities. Consider past performance, customer service, and long-term viability."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.vendor_reputation_support|default:1 }}"
+                                                   value="{{ user_score.vendor_reputation_support|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -164,12 +220,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Security and Compliance</td>
+                                        <td>
+                                            Security and Compliance
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates security requirements and compliance obligations. Consider data protection, regulatory requirements, and risk management."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="security_compliance" id="security_compliance" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.security_compliance|default:1 }}"
+                                                   value="{{ user_score.security_compliance|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -177,12 +237,16 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>Student-Centered</td>
+                                        <td>
+                                            Student-Centered
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures the project's impact on student success and experience. Consider direct benefits to students, learning outcomes, and student engagement."></i>
+                                        </td>
                                         <td>10%</td>
                                         <td>
                                             <input type="number" name="student_centered" id="student_centered" 
                                                    class="form-control score-input" min="1" max="5" 
-                                                   value="{{ project.student_centered|default:1 }}"
+                                                   value="{{ user_score.student_centered|default:'' }}"
                                                    onchange="calculateWeightedScore(this)">
                                         </td>
                                         <td>
@@ -192,7 +256,7 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="3" class="text-end"><strong>Final Score:</strong></td>
+                                        <td colspan="3" class="text-end"><strong>Your Final Score:</strong></td>
                                         <td><span id="final_score_display" class="weighted-score">0</span></td>
                                     </tr>
                                 </tfoot>
@@ -202,32 +266,12 @@
                         <div class="form-group mb-3">
                             <label for="scoring_notes">Scoring Notes</label>
                             <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                                    rows="4">{{ project.scoring_notes }}</textarea>
+                                    rows="4">{{ user_score.scoring_notes|default:'' }}</textarea>
                         </div>
 
-                        <input type="hidden" name="final_score" id="final_score" value="0">
+                        <input type="hidden" name="final_score" id="final_score" value="{{ user_score.final_score|default:0 }}">
                         <button type="submit" class="btn btn-primary">Save Scoring</button>
                     </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Contact Information</h5>
-                </div>
-                <div class="card-body">
-                    <p><strong>Contact Person:</strong> 
-                        {% if project.submitted_by.first_name and project.submitted_by.last_name %}
-                            {{ project.submitted_by.get_full_name }}
-                        {% else %}
-                            {{ project.submitted_by.username }}
-                        {% endif %}
-                    </p>
-                    <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
-                    <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
-                    <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                 </div>
             </div>
         </div>
@@ -264,17 +308,51 @@
     .score-input {
         -moz-appearance: textfield;
     }
+
+    .info-icon {
+        color: #6c757d;
+        font-size: 15px;
+        margin-left: 5px;
+        cursor: help;
+    }
+
+    .tooltip {
+        max-width: 300px;
+    }
+
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+    }
+    
+    .table th {
+        background-color: var(--bs-gray-200);
+        color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    
+    [data-bs-theme="dark"] .table th {
+        background-color: var(--bs-dark);
+        color: var(--bs-light);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
 </style>
 
 <script>
     function calculateWeightedScore(input) {
-        const score = parseFloat(input.value) || 1;
+        const score = parseFloat(input.value) || 0;
         let weight = 0.2; // Default weight for strategic alignment and user impact
         
         // Set weight based on the input field
         if (input.id === 'cost_benefit' || input.id === 'ease_of_implementation') {
             weight = 0.15; // 15% weight for cost benefit and ease of implementation
-        } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || input.id === 'student_centered') {
+        } else if (input.id === 'vendor_reputation_support' || input.id === 'security_compliance' || 
+                  input.id === 'student_centered') {
             weight = 0.10; // 10% weight for vendor reputation and support, security and compliance, student-centered
         }
         
@@ -285,13 +363,13 @@
         weightedScoreElement.textContent = weightedScore.toFixed(2);
         
         // Calculate and update the final score
-        const strategicAlignmentScore = parseFloat(document.getElementById('strategic_alignment').value) || 1;
-        const costBenefitScore = parseFloat(document.getElementById('cost_benefit').value) || 1;
-        const userImpactScore = parseFloat(document.getElementById('user_impact').value) || 1;
-        const easeOfImplementationScore = parseFloat(document.getElementById('ease_of_implementation').value) || 1;
-        const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 1;
-        const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 1;
-        const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 1;
+        const strategicAlignmentScore = parseFloat(document.getElementById('strategic_alignment').value) || 0;
+        const costBenefitScore = parseFloat(document.getElementById('cost_benefit').value) || 0;
+        const userImpactScore = parseFloat(document.getElementById('user_impact').value) || 0;
+        const easeOfImplementationScore = parseFloat(document.getElementById('ease_of_implementation').value) || 0;
+        const vendorReputationScore = parseFloat(document.getElementById('vendor_reputation_support').value) || 0;
+        const securityComplianceScore = parseFloat(document.getElementById('security_compliance').value) || 0;
+        const studentCenteredScore = parseFloat(document.getElementById('student_centered').value) || 0;
         
         const finalScore = (strategicAlignmentScore * 0.2) + 
                           (costBenefitScore * 0.15) + 
@@ -300,8 +378,12 @@
                           (vendorReputationScore * 0.10) +
                           (securityComplianceScore * 0.10) +
                           (studentCenteredScore * 0.10);
+        
+        // Display the raw final score with 2 decimal places
         document.getElementById('final_score_display').textContent = finalScore.toFixed(2);
-        document.getElementById('final_score').value = Math.round(finalScore * 100); // Convert to 0-100 scale
+        
+        // Store the raw final score value (not converted to 0-100 scale)
+        document.getElementById('final_score').value = finalScore.toFixed(2);
     }
 
     // Initialize scores on page load
@@ -314,27 +396,44 @@
         const securityComplianceInput = document.getElementById('security_compliance');
         const studentCenteredInput = document.getElementById('student_centered');
         
-        if (strategicAlignmentInput) {
-            calculateWeightedScore(strategicAlignmentInput);
+        if (strategicAlignmentInput) calculateWeightedScore(strategicAlignmentInput);
+        if (costBenefitInput) calculateWeightedScore(costBenefitInput);
+        if (userImpactInput) calculateWeightedScore(userImpactInput);
+        if (easeOfImplementationInput) calculateWeightedScore(easeOfImplementationInput);
+        if (vendorReputationInput) calculateWeightedScore(vendorReputationInput);
+        if (securityComplianceInput) calculateWeightedScore(securityComplianceInput);
+        if (studentCenteredInput) calculateWeightedScore(studentCenteredInput);
+        
+        // Initialize the final score display with the user's existing score if available
+        const finalScoreInput = document.getElementById('final_score');
+        if (finalScoreInput && finalScoreInput.value) {
+            document.getElementById('final_score_display').textContent = parseFloat(finalScoreInput.value).toFixed(2);
         }
-        if (costBenefitInput) {
-            calculateWeightedScore(costBenefitInput);
-        }
-        if (userImpactInput) {
-            calculateWeightedScore(userImpactInput);
-        }
-        if (easeOfImplementationInput) {
-            calculateWeightedScore(easeOfImplementationInput);
-        }
-        if (vendorReputationInput) {
-            calculateWeightedScore(vendorReputationInput);
-        }
-        if (securityComplianceInput) {
-            calculateWeightedScore(securityComplianceInput);
-        }
-        if (studentCenteredInput) {
-            calculateWeightedScore(studentCenteredInput);
-        }
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Convert UTC times to Mountain Time
+        document.querySelectorAll('.mountain-time').forEach(function(element) {
+            const utcDate = new Date(element.getAttribute('data-utc'));
+            const mountainTime = new Date(utcDate.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+            element.textContent = mountainTime.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            }) + ' MT';
+        });
+
+        // Calculate initial weighted scores
+        document.querySelectorAll('.score-input').forEach(function(input) {
+            calculateWeightedScore(input);
+        });
     });
 </script>
 {% endblock %} 

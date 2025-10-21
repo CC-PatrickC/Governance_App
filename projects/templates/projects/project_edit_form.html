@@ -1,0 +1,320 @@
+{% load static %}
+{% load tz %}
+
+<style>
+/* Drag and Drop File Upload Styles */
+.file-drop-zone {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover {
+    border-color: #D09B2C;
+    background-color: #fff8e1;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #D09B2C;
+    background-color: #fff3cd;
+    border-style: solid;
+    transform: scale(1.02);
+}
+
+.file-drop-content {
+    pointer-events: none;
+    color: #6c757d;
+}
+
+.file-drop-zone.drag-over .file-drop-content {
+    color: #D09B2C;
+}
+
+.file-drop-zone.drag-over .file-drop-content i {
+    color: #D09B2C;
+    transform: scale(1.1);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-drop-zone i {
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+}
+
+.autocomplete-suggestion {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.autocomplete-suggestion:hover,
+.autocomplete-suggestion.active {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.user-username {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-left: 8px;
+}
+</style>
+
+<form id="project-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="status" value="{{ project.status }}">
+    
+    <div class="mb-3">
+        <label for="title" class="form-label">Request Title *</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="description" class="form-label">Description *</label>
+        <textarea class="form-control" id="description" name="description" rows="4" required>{{ project.description }}</textarea>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="project_type" class="form-label">Request Type *</label>
+            <select class="form-select" id="project_type" name="project_type" required>
+                {% for value, label in project.PROJECT_TYPE_CHOICES %}
+                <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="priority" class="form-label">Priority *</label>
+            <select class="form-select" id="priority" name="priority" required>
+                <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
+                <option value="High" {% if project.priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Normal" {% if project.priority == 'Normal' %}selected{% endif %}>Normal</option>
+                <option value="Low" {% if project.priority == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="stage" class="form-label">Stage *</label>
+            <select class="form-select" id="stage" name="stage" required>
+                {% for value, label in project.STAGE_CHOICES %}
+                <option value="{{ value }}" {% if project.stage == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+            <small class="form-text text-muted">The status will automatically update to match the selected stage.</small>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Current Status</label>
+            <input type="text" class="form-control" value="{{ project.get_status_display }}" readonly>
+            <small class="form-text text-muted">This will update automatically when you change the stage.</small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="department" class="form-label">Department</label>
+        <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
+    </div>
+
+    <div class="mb-3" style="position: relative;">
+        <label for="contact_person" class="form-label">Contact Person</label>
+        <input type="text" 
+               class="form-control" 
+               id="contact_person" 
+               name="contact_person" 
+               value="{{ project.contact_person|default:'' }}"
+               placeholder="Start typing to search users..."
+               autocomplete="off">
+        <div id="contact_person_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+        <small class="form-text text-muted">Type to search and select the primary contact person for this request.</small>
+    </div>
+
+    <div class="mb-3">
+        <label for="files" class="form-label">Add New Attachments</label>
+        <div class="file-drop-zone" id="file-drop-zone">
+            <div class="file-drop-content">
+                <i class="fas fa-cloud-upload-alt fa-2x mb-3"></i>
+                <p class="mb-2">Drag and drop files here or click to browse</p>
+                <small class="text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+            </div>
+            <input type="file" class="form-control file-input" id="files" name="files" multiple>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="triage_notes">Triage Notes</label>
+        <textarea class="form-control" id="triage_notes" name="triage_notes" rows="3">{{ project.triage_notes }}</textarea>
+    </div>
+
+    {% if project.triage_note_history.exists %}
+    <div class="mt-4">
+        <h5>Triage Note History</h5>
+        <div class="list-group">
+            {% for note in project.triage_note_history.all %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> 
+                        {% if note.created_by.first_name and note.created_by.last_name %}
+                            {{ note.created_by.get_full_name }}
+                        {% else %}
+                            {{ note.created_by.username }}
+                        {% endif %}
+                        <i class="fas fa-clock ms-2"></i> {% timezone "America/Denver" %}{{ note.created_at|date:"F j, Y, g:i a T" }}{% endtimezone %}
+                    </small>
+                </div>
+                <p class="mb-0">{{ note.notes|linebreaks }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if project.files.all %}
+    <div class="mb-3">
+        <label class="form-label">Current Attachments</label>
+        <div class="list-group">
+            {% for file in project.files.all %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none">
+                    <i class="fas fa-file me-2"></i> {{ file.file.name|cut:"project_files/" }}
+                </a>
+                <div>
+                    <small class="text-muted me-3">Uploaded: {% timezone "America/Denver" %}{{ file.uploaded_at|date:"M d, Y g:i a T" }}{% endtimezone %}</small>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteAttachment({{ project.pk }}, {{ file.pk }}, this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if project.triage_change_history.exists %}
+    <div class="mt-4">
+        <h5>Triage Change History</h5>
+        <div class="list-group">
+            {% for change in project.triage_change_history.all %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> 
+                        {% if change.changed_by.first_name and change.changed_by.last_name %}
+                            {{ change.changed_by.get_full_name }}
+                        {% else %}
+                            {{ change.changed_by.username }}
+                        {% endif %}
+                        <i class="fas fa-clock ms-2"></i> {% timezone "America/Denver" %}{{ change.changed_at|date:"F j, Y, g:i a T" }}{% endtimezone %}
+                    </small>
+                </div>
+                <div class="change-details">
+                    <strong>{{ change.field_label }}:</strong> 
+                    <span class="text-muted">{{ change.old_value|default:"None" }}</span> 
+                    <i class="fas fa-arrow-right mx-2"></i> 
+                    <span style="font-weight: bold; color: black;">{{ change.new_value|default:"None" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</form>
+
+<script>
+// Drag and Drop File Upload Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('file-drop-zone');
+    const fileInput = document.getElementById('files');
+    
+    if (dropZone && fileInput) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle click to browse
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        dropZone.classList.add('drag-over');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        // Set the files to the file input
+        fileInput.files = files;
+        
+        // Trigger change event to notify any listeners
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    }
+});
+</script>

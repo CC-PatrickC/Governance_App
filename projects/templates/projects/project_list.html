@@ -1,19 +1,418 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
+
+{% block title %}Requests{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Project List</h2>
-        <div class="d-flex gap-2">
-            <button id="refreshButton" class="btn btn-secondary" onclick="refreshProjects()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <a href="{% url 'projects:project_create' %}" class="btn btn-primary">New Project</a>
-        </div>
-    </div>
+<style>
+    .stage-badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        display: inline-block;
+    }
+    
+    .stage-pending_review {
+        background-color: #e2e8f0;
+        color: #1a202c;
+    }
+    
+    .stage-under_review_triage {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .stage-under_review_governance {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .stage-under_review_final_governance {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    .stage-governance_closure {
+        background-color: #fef2f2;
+        color: #dc2626;
+    }
+    
+    .stage-complete {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    
+    .stage-archived {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
 
+    /* CC Theme Card Styles */
+    .cc-projects-section {
+        margin-bottom: 40px;
+    }
+
+    .cc-projects-header h3 {
+        color: #000000;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
+    .cc-projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
+    }
+
+    .cc-project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-project-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-project-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: white;
+        padding: 16px 20px;
+    }
+
+    .cc-project-id {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: black;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-project-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: white;
+    }
+
+    .cc-project-body {
+        padding: 20px;
+    }
+
+    .cc-project-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .cc-project-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .cc-meta-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-department-section {
+        margin-top: 12px;
+    }
+
+    .cc-department-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+
+
+    .cc-project-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .cc-action-btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-action-primary {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+    }
+
+    .cc-action-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+    /* CC Filter Styles */
+    .cc-filters-section {
+        background: #f8f9fa;
+        border-radius: 0 0 8px 8px;
+        padding: 12px;
+        margin-bottom: 32px;
+        border: 1px solid #e9ecef;
+        position: sticky;
+        top: 80px;
+        z-index: 999;
+    }
+
+    .cc-filters-form {
+        margin: 0;
+    }
+
+    .cc-filters-header h3 {
+        color: #000000;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .cc-filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .cc-filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cc-filter-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 3px;
+    }
+
+    .cc-filter-select {
+        padding: 4px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        background: white;
+        color: #495057;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .cc-filter-select:focus {
+        outline: none;
+        border-color: #000000;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .cc-clear-filters {
+        text-align: center;
+        padding-top: 8px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-clear-btn {
+        color: #6c757d;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-clear-btn:hover {
+        color: #000000;
+        background: #e9ecef;
+        text-decoration: none;
+    }
+
+    /* CC Search Styles */
+    .cc-search-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 12px 48px 12px 16px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 3px rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-input::placeholder {
+        color: #6c757d;
+    }
+
+    .cc-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-btn:hover {
+        color: #D09B2C;
+        background: rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-clear-search {
+        color: #D09B2C;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-clear-search:hover {
+        color: #B8860B;
+        background: rgba(208, 155, 44, 0.1);
+        text-decoration: none;
+    }
+
+    /* CC Button Styles */
+    .cc-btn-primary {
+        background: #D09B2C;
+        border: 1px solid #D09B2C;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-btn-primary:hover {
+        background: #B8860B;
+        border-color: #B8860B;
+        color: white;
+        text-decoration: none;
+    }
+
+    .cc-btn-secondary {
+        background: #6c757d;
+        border: 1px solid #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-btn-secondary:hover {
+        background: #5a6268;
+        border-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<!-- Main Content Area -->
+<div class="container">
     {% if messages %}
-    <div class="messages">
+    <div class="messages mb-4">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">
             {{ message }}
@@ -22,80 +421,441 @@
     </div>
     {% endif %}
 
-    <div id="projectsTable" class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Project Name</th>
-                    <th style="width: 30%">Description</th>
-                    <th>Type</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Submitted By</th>
-                    <th>Department</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td>
-                        <span class="badge bg-secondary">
-                            {{ project.formatted_id }}
-                        </span>
-                    </td>
-                    <td>{{ project.title }}</td>
-                    <td class="description-cell">
-                        <div class="description-content">
-                            {{ project.description|truncatewords:20 }}
-                            {% if project.description|wordcount > 20 %}
-                            <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            {% endif %}
-                        </div>
-                        <div class="full-description d-none">
-                            {{ project.description }}
-                            <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this)">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge bg-info">
-                            {{ project.get_project_type_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="priority-badge priority-{{ project.priority|lower }}">
-                            {{ project.priority }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status-badge status-{{ project.status|lower }}">
-                            {{ project.status|title }}
-                        </span>
-                    </td>
-                    <td>{{ project.submitted_by.username|default:"-" }}</td>
-                    <td>{{ project.department|default:"-" }}</td>
-                    <td>
-                        {% if project.id %}
-                        <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-info btn-sm">View</a>
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Request List</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
+                <i class="fas fa-plus-circle"></i> Submit New Request
+            </a>
+            <button id="refreshButton" class="cc-btn-secondary" onclick="refreshProjects()">
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="cc-search-section mb-4">
+        <form method="get" class="cc-search-form">
+            <div class="cc-search-container">
+                <input type="text" 
+                       name="search" 
+                       class="cc-search-input" 
+                       placeholder="Search requests by title, description, department, or contact..." 
+                       value="{{ search_query|default:'' }}">
+                <button type="submit" class="cc-search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            {% if search_query %}
+            <div class="cc-search-results-info">
+                <small class="text-muted">Search results for: "{{ search_query }}"</small>
+                <a href="?{% if type_filter %}type={{ type_filter }}{% endif %}{% if priority_filter %}{% if type_filter %}&{% endif %}priority={{ priority_filter }}{% endif %}{% if status_filter %}{% if type_filter or priority_filter or status_filter %}&{% endif %}status={{ status_filter }}{% endif %}{% if department_filter %}{% if type_filter or priority_filter or status_filter %}&{% endif %}department={{ department_filter }}{% endif %}" class="cc-clear-search">Clear search</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="cc-filters-section">
+        <div class="cc-filters-header">
+            <h3>Filter Requests</h3>
+        </div>
+        <form method="get" class="cc-filters-form">
+            {% if search_query %}
+            <input type="hidden" name="search" value="{{ search_query }}">
+            {% endif %}
+            <div class="cc-filters-grid">
+                <!-- Project Type Filter -->
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Request Type</label>
+                    <select name="type" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Types</option>
+                        {% if project_types %}
+                            {% for value, label in project_types %}
+                            <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
                         {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">No projects found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </select>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Priority</label>
+                    <select name="priority" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Priorities</option>
+                        {% if priorities %}
+                            {% for priority in priorities %}
+                            <option value="{{ priority }}" {% if priority_filter == priority %}selected{% endif %}>{{ priority }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Status</label>
+                    <select name="status" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        {% if status_choices %}
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="cc-filter-group">
+                    <label class="cc-filter-label">Department</label>
+                    <select name="department" class="cc-filter-select" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        {% if departments %}
+                            {% for dept in departments %}
+                            <option value="{{ dept }}" {% if department_filter == dept %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Clear Filters -->
+            {% if type_filter or priority_filter or status_filter or department_filter %}
+            <div class="cc-clear-filters">
+                <a href="?{% if search_query %}search={{ search_query }}{% endif %}" class="cc-clear-btn">Clear All Filters</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Projects Section -->
+    <div class="cc-projects-section">
+        <div class="cc-projects-header">
+            <h3>Requests ({{ projects|length }})</h3>
+        </div>
+        
+        {% if projects %}
+        <div class="cc-projects-grid">
+            {% for project in projects %}
+            <div class="cc-project-card" data-project-id="{{ project.id }}" data-project-title="{{ project.title|safe }}" data-project-description="{{ project.description|safe }}" data-project-type="{{ project.get_project_type_display|safe }}" data-project-priority="{{ project.priority|safe }}" data-project-status="{{ project.get_status_display|safe }}" data-project-stage="{{ project.get_stage_display|safe }}" data-project-department="{{ project.department|default:""|safe }}" data-project-notes="{{ project.notes|default:""|safe }}" data-project-contact-person="{% if project.contact_person %}{% if project.contact_person.first_name and project.contact_person.last_name %}{{ project.contact_person.get_full_name|safe }}{% else %}{{ project.contact_person|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-formatted-id="{{ project.formatted_id|safe }}" data-project-submitted-by="{% if project.submitted_by %}{% if project.submitted_by.first_name and project.submitted_by.last_name %}{{ project.submitted_by.get_full_name|safe }}{% else %}{{ project.submitted_by.username|safe }}{% endif %}{% else %}Unknown{% endif %}" data-project-submission-date="{{ project.submission_date|date:'F j, Y'|safe }}" data-project-triage-notes="{{ project.triage_notes|default:""|safe }}" data-project-triaged-by="{% if project.triaged_by %}{% if project.triaged_by.first_name and project.triaged_by.last_name %}{{ project.triaged_by.get_full_name|safe }}{% else %}{{ project.triaged_by.username|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-triage-date="{{ project.triage_date|date:'F j, Y'|default:'Not specified'|safe }}" style="cursor: pointer;">
+                <div class="cc-project-header">
+                    <div class="cc-project-title">{{ project.title }}</div>
+                    <div class="cc-project-id">{{ project.formatted_id }}</div>
+                </div>
+                <div class="cc-project-body">
+                    <div class="cc-project-description">
+                        {{ project.description|truncatechars:120 }}
+                    </div>
+                    <div class="cc-project-meta">
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Request Type</div>
+                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Priority</div>
+                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Status</div>
+                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if project.department %}
+                    <div class="cc-department-section">
+                        <div class="cc-department-title">Department</div>
+                        <span class="cc-meta-item">{{ project.department }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="cc-project-meta-requested" style="font-size:0.85em; color:#333; margin-top:8px; font-style:italic;">
+                        Requested by: 
+                        {% if project.submitted_by %}
+                            {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                        on {{ project.submission_date|date:'M d, Y' }}
+                    </div>
+
+                    <div class="cc-project-actions">
+                        <!-- View Details button removed -->
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <h4>No requests found</h4>
+            <p>Try adjusting your search criteria or filters.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
+<!-- Project Details Modal -->
+<div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="projectDetailsModalLabel">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Project details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modal Styles */
+    
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 2rem;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    /* Request Details Section Styling */
+    .request-details-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .detail-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .detail-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #D09B2C;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .detail-content p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .detail-content strong {
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .detail-content .text-muted {
+        color: #6c757d !important;
+    }
+    
+    /* Project Title Styling */
+    .project-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 6px;
+        border-left: 4px solid #D09B2C;
+        display: inline-block;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
 <script>
+let currentProjectId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event listeners to project cards
+    const projectCards = document.querySelectorAll('.cc-project-card');
+    projectCards.forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't trigger modal if clicking on action buttons
+            if (e.target.closest('.cc-project-actions')) {
+                return;
+            }
+            
+            const projectId = this.getAttribute('data-project-id');
+            currentProjectId = projectId;
+            
+            // Open modal and load project details
+            const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+            modal.show();
+            
+            loadProjectDetails(projectId);
+        });
+    });
+});
+
+// Function to load project details via AJAX
+function loadProjectDetails(projectId) {
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    
+    // Show loading spinner
+    modalBody.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details...</p>
+        </div>
+    `;
+    
+    const url = `/${projectId}/scoring-details-modal/`;
+    console.log('Fetching from URL:', url);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken,
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            displayProjectDetails(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div class="text-center text-danger">
+                    <h5>Error loading project details</h5>
+                    <p>Please try again or contact support if the problem persists.</p>
+                    <p class="small">Error: ${error.message}</p>
+                    <p class="small">URL: ${url}</p>
+                </div>
+            `;
+        });
+}
+
+// Function to display project details
+function displayProjectDetails(data) {
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const project = data.project;
+    
+    modalBody.innerHTML = `
+        <div class="project-title mb-3">${project.title}</div>
+        
+        <div class="request-details-section">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Request Information</div>
+                        <div class="detail-content">
+                            <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                            <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                            <p><strong>Status:</strong> ${project.status}</p>
+                            <p><strong>Priority:</strong> ${project.priority}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Contact Information</div>
+                        <div class="detail-content">
+                            <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                            <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                            <p><strong>Budget:</strong> ${project.budget_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="detail-card">
+                        <div class="detail-title">Timeline</div>
+                        <div class="detail-content">
+                            <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                            <p><strong>Start Date:</strong> ${project.start_date_formatted || 'N/A'}</p>
+                            <p><strong>End Date:</strong> ${project.end_date_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="detail-card">
+                        <div class="detail-title">Description</div>
+                        <div class="detail-content">
+                            <p>${project.description || 'No description available.'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function refreshProjects() {
     const button = document.getElementById('refreshButton');
     const icon = button.querySelector('i');
@@ -103,45 +863,9 @@ function refreshProjects() {
     // Add spinning animation
     icon.classList.add('fa-spin');
     button.disabled = true;
-
-    // Fetch updated data
-    fetch(window.location.href)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newTable = doc.getElementById('projectsTable');
-            document.getElementById('projectsTable').innerHTML = newTable.innerHTML;
-            
-            // Show success message
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
-            alertDiv.innerHTML = `
-                Connection refreshed successfully
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            document.querySelector('.container').insertBefore(alertDiv, document.getElementById('projectsTable'));
-            
-            // Auto-dismiss the alert after 3 seconds
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 3000);
-        })
-        .catch(error => {
-            // Show error message
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
-            alertDiv.innerHTML = `
-                Error refreshing connection: ${error.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            document.querySelector('.container').insertBefore(alertDiv, document.getElementById('projectsTable'));
-        })
-        .finally(() => {
-            // Stop spinning animation
-            icon.classList.remove('fa-spin');
-            button.disabled = false;
-        });
+    
+    // Reload the page
+    window.location.reload();
 }
 
 function toggleDescription(button) {
@@ -158,79 +882,101 @@ function toggleDescription(button) {
         fullDescription.classList.remove('d-none');
     }
 }
+
+function clearSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    searchInput.value = '';
+    searchForm.submit();
+}
+
+// Debounce function to limit how often the search is performed
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Function to perform the search
+function performSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const currentUrl = new URL(window.location.href);
+    const searchParams = new URLSearchParams(currentUrl.search);
+    
+    if (searchInput.value) {
+        searchParams.set('search', searchInput.value);
+    } else {
+        searchParams.delete('search');
+    }
+    
+    // Preserve the filter parameter if it exists
+    const filterType = searchParams.get('filter');
+    if (filterType) {
+        searchParams.set('filter', filterType);
+    }
+    
+    window.location.href = `${currentUrl.pathname}?${searchParams.toString()}`;
+}
+
+// Add event listener to search input with debounce
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('input', debounce(performSearch, 500));
+}
+
+// Prevent form submission on enter
+const searchForm = document.getElementById('searchForm');
+if (searchForm) {
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+}
 </script>
 
 <style>
-    .priority-badge, .status-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        display: inline-block;
-    }
-
-    .priority-low {
-        background-color: #e2e8f0;
-        color: #4a5568;
-    }
-
-    .priority-normal {
-        background-color: #bee3f8;
-        color: #2b6cb0;
-    }
-
-    .priority-high {
-        background-color: #feb2b2;
-        color: #c53030;
-    }
-
-    .priority-top {
-        background-color: #f56565;
-        color: white;
-    }
-
-    .status-pending {
-        background-color: #f6e05e;
-        color: #744210;
-    }
-
-    .status-approved {
-        background-color: #68d391;
-        color: #1a4731;
-    }
-
-    .status-rejected {
-        background-color: #fc8181;
-        color: #742a2a;
-    }
-
-    .status-in_progress {
-        background-color: #63b3ed;
-        color: #2a4365;
-    }
-
-    .status-completed {
-        background-color: #a0aec0;
-        color: #2d3748;
-    }
-
     .description-cell {
         max-width: 300px;
         word-wrap: break-word;
-        text-align: left;
+        text-align: left !important;
+        padding-left: 0 !important;
+        vertical-align: middle !important;
     }
 
     .description-content, .full-description {
         white-space: pre-wrap;
-        text-align: left;
+        text-align: left !important;
         display: block;
         width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        vertical-align: middle;
+    }
+    
+    .description-text {
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block;
+        width: 100%;
+        line-height: 1.5;
     }
 
     .description-content p, .full-description p {
-        text-align: left;
-        margin: 0;
-        padding: 0;
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ensure table cells have consistent vertical alignment */
+    .table td {
+        vertical-align: middle !important;
     }
 
     /* Add animation for refresh icon */

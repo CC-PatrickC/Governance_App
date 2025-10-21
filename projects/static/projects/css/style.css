@@ -1,8 +1,11 @@
-.priority-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-weight: 500;
-    font-size: 0.875rem;
+.priority-badge,
+.status-badge,
+.type-badge {
+    display: inline-block !important;
+    padding: 0.35em 0.65em !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    border-radius: 0.25rem !important;
 }
 
 .priority-low {
@@ -21,6 +24,292 @@
 }
 
 .priority-top {
-    background-color: #f56565;
+    background-color: #800b0b;
     color: white;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-in_progress {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-completed {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.type-not_yet_decided {
+    background-color: #e2e8f0 !important;
+    color: #4a5568 !important;
+}
+
+.type-process_improvement {
+    background-color: #0466C8 !important;
+    color: white !important;
+}
+
+.type-it_governance {
+    background-color: #0353A4 !important;
+    color: white !important;
+}
+
+.type-erp_governance {
+    background-color: #023E7D !important;
+    color: white !important;
+}
+
+.type-data_governance {
+    background-color: #002855 !important;
+    color: white !important;
+}
+
+/* Dashboard Stage Cards */
+.stage-card {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #e9ecef;
+}
+
+.stage-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.stage-card .card-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.stage-card .stage-count {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #D09B2C;
+}
+
+.stage-card .list-group-item {
+    border: none;
+    border-bottom: 1px solid #f8f9fa;
+    padding: 0.75rem;
+}
+
+.stage-card .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.stage-card .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.stage-card .project-title {
+    font-weight: 500;
+    color: #495057;
+}
+
+.stage-card .project-department {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.stage-card .badge {
+    font-size: 0.75rem;
+    padding: 0.25em 0.5em;
+}
+
+/* Dashboard Equal Height Cards */
+.row .col-md-4 .card,
+.row .col-md-6 .card,
+.row .col-md-12 .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.row .col-md-4 .card .card-body,
+.row .col-md-6 .card .card-body,
+.row .col-md-12 .card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.row .col-md-4 .card .card-body > div:last-child,
+.row .col-md-6 .card .card-body > div:last-child,
+.row .col-md-12 .card .card-body > div:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure chart containers maintain aspect ratio */
+.row .col-md-4 .card .card-body div[style*="height: 350px"],
+.row .col-md-6 .card .card-body div[style*="height: 350px"],
+.row .col-md-12 .card .card-body div[style*="height: 350px"] {
+    flex: 1;
+    min-height: 350px;
+}
+
+/* Ensure table containers maintain consistent height */
+.row .col-md-4 .card .card-body .table-responsive,
+.row .col-md-6 .card .card-body .table-responsive,
+.row .col-md-12 .card .card-body .table-responsive {
+    flex: 1;
+    min-height: 350px;
+}
+
+/* Make sure the row itself uses flexbox for equal height columns */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.row > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Force equal heights for dashboard sections - override inline styles */
+.test-dashboard .row .col-md-4 .card {
+    height: 450px !important;
+}
+
+.test-dashboard .row .col-md-4 .card .card-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.test-dashboard .row .col-md-4 .card .card-body > div:last-child {
+    flex: 1 !important;
+    height: 350px !important;
+    max-height: 350px !important;
+}
+
+/* Specific override for the line chart section */
+.test-dashboard .row .col-md-4 .card .card-body div[style*="height: 350px"] {
+    height: 350px !important;
+    max-height: 350px !important;
+    overflow: hidden !important;
+}
+
+/* Ensure all chart containers are the same height */
+.test-dashboard canvas {
+    max-height: 350px !important;
+}
+
+/* Disabled Navigation Links */
+.nav-link.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    color: #6c757d !important;
+}
+
+.nav-link.disabled:hover {
+    background-color: transparent !important;
+    color: #6c757d !important;
+}
+
+.nav-link.disabled .nav-icon {
+    color: #6c757d !important;
+}
+
+/* Sub-menu Items */
+.nav-item.sub-item {
+    margin-left: 1rem;
+}
+
+.nav-item.sub-item .nav-link {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-left: 2px solid #e9ecef;
+    margin-left: 0.5rem;
+}
+
+.nav-item.sub-item .nav-icon {
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+/* Navigation Section Title */
+.nav-section-title {
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+    padding: 0.75rem 1rem 0.5rem 1rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+} 
+
+/* Force equal heights for test dashboard - very specific selectors */
+.test-dashboard .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+
+.test-dashboard .row > .col-md-4 {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card {
+    height: 500px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 1rem !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card > .card-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 1rem !important;
+}
+
+.test-dashboard .row > .col-md-4 > .card > .card-body > div:last-child {
+    flex: 1 !important;
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow: hidden !important;
+}
+
+/* Override any inline styles on chart containers */
+.test-dashboard .row > .col-md-4 > .card > .card-body > div[style*="height: 350px"] {
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow: hidden !important;
+    flex: 1 !important;
+}
+
+/* Ensure table containers are also constrained */
+.test-dashboard .row > .col-md-4 > .card > .card-body > .table-responsive {
+    height: 350px !important;
+    max-height: 350px !important;
+    min-height: 350px !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+}
+
+/* Force canvas elements to respect container height */
+.test-dashboard canvas {
+    max-height: 350px !important;
+    height: 350px !important;
 } 

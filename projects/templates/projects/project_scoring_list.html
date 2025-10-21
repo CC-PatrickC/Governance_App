@@ -1,82 +1,1104 @@
-{% extends "base.html" %}
+{% extends 'base_cc.html' %}
 {% load static %}
 
-{% block title %}Project Scoring{% endblock %}
+{% block title %}Requests for Governance{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* CC Theme Styles for Scoring Page */
+    .cc-projects-section {
+        margin-bottom: 2rem;
+    }
+
+    .cc-projects-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .cc-projects-header h3 {
+        color: #000000;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .cc-projects-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        justify-content: center;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .cc-project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+    }
+
+    .cc-project-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+        cursor: pointer;
+    }
+
+    .cc-project-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cc-project-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 0;
+        color: white;
+    }
+
+    .cc-project-id {
+        font-size: 0.875rem;
+        font-weight: 500;
+        opacity: 0.8;
+        color: black;
+    }
+
+    .cc-project-body {
+        padding: 1.5rem;
+    }
+
+    .cc-project-description {
+        color: #495057;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .cc-project-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .cc-meta-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-department-section {
+        margin-top: 12px;
+    }
+
+    .cc-department-title {
+        font-size: 8px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .cc-project-department {
+        margin-top: 8px;
+        padding: 4px 0;
+    }
+    
+    .cc-department-value {
+        font-size: 0.875rem;
+        color: #495057;
+    }
+
+    .cc-project-meta-requested {
+        font-size: 0.85em;
+        color: #6c757d;
+        margin-bottom: 1rem;
+        font-style: italic;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .cc-search-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .cc-search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .cc-search-input {
+        width: 100%;
+        padding: 12px 48px 12px 16px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #495057;
+        background: white;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-input:focus {
+        outline: none;
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 3px rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-input::placeholder {
+        color: #6c757d;
+    }
+
+    .cc-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-search-btn:hover {
+        color: #D09B2C;
+        background: rgba(208, 155, 44, 0.1);
+    }
+
+    .cc-search-results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-clear-search {
+        color: #D09B2C;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .cc-clear-search:hover {
+        color: #B8860B;
+        background: rgba(208, 155, 44, 0.1);
+        text-decoration: none;
+    }
+
+    .cc-empty-state h4 {
+        margin-bottom: 1rem;
+        color: #495057;
+    }
+
+    /* Debug info styles */
+    .debug-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    
+    /* Modal Styles */
+    
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 2rem;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    /* Request Details Section Styling */
+    .request-details-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .detail-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .detail-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #D09B2C;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .detail-content p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .detail-content strong {
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .detail-content .text-muted {
+        color: #6c757d !important;
+    }
+    
+    /* Project Title Styling */
+    .project-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 6px;
+        border-left: 4px solid #D09B2C;
+        display: inline-block;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    /* Scoring Form Styles */
+    .weighted-score {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .score-input {
+        width: 80px;
+    }
+
+    /* Remove number input arrows */
+    .score-input::-webkit-outer-spin-button,
+    .score-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .score-input {
+        -moz-appearance: textfield;
+    }
+
+    .info-icon {
+        color: #6c757d;
+        font-size: 15px;
+        margin-left: 5px;
+        cursor: help;
+    }
+
+    .tooltip {
+        max-width: 300px;
+    }
+    
+    .table th {
+        background-color: var(--bs-gray-200);
+        color: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+    
+    [data-bs-theme="dark"] .table th {
+        background-color: var(--bs-dark);
+        color: var(--bs-light);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    /* Modal specific table adjustments */
+    .modal .table {
+        font-size: 0.9rem;
+    }
+    
+    .modal .table td {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+    
+    .modal .table th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Triage Notes Styling */
+    .triage-note-item {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .triage-note-item:hover {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-color: #D09B2C;
+    }
+    
+    .triage-note-item strong {
+        color: #D09B2C;
+        font-weight: 600;
+    }
+    
+    .triage-note-item small {
+        font-size: 0.75rem;
+    }
+    
+    .triage-note-item p {
+        margin-bottom: 0;
+        line-height: 1.4;
+        color: #495057;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Project Scoring</h2>
-        <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Projects
-        </a>
-    </div>
-
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
+{% csrf_token %}
+<div class="container-fluid py-4">
+    <div class="cc-projects-section">
+        <div class="cc-projects-header">
+                                <h3>Requests for Governance ({{ projects|length }})</h3>
+            {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <p class="text-muted mb-0"><small>You have access to all request types as an administrator.</small></p>
+                {% elif allowed_project_types %}
+                    <p class="text-muted mb-0"><small>You are viewing: {{ allowed_project_types|join:", " }} projects only.</small></p>
+                {% else %}
+                    <p class="text-muted mb-0"><small>You have access to all request types.</small></p>
+                {% endif %}
+            {% endif %}
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+        
+        <!-- Search Bar -->
+        <div class="cc-search-section mb-4">
+            <form method="get" class="cc-search-form">
+                <div class="cc-search-container">
+                    <input type="text" 
+                           name="search" 
+                           class="cc-search-input" 
+                           placeholder="Search requests by title, description, department, or contact..." 
+                           value="{{ search_query|default:'' }}">
+                    <button type="submit" class="cc-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                {% if search_query %}
+                <div class="cc-search-results-info">
+                    <small class="text-muted">Search results for: "{{ search_query }}"</small>
+                    <a href="{% url 'projects:project_scoring_list' %}" class="cc-clear-search">Clear search</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+        
+        {% if projects %}
+        <div class="cc-projects-grid">
+            {% for project in projects %}
+            <div class="cc-project-card" data-project-id="{{ project.id }}">
+                <div class="cc-project-header">
+                    <div class="cc-project-title">{{ project.title }}</div>
+                    <div class="cc-project-id">{{ project.formatted_id }}</div>
+                </div>
+                <div class="cc-project-body">
+                    <div class="cc-project-description">
+                        {{ project.description|truncatechars:120 }}
+                    </div>
+                    <div class="cc-project-meta">
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Request Type</div>
+                            <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Priority</div>
+                            <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                        </div>
+                        <div class="cc-meta-section">
+                            <div class="cc-meta-title">Status</div>
+                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if project.department %}
+                    <div class="cc-department-section">
+                        <div class="cc-department-title">Department</div>
+                        <span class="cc-meta-item">{{ project.department }}</span>
+                    </div>
+                    {% endif %}
 
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Project Name</th>
-                    <th>Description</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Department</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td>{{ project.formatted_id }}</td>
-                    <td>{{ project.title }}</td>
-                    <td>{{ project.description|truncatechars:100 }}</td>
-                    <td>
-                        <span class="priority-badge priority-{{ project.priority|lower }}">
-                            {{ project.priority }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status-badge status-{{ project.status|lower }}">
-                            {{ project.status|title }}
-                        </span>
-                    </td>
-                    <td>{{ project.department|default:"-" }}</td>
-                    <td>
-                        <a href="{% url 'projects:project_scoring' project.pk %}" class="btn btn-primary btn-sm">
-                            Score
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">No projects found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    <div class="cc-project-meta-requested">
+                        Requested by: 
+                        {% if project.submitted_by %}
+                            {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                        on {{ project.submission_date|date:'M d, Y' }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cc-empty-state">
+            <h4>No requests found</h4>
+            <p>Try adjusting your search criteria or filters.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<style>
-    .badge {
-        font-size: 0.875rem;
-        padding: 0.35em 0.65em;
+<!-- Project Details Modal -->
+<div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectDetailsModalLabel">Project Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading project details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentProjectId = null;
+    
+    // Add click event listener to project cards
+    document.querySelectorAll('.cc-project-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const projectId = this.getAttribute('data-project-id');
+            if (projectId) {
+                currentProjectId = projectId;
+                loadProjectDetails(projectId);
+            }
+        });
+    });
+    
+    // Function to load project details
+    function loadProjectDetails(projectId) {
+        const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+        modal.show();
+        
+        // Show loading spinner
+        const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+        modalBody.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading project details...</p>
+            </div>
+        `;
+        
+        // Fetch project details
+        fetch(`/${projectId}/scoring-details-modal/`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || 'Network response was not ok');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayProjectDetails(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error loading project details</h6>
+                        <p>Please try again or contact support if the problem persists.</p>
+                        <small class="text-muted">Error: ${error.message}</small>
+                    </div>
+                `;
+            });
     }
     
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
+    // Function to display project details
+    function displayProjectDetails(data) {
+        const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+        const project = data.project;
+        
+        modalBody.innerHTML = `
+            <div class="project-title mb-3">${project.title}</div>
+            
+            <div class="request-details-section">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="detail-card">
+                            <div class="detail-title">Request Information</div>
+                            <div class="detail-content">
+                                <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                                <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                                <p><strong>Status:</strong> ${project.status}</p>
+                                <p><strong>Priority:</strong> ${project.priority}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-card">
+                            <div class="detail-title">Contact Information</div>
+                            <div class="detail-content">
+                                <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
+                                <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                                <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                <p><strong>Budget:</strong> ${project.budget_formatted || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="detail-card">
+                            <div class="detail-title">Timeline</div>
+                            <div class="detail-content">
+                                <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                <p><strong>Start Date:</strong> ${project.start_date_formatted || 'N/A'}</p>
+                                <p><strong>End Date:</strong> ${project.end_date_formatted || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="detail-card">
+                            <div class="detail-title">Description</div>
+                            <div class="detail-content">
+                                <p>${project.description || 'No description available.'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="detail-card">
+                            <div class="detail-title">Triage Notes</div>
+                            <div class="detail-content">
+                                ${data.triage_notes_history && data.triage_notes_history.length > 0 ? 
+                                    data.triage_notes_history.map(note => `
+                                        <div class="triage-note-item mb-3 p-3 border rounded bg-light">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <strong>${note.created_by}</strong>
+                                                <small class="text-muted">${note.created_at}</small>
+                                            </div>
+                                            <p class="mb-0">${note.notes}</p>
+                                        </div>
+                                    `).join('') : 
+                                    '<p class="text-muted">No triage notes available.</p>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scoring Form Section -->
+            <div class="scoring-form-section mt-4">
+                <div class="detail-card">
+                    <div class="detail-title">Score This Project</div>
+                    <form id="scoringForm">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Criteria</th>
+                                        <th>Weight</th>
+                                        <th>Your Score (1-5)</th>
+                                        <th>Weighted Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            Strategic Alignment
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures how well the project aligns with institutional strategic goals and priorities. Consider the project's impact on key strategic initiatives and its contribution to long-term objectives."></i>
+                                        </td>
+                                        <td>20%</td>
+                                        <td>
+                                            <input type="number" name="strategic_alignment" id="strategic_alignment" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.strategic_alignment || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="strategic_alignment_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Cost Benefit
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the financial viability and return on investment. Consider both direct and indirect costs, potential savings, and the overall value proposition."></i>
+                                        </td>
+                                        <td>15%</td>
+                                        <td>
+                                            <input type="number" name="cost_benefit" id="cost_benefit" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.cost_benefit || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="cost_benefit_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            User Impact and Adoption
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the potential impact on users and the likelihood of successful adoption. Consider user needs, training requirements, and change management implications."></i>
+                                        </td>
+                                        <td>20%</td>
+                                        <td>
+                                            <input type="number" name="user_impact" id="user_impact" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.user_impact || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="user_impact_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Ease of Implementation
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates the complexity and feasibility of implementation. Consider technical requirements, resource needs, timeline, and potential risks."></i>
+                                        </td>
+                                        <td>15%</td>
+                                        <td>
+                                            <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.ease_of_implementation || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="ease_of_implementation_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Vendor Reputation and Support
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Assesses the vendor's track record, reliability, and support capabilities. Consider past performance, customer service, and long-term viability."></i>
+                                        </td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.vendor_reputation_support || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="vendor_reputation_support_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Security and Compliance
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Evaluates security requirements and compliance obligations. Consider data protection, regulatory requirements, and risk management."></i>
+                                        </td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="security_compliance" id="security_compliance" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.security_compliance || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="security_compliance_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Student-Centered
+                                            <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                               title="Measures the project's impact on student success and experience. Consider direct benefits to students, learning outcomes, and student engagement."></i>
+                                        </td>
+                                        <td>10%</td>
+                                        <td>
+                                            <input type="number" name="student_centered" id="student_centered" 
+                                                   class="form-control score-input" min="1" max="5" 
+                                                   value="${data.user_score ? data.user_score.student_centered || 1 : 1}"
+                                                   onchange="calculateWeightedScore(this)">
+                                        </td>
+                                        <td>
+                                            <span id="student_centered_weighted" class="weighted-score">0</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Your Final Score:</strong></td>
+                                        <td><span id="final_score_display" class="weighted-score">0</span></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="scoring_notes">Scoring Notes</label>
+                            <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
+                                    rows="4" placeholder="Add your detailed scoring notes here...">${data.user_score ? data.user_score.scoring_notes || '' : ''}</textarea>
+                        </div>
+
+                        <input type="hidden" name="final_score" id="final_score" value="${data.user_score ? data.user_score.final_score || 0 : 0}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
+                                <i class="fas fa-save me-2"></i>Save Scoring
+                            </button>
+                            <div id="saveStatus" class="text-muted"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        // Add event listener for the scoring form
+        document.getElementById('scoringForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveScore(project.id);
+        });
+        
+        // Initialize tooltips and calculate initial scores
+        setTimeout(() => {
+            // Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Calculate initial weighted scores
+            document.querySelectorAll('.score-input').forEach(input => {
+                calculateWeightedScore(input);
+            });
+        }, 100);
     }
-</style>
+    
+    // Function to calculate weighted scores - make it global
+    window.calculateWeightedScore = function(input) {
+        const score = parseFloat(input.value) || 1;
+        let weight = 0.2; // Default weight for strategic alignment and user impact
+        
+        // Set weight based on input name
+        switch(input.name) {
+            case 'strategic_alignment':
+                weight = 0.2;
+                break;
+            case 'cost_benefit':
+                weight = 0.15;
+                break;
+            case 'user_impact':
+                weight = 0.2;
+                break;
+            case 'ease_of_implementation':
+                weight = 0.15;
+                break;
+            case 'vendor_reputation_support':
+                weight = 0.1;
+                break;
+            case 'security_compliance':
+                weight = 0.1;
+                break;
+            case 'student_centered':
+                weight = 0.1;
+                break;
+        }
+        
+        const weightedScore = (score * weight).toFixed(2);
+        const weightedElement = document.getElementById(input.name + '_weighted');
+        if (weightedElement) {
+            weightedElement.textContent = weightedScore;
+        }
+        
+        // Calculate and update final score
+        calculateFinalScore();
+    }
+    
+    // Function to calculate final score - make it global
+    window.calculateFinalScore = function() {
+        let finalScore = 0;
+        const criteria = ['strategic_alignment', 'cost_benefit', 'user_impact', 'ease_of_implementation', 
+                         'vendor_reputation_support', 'security_compliance', 'student_centered'];
+        
+        criteria.forEach(criterion => {
+            const input = document.getElementById(criterion);
+            if (input) {
+                const score = parseFloat(input.value) || 1;
+                let weight = 0.2; // Default weight
+                
+                switch(criterion) {
+                    case 'strategic_alignment':
+                    case 'user_impact':
+                        weight = 0.2;
+                        break;
+                    case 'cost_benefit':
+                    case 'ease_of_implementation':
+                        weight = 0.15;
+                        break;
+                    case 'vendor_reputation_support':
+                    case 'security_compliance':
+                    case 'student_centered':
+                        weight = 0.1;
+                        break;
+                }
+                
+                finalScore += score * weight;
+            }
+        });
+        
+        const finalScoreDisplay = document.getElementById('final_score_display');
+        const finalScoreInput = document.getElementById('final_score');
+        
+        if (finalScoreDisplay) {
+            finalScoreDisplay.textContent = finalScore.toFixed(2);
+        }
+        if (finalScoreInput) {
+            finalScoreInput.value = finalScore.toFixed(2);
+        }
+    }
+    
+    // Function to save the score - make it global
+    window.saveScore = function(projectId) {
+        const form = document.getElementById('scoringForm');
+        const formData = new FormData(form);
+        const saveStatus = document.getElementById('saveStatus');
+        
+        // Validate that all scores are entered
+        const scoreInputs = document.querySelectorAll('.score-input');
+        let isValid = true;
+        scoreInputs.forEach(input => {
+            if (!input.value || input.value < 1 || input.value > 5) {
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            saveStatus.innerHTML = '<span class="text-danger">Please enter valid scores (1-5) for all criteria</span>';
+            return;
+        }
+        
+        saveStatus.innerHTML = '<span class="text-info">Saving...</span>';
+        
+        // Get CSRF token
+        const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfTokenElement) {
+            saveStatus.innerHTML = '<span class="text-danger">CSRF token not found. Please refresh the page and try again.</span>';
+            return;
+        }
+        const csrfToken = csrfTokenElement.value;
+        
+        // Prepare data for submission
+        const scoreData = {
+            strategic_alignment: parseInt(formData.get('strategic_alignment')),
+            cost_benefit: parseInt(formData.get('cost_benefit')),
+            user_impact: parseInt(formData.get('user_impact')),
+            ease_of_implementation: parseInt(formData.get('ease_of_implementation')),
+            vendor_reputation_support: parseInt(formData.get('vendor_reputation_support')),
+            security_compliance: parseInt(formData.get('security_compliance')),
+            student_centered: parseInt(formData.get('student_centered')),
+            scoring_notes: formData.get('scoring_notes'),
+            final_score: parseFloat(formData.get('final_score'))
+        };
+        
+        // Debug: Log form data
+        console.log('Form data debug:');
+        console.log('strategic_alignment:', formData.get('strategic_alignment'));
+        console.log('cost_benefit:', formData.get('cost_benefit'));
+        console.log('user_impact:', formData.get('user_impact'));
+        console.log('ease_of_implementation:', formData.get('ease_of_implementation'));
+        console.log('vendor_reputation_support:', formData.get('vendor_reputation_support'));
+        console.log('security_compliance:', formData.get('security_compliance'));
+        console.log('student_centered:', formData.get('student_centered'));
+        console.log('scoring_notes:', formData.get('scoring_notes'));
+        console.log('final_score:', formData.get('final_score'));
+        
+        console.log('Sending score data:', scoreData);
+        console.log('CSRF Token:', csrfToken);
+        console.log('Project ID:', projectId);
+        
+        fetch(`/${projectId}/score/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(scoreData)
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                saveStatus.innerHTML = '<span class="text-success">✓ Score saved successfully!</span>';
+                setTimeout(() => {
+                    saveStatus.innerHTML = '';
+                    // Close the modal after successful save
+                    const modalElement = document.getElementById('projectDetailsModal');
+                    if (modalElement) {
+                        // Try multiple approaches to close the modal
+                        try {
+                            // Method 1: Use Bootstrap's modal API
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) {
+                                modal.hide();
+                            } else {
+                                // Method 2: Create new modal instance and hide
+                                const newModal = new bootstrap.Modal(modalElement);
+                                newModal.hide();
+                            }
+                        } catch (e) {
+                            console.log('Bootstrap modal close failed, trying manual close');
+                            // Method 3: Manual close
+                            modalElement.classList.remove('show');
+                            modalElement.style.display = 'none';
+                            document.body.classList.remove('modal-open');
+                            const backdrop = document.querySelector('.modal-backdrop');
+                            if (backdrop) {
+                                backdrop.remove();
+                            }
+                        }
+                    }
+                }, 1500);
+            } else {
+                saveStatus.innerHTML = '<span class="text-danger">Error saving score: ' + (data.error || 'Unknown error') + '</span>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            saveStatus.innerHTML = '<span class="text-danger">Error saving score. Please try again.</span>';
+        });
+    }
+    
+    // Handle "Go to Scoring Page" button
+    // document.getElementById('goToScoringPage').addEventListener('click', function() {
+    //     if (currentProjectId) {
+    //         const url = `{% url 'projects:project_scoring' 999 %}`.replace('999', currentProjectId);
+    //         window.location.href = url;
+    //     }
+    // });
+});
+</script>
 {% endblock %} 
