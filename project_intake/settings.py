@@ -100,6 +100,18 @@ CAS_SERVICE_URL = "https://governance.coloradocollege.app"
 CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
 CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
 
+# CAS User Attribute Mapping - captures email and other info from CAS response
+CAS_RENAME_ATTRIBUTES = {
+    'mail': 'email',
+    'givenName': 'first_name', 
+    'sn': 'last_name',
+    'displayName': 'full_name',
+}
+
+# Auto-create user accounts with attributes from CAS
+CAS_CREATE_USER = True
+CAS_UPDATE_USER_ATTRIBUTES = True
+
 ROOT_URLCONF = 'project_intake.urls'
 
 TEMPLATES = [
