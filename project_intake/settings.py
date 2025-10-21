@@ -100,10 +100,10 @@ CAS_RENAME_ATTRIBUTES = {
     'givenName': 'first_name', # First Name  
     'sn': 'last_name',        # Last Name
     'fullName': 'full_name',   # Full Name (corrected from displayName)
-    # Additional attributes available from CAS:
-    # 'msDS-cloudExtensionAttribute1': 'employee_id',  # ID or INID (if needed)
-    # 'title': 'job_title',                           # Job Title (if needed)
-    # 'department': 'department',                     # Department (if needed)
+    # Additional attributes from CAS:
+    'msDS-cloudExtensionAttribute1': 'employee_id',  # ID or INID
+    'title': 'job_title',                           # Job Title
+    'department': 'department',                     # Department
 }
 
 # Auto-create user accounts with attributes from CAS
