@@ -466,9 +466,11 @@ def project_update_ajax(request, pk):
         project.triaged_by = request.user
         project.triage_date = timezone.now()
         
-        # Update contact information
+        # Update contact information and SDP fields
         project.contact_person = request.POST.get('contact_person', '')
         project.contact_email = request.POST.get('contact_email', '')
+        project.sdp_ticket_number = request.POST.get('sdp_ticket_number', '')
+        project.sdp_link = request.POST.get('sdp_link', '')
         
         # Sync status with stage before saving
         project = sync_status_with_stage(project)
@@ -1336,6 +1338,8 @@ def project_scoring_details_modal(request, pk):
             'submitted_by': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
             'submitted_by_email': project.submitted_by.email if project.submitted_by else 'N/A',
             'contact_person': project.contact_person,
+            'sdp_ticket_number': project.sdp_ticket_number,
+            'sdp_link': project.sdp_link,
             'project_type': project.project_type,
             'project_type_display': project.get_project_type_display(),
             'status': project.status,
