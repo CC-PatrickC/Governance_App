@@ -920,8 +920,10 @@
                                     {% endif %}
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
+                                {% if user.is_superuser %}
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                 <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 <li>
                                     <button type="button" class="dropdown-item text-danger" onclick="logout()">
                                         <i class="fas fa-sign-out-alt me-2"></i>Logout

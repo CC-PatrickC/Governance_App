@@ -1183,8 +1183,8 @@
                 {% endif %}
             {% endif %}
             
-            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
-            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+            <!-- Final Governance Section (Visible for superusers, staff, and governance users only) -->
+            {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
                 {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
@@ -1669,11 +1669,6 @@ function openTriageEditModal(projectId) {
                 saveBtn.style.display = 'inline-block';
                 deleteBtn.style.display = 'inline-block';
                 
-                
-                // Initialize contact person autocomplete
-                initializeContactPersonAutocomplete();
-                
-                
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -1860,9 +1855,6 @@ function submitTriageEditForm(form, projectId) {
                         if (newForm) {
                             // Replace the form content
                             formElement.innerHTML = newForm.innerHTML;
-                            
-                            // Re-initialize contact person autocomplete
-                            initializeContactPersonAutocomplete();
                             
                             // Clear the file input
                             const fileInput = formElement.querySelector('input[type="file"]');

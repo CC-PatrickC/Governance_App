@@ -183,7 +183,11 @@ def get_user_allowed_project_types(user):
 @login_not_required
 def custom_login_view(request):
     if request.user.is_authenticated:
-        return redirect('projects:my_governance')
+        # Redirect based on user permissions
+        if request.user.is_staff or request.user.groups.exists():
+            return redirect('projects:my_governance')
+        else:
+            return redirect('projects:project_intake_form')
     
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -192,6 +196,7 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
+            # All users go to MyGovernance after login
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -732,13 +737,17 @@ def project_update_form_ajax(request, pk):
             logger.info(f"Project {pk} is in Governance_Closure stage, cannot be edited")
             return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
         
-        # Get all users for the contact person dropdown
-        from django.contrib.auth.models import User
-        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        # Get users from Triage Group and Triage Group Lead for the technician dropdown
+        from django.contrib.auth.models import User, Group
+        triage_group = Group.objects.filter(name__in=['Triage Group', 'Triage Group Lead'])
+        triage_users = User.objects.filter(
+            is_active=True,
+            groups__in=triage_group
+        ).distinct().order_by('first_name', 'last_name', 'username')
         
         context = {
             'project': project,
-            'users': users,
+            'triage_users': triage_users,
         }
         logger.info(f"Rendering edit form template for project {pk}")
         
@@ -1859,16 +1868,10 @@ def my_governance_superuser(request):
     
     return render(request, 'projects/my_governance_superuser.html', context)
 
+@login_required
 def my_governance(request):
     """My Governance page - shows user's submitted requests and contact requests"""
-    # Handle anonymous users
-    if not request.user.is_authenticated:
-        user_projects = Project.objects.none()
-        contact_projects = Project.objects.none()
-        triage_projects = None
-        governance_projects = None
-        final_governance_projects = None
-    else:
+    if request.user.is_authenticated:
         # Get all projects submitted by the current user
         user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
         
