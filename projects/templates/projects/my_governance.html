@@ -145,6 +145,17 @@
         margin-bottom: 1px;
     }
 
+    .cc-department-section a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .cc-department-section a:hover {
+        color: #004499;
+        text-decoration: underline;
+    }
+
     .cc-project-meta-requested {
         font-size: 0.6rem;
         color: #6c757d;
@@ -260,6 +271,17 @@
     
     .detail-content .text-muted {
         color: #6c757d !important;
+    }
+
+    .detail-content a, .info-content a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .detail-content a:hover, .info-content a:hover {
+        color: #004499;
+        text-decoration: underline;
     }
     
          /* Project Title Styling */
@@ -1030,6 +1052,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.sdp_ticket_number and project.sdp_link %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">SDP</div>
+                                    <span class="cc-meta-item"><a href="{{ project.sdp_link }}" target="_blank" rel="noopener noreferrer">{{ project.sdp_ticket_number }}</a></span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1103,6 +1132,13 @@
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Technician</div>
                                     <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if project.sdp_ticket_number and project.sdp_link %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">SDP</div>
+                                    <span class="cc-meta-item"><a href="{{ project.sdp_link }}" target="_blank" rel="noopener noreferrer">{{ project.sdp_ticket_number }}</a></span>
                                 </div>
                                 {% endif %}
 
@@ -1180,6 +1216,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.sdp_ticket_number and project.sdp_link %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">SDP</div>
+                                    <span class="cc-meta-item"><a href="{{ project.sdp_link }}" target="_blank" rel="noopener noreferrer">{{ project.sdp_ticket_number }}</a></span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1253,6 +1296,13 @@
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Technician</div>
                                     <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if project.sdp_ticket_number and project.sdp_link %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">SDP</div>
+                                    <span class="cc-meta-item"><a href="{{ project.sdp_link }}" target="_blank" rel="noopener noreferrer">{{ project.sdp_ticket_number }}</a></span>
                                 </div>
                                 {% endif %}
 
@@ -1486,11 +1536,12 @@ function showProjectDetails(projectId) {
                              <div class="col-12">
                                  <div class="detail-card">
                                      <div class="detail-title">Request Information</div>
-                                                                           <div class="detail-content">
-                                          <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
-                                          <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                                          <p><strong>Priority:</strong> ${project.priority}</p>
-                                      </div>
+                                                                          <div class="detail-content">
+                                         <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                                         <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                                         <p><strong>Priority:</strong> ${project.priority}</p>
+                                         ${project.sdp_ticket_number && project.sdp_link ? `<p><strong>SDP:</strong> <a href="${project.sdp_link}" target="_blank" rel="noopener noreferrer">${project.sdp_ticket_number}</a></p>` : ''}
+                                     </div>
                                  </div>
                              </div>
                          </div>
@@ -1915,6 +1966,7 @@ function openGovernanceScoringModal(projectId) {
                         <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
                         <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
                         ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
+                        ${project.sdp_ticket_number && project.sdp_link ? `<p class="mb-2"><strong>SDP:</strong> <a href="${project.sdp_link}" target="_blank" rel="noopener noreferrer">${project.sdp_ticket_number}</a></p>` : ''}
                     </div>
                 </div>
                 
