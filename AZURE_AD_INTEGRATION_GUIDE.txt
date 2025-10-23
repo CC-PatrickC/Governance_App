@@ -1,0 +1,460 @@
+# Azure AD Integration Guide for Django Governance App
+# ====================================================
+
+## Overview
+This guide provides step-by-step instructions for integrating your Django Governance App with Azure AD (Microsoft Entra ID) and deploying it as a web-based application.
+
+## Prerequisites
+- Azure subscription with appropriate permissions
+- Access to Azure Active Directory
+- Basic understanding of Django, Python, and web deployment
+- Domain name for production deployment (optional but recommended)
+
+## 1. Azure AD App Registration Setup
+
+### Step 1.1: Create App Registration in Azure Portal
+1. Navigate to Azure Portal (portal.azure.com)
+2. Go to Azure Active Directory → App registrations
+3. Click "New registration"
+4. Fill in the details:
+   - Name: "Gov App with Django"
+   - Supported account types: Choose based on your organization
+   - Redirect URI: https://yourdomain.com/auth/callback/ (update later)
+5. Click "Register"
+
+### Step 1.2: Configure Authentication
+1. In your app registration, go to "Authentication"
+2. Add redirect URIs:
+   - https://yourdomain.com/auth/callback/
+   - https://localhost:8000/auth/callback/ (for development)
+3. Under "Advanced settings":
+   - Enable "Allow public client flows" if needed
+   - Set "Supported account types" as appropriate
+
+### Step 1.3: Configure API Permissions
+1. Go to "API permissions"
+2. Add permissions:
+   - Microsoft Graph → User.Read
+   - Microsoft Graph → GroupMember.Read.All (if using groups)
+3. Click "Grant admin consent" if required
+
+### Step 1.4: Create Client Secret
+1. Go to "Certificates & secrets"
+2. Click "New client secret"
+3. Add description: "Django App Secret"
+4. Set expiration (recommended: 24 months)
+5. Click "Add"
+6. **IMPORTANT**: Copy the secret value immediately (you won't see it again)
+
+### Step 1.5: Note Required Information
+Save these values securely:
+- Application (client) ID
+- Directory (tenant) ID
+- Client secret value
+- Redirect URI
+
+## 2. Django Packages Installation
+
+### Step 2.1: Update requirements.txt
+Add these packages to your requirements.txt:
+
+django-auth-adfs==2.3.0
+requests==2.31.0
+msal==1.24.1
+gunicorn==21.2.0
+whitenoise==6.6.0
+psycopg2-binary==2.9.7
+python-decouple==3.8
+
+### Step 2.2: Install Packages
+```bash
+pip install -r requirements.txt
+```
+
+## 3. Django Settings Configuration
+
+### Step 3.1: Create Environment Variables
+Create a .env file in your project root:
+
+```env
+# Azure AD Configuration
+AZURE_TENANT_ID=your-tenant-id
+AZURE_CLIENT_ID=your-client-id
+AZURE_CLIENT_SECRET=your-client-secret
+AZURE_REDIRECT_URI=https://yourdomain.com/auth/callback/
+
+# Django Configuration
+SECRET_KEY=your-secret-key
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+
+# Database (for production)
+DATABASE_URL=postgresql://user:password@host:port/dbname
+
+# Email Configuration (optional)
+EMAIL_HOST=smtp.office365.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@yourdomain.com
+EMAIL_HOST_PASSWORD=your-email-password
+```
+
+### Step 3.2: Update settings.py
+Add these configurations to your settings.py:
+
+```python
+import os
+from decouple import config
+
+# Azure AD Configuration
+AUTH_ADFS = {
+    "TENANT_ID": config('AZURE_TENANT_ID'),
+    "CLIENT_ID": config('AZURE_CLIENT_ID'),
+    "CLIENT_SECRET": config('AZURE_CLIENT_SECRET'),
+    "REPLY_URL": config('AZURE_REDIRECT_URI'),
+    "AUDIENCE": config('AZURE_CLIENT_ID'),
+    "CLAIM_MAPPING": {
+        "first_name": "given_name",
+        "last_name": "family_name",
+        "email": "upn",
+    },
+    "GROUPS_CLAIM": "groups",
+}
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'django_auth_adfs.backend.AdfsAuthCodeBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Login/Logout URLs
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Security Settings for Production
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Static Files (for production)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media Files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+```
+
+## 4. URL Configuration
+
+### Step 4.1: Update main urls.py
+```python
+from django.contrib import admin
+from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from django_auth_adfs import urls as adfs_urls
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('projects.urls')),
+    path('auth/', include(adfs_urls)),
+    path('auth/login/', auth_views.LoginView.as_view(), name='login'),
+    path('auth/logout/', auth_views.LogoutView.as_view(), name='logout'),
+]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+```
+
+## 5. User Model Enhancement
+
+### Step 5.1: Create User Profile Model
+Add to your models.py:
+
+```python
+from django.contrib.auth.models import User, Group
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    azure_ad_object_id = models.CharField(max_length=255, blank=True)
+    department = models.CharField(max_length=100, blank=True)
+    job_title = models.CharField(max_length=100, blank=True)
+    office_location = models.CharField(max_length=100, blank=True)
+    last_azure_sync = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} Profile"
+
+class AzureGroupMapping(models.Model):
+    azure_group_name = models.CharField(max_length=255, unique=True)
+    django_group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.azure_group_name} → {self.django_group.name}"
+```
+
+### Step 5.2: Create Migration
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+## 6. Custom Authentication Backend
+
+### Step 6.1: Create Custom Backend
+Create a new file: projects/auth_backends.py
+
+```python
+from django_auth_adfs.backend import AdfsAuthCodeBackend
+from .models import UserProfile, AzureGroupMapping
+
+class AzureADAuthBackend(AdfsAuthCodeBackend):
+    def create_or_update_user(self, claims, request=None):
+        user = super().create_or_update_user(claims, request)
+        
+        # Create or update user profile
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'azure_ad_object_id': claims.get('oid', ''),
+                'department': claims.get('department', ''),
+                'job_title': claims.get('jobTitle', ''),
+                'office_location': claims.get('officeLocation', ''),
+            }
+        )
+        
+        if not created:
+            profile.azure_ad_object_id = claims.get('oid', profile.azure_ad_object_id)
+            profile.department = claims.get('department', profile.department)
+            profile.job_title = claims.get('jobTitle', profile.job_title)
+            profile.office_location = claims.get('officeLocation', profile.office_location)
+            profile.save()
+        
+        # Sync Azure AD groups with Django groups
+        azure_groups = claims.get('groups', [])
+        user.groups.clear()  # Clear existing groups
+        
+        for group_name in azure_groups:
+            try:
+                mapping = AzureGroupMapping.objects.get(
+                    azure_group_name=group_name,
+                    is_active=True
+                )
+                user.groups.add(mapping.django_group)
+            except AzureGroupMapping.DoesNotExist:
+                pass
+                
+        return user
+```
+
+### Step 6.2: Update settings.py Backend
+```python
+AUTHENTICATION_BACKENDS = [
+    'projects.auth_backends.AzureADAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+```
+
+## 7. Production Deployment Options
+
+### Option A: Azure App Service (Recommended)
+
+#### Step 7.1: Prepare for Deployment
+Create a .deployment file in your project root:
+[config]
+SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+Create web.config in your project root:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <handlers>
+      <add name="PythonHandler" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified"/>
+    </handlers>
+    <httpPlatform processPath="D:\home\Python39\python.exe"
+                  arguments="D:\home\site\wwwroot\manage.py runserver 0.0.0.0:%HTTP_PLATFORM_PORT%"
+                  stdoutLogEnabled="true"
+                  stdoutLogFile="D:\home\LogFiles\python.log"
+                  startupTimeLimit="60"
+                  startupRetryCount="3"
+                  forwardWindowsAuthToken="false">
+    </httpPlatform>
+  </system.webServer>
+</configuration>
+```
+
+#### Step 7.2: Deploy to Azure App Service
+```bash
+# Install Azure CLI
+# Login to Azure
+az login
+
+# Create resource group
+az group create --name myResourceGroup --location "East US"
+
+# Create App Service plan
+az appservice plan create --name myAppServicePlan --resource-group myResourceGroup --sku B1
+
+# Create web app
+az webapp create --resource-group myResourceGroup --plan myAppServicePlan --name myDjangoApp --runtime "PYTHON|3.9"
+
+# Deploy code
+az webapp deployment source config --name myDjangoApp --resource-group myResourceGroup --repo-url https://github.com/yourusername/your-repo --branch main --manual-integration
+```
+
+## 8. Database Migration
+
+### Step 8.1: Set Up Azure Database for PostgreSQL
+```bash
+# Create PostgreSQL server
+az postgres server create \
+  --resource-group myResourceGroup \
+  --name mypostgresqlserver \
+  --location "East US" \
+  --admin-user myadmin \
+  --admin-password mypassword \
+  --sku-name B_Gen5_1
+
+# Create database
+az postgres db create \
+  --resource-group myResourceGroup \
+  --server-name mypostgresqlserver \
+  --name mydjangodb
+
+# Configure firewall
+az postgres server firewall-rule create \
+  --resource-group myResourceGroup \
+  --server mypostgresqlserver \
+  --name AllowAzureServices \
+  --start-ip-address 0.0.0.0 \
+  --end-ip-address 0.0.0.0
+```
+
+### Step 8.2: Update Database Settings
+```python
+# In settings.py for production
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'mydjangodb',
+        'USER': 'myadmin@mypostgresqlserver',
+        'PASSWORD': 'mypassword',
+        'HOST': 'mypostgresqlserver.postgres.database.azure.com',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
+    }
+}
+```
+
+## 9. Testing and Validation
+
+### Step 9.1: Create Test Commands
+Create: projects/management/commands/test_azure_ad.py
+
+```python
+from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+from projects.models import UserProfile, AzureGroupMapping
+
+class Command(BaseCommand):
+    help = 'Test Azure AD integration'
+
+    def handle(self, *args, **options):
+        self.stdout.write('Testing Azure AD Integration...')
+        
+        # Test user profiles
+        profiles = UserProfile.objects.all()
+        self.stdout.write(f'Found {profiles.count()} user profiles')
+        
+        # Test group mappings
+        mappings = AzureGroupMapping.objects.filter(is_active=True)
+        self.stdout.write(f'Found {mappings.count()} active group mappings')
+        
+        for mapping in mappings:
+            self.stdout.write(f'- {mapping.azure_group_name} → {mapping.django_group.name}')
+        
+        # Test users with Azure AD data
+        users_with_azure = User.objects.filter(userprofile__azure_ad_object_id__isnull=False)
+        self.stdout.write(f'\nFound {users_with_azure.count()} users with Azure AD data')
+        
+        for user in users_with_azure:
+            profile = user.userprofile
+            self.stdout.write(f'- {user.username}: OID={profile.azure_ad_object_id}')
+        
+        self.stdout.write(self.style.SUCCESS('Azure AD integration test complete!'))
+```
+
+## 10. Troubleshooting
+
+### Common Issues and Solutions
+
+#### Issue 1: Authentication Redirect Loop
+**Solution**: Check redirect URI configuration in Azure AD and Django settings
+
+#### Issue 2: Group Synchronization Not Working
+**Solution**: Verify Azure AD group claims are configured and group mappings exist
+
+#### Issue 3: User Profile Not Created
+**Solution**: Check Azure AD claims mapping and custom backend implementation
+
+#### Issue 4: SSL Certificate Errors
+**Solution**: Ensure proper SSL configuration and certificate chain
+
+#### Issue 5: Database Connection Issues
+**Solution**: Verify connection string, firewall rules, and SSL settings
+
+## 11. Post-Deployment Checklist
+
+- [ ] Azure AD authentication working
+- [ ] User groups synchronized
+- [ ] SSL certificate valid
+- [ ] Database connectivity stable
+- [ ] Static files served correctly
+- [ ] Media files accessible
+- [ ] Admin interface functional
+- [ ] Email notifications working
+- [ ] Monitoring configured
+- [ ] Backup procedures tested
+- [ ] Performance acceptable
+- [ ] Security scan completed
+
+## 12. Support and Resources
+
+### Documentation
+- Django ADFS: https://django-auth-adfs.readthedocs.io/
+- Azure AD: https://docs.microsoft.com/en-us/azure/active-directory/
+- Django Deployment: https://docs.djangoproject.com/en/stable/howto/deployment/
+
+### Support Contacts
+- Azure Support: https://azure.microsoft.com/en-us/support/
+- Django Community: https://www.djangoproject.com/community/
+- Stack Overflow: https://stackoverflow.com/questions/tagged/django
+
+---
+
+## Quick Start Summary
+
+1. Register app in Azure AD
+2. Install required packages
+3. Configure Django settings
+4. Set up authentication URLs
+5. Create user profile models
+6. Deploy to Azure App Service
+7. Set up PostgreSQL database
+8. Run migration scripts
+9. Test authentication
+10. Configure monitoring
+
+This guide provides a comprehensive approach to integrating your Django Governance App with Azure AD and deploying it as a web-based application. Follow the steps in order and test each phase before proceeding to the next.

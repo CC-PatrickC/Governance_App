@@ -246,3 +246,16 @@ class TriageChange(models.Model):
         old_display = self.old_value if self.old_value else "None"
         new_display = self.new_value if self.new_value else "None"
         return f"{old_display} → {new_display}"
+
+class Conversation(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='conversations')
+    message = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_internal = models.BooleanField(default=True, help_text="Internal notes vs external communications")
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Conversation on {self.project.title} by {self.created_by.username} at {self.created_at}"

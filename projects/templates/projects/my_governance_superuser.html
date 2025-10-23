@@ -1,0 +1,770 @@
+{% extends 'base_cc.html' %}
+{% load static %}
+
+{% block title %}MyGovernance-test - SuperUser{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Force horizontal scroll at browser level */
+    html, body {
+        overflow-x: auto !important;
+        min-width: 2000px !important;
+    }
+    
+    /* Make table extremely wide to force scroll */
+    .table-responsive {
+        overflow-x: visible !important;
+        width: 100% !important;
+    }
+    
+    .table-responsive table {
+        width: 2000px !important;
+        min-width: 2000px !important;
+    }
+    
+    /* Set table font size to 14px */
+    .table-responsive table,
+    .table-responsive table th,
+    .table-responsive table td {
+        font-size: 14px !important;
+    }
+    
+    /* Remove all width constraints */
+    .container-fluid {
+        max-width: none !important;
+        width: 100% !important;
+        overflow-x: visible !important;
+    }
+    
+    .row {
+        max-width: none !important;
+        width: 100% !important;
+    }
+    
+    .col-12 {
+        max-width: none !important;
+        width: 100% !important;
+    }
+    
+    /* Make table rows clickable */
+    tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    /* Custom Modal Styles */
+    .custom-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        height: 90vh;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .custom-modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: white;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .custom-modal-close:hover {
+        color: #333;
+    }
+    
+    .custom-modal-body {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-footer {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+    
+    /* Tab Styles */
+    .modal-tabs {
+        display: flex;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 20px;
+        gap: 5px;
+    }
+    
+    .modal-tab {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        margin-bottom: -2px;
+    }
+    
+    .modal-tab:hover {
+        color: #D09B2C;
+        background-color: #f8f9fa;
+    }
+    
+    .modal-tab.active {
+        color: #D09B2C;
+        border-bottom-color: #D09B2C;
+        font-weight: 600;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Conversation Styles */
+    .conversation-item {
+        padding: 12px 15px;
+        border-left: 3px solid #D09B2C;
+        background: #f8f9fa;
+        margin-bottom: 12px;
+        border-radius: 4px;
+    }
+    
+    .conversation-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .conversation-author {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .conversation-date {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .conversation-message {
+        color: #495057;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+    
+    .no-conversations {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+    
+    /* Icon Button Styles */
+    #toggleNoteBtn:hover {
+        background-color: #B8860B !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    #replyBtn:hover:not(:disabled) {
+        background-color: #5a6268 !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    #replyBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Notifications Section Styles */
+    .notifications-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .notifications-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: white;
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .notifications-body {
+        max-height: calc(3 * 45px);
+        overflow-y: auto;
+        padding: 0;
+    }
+    
+    .notification-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s ease;
+        min-height: 45px;
+    }
+    
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .notification-icon {
+        flex-shrink: 0;
+        width: 24px;
+        margin-right: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .notification-text {
+        flex: 1;
+        color: #495057;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    .notification-time {
+        flex-shrink: 0;
+        color: #6c757d;
+        font-size: 0.8rem;
+        margin-left: 12px;
+    }
+    
+    .notifications-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .notifications-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    .notifications-body::-webkit-scrollbar-thumb {
+        background: #D09B2C;
+        border-radius: 3px;
+    }
+    
+    .notifications-body::-webkit-scrollbar-thumb:hover {
+        background: #B8860B;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="page-title">MyGovernance-test</h1>
+                <div class="badge bg-warning text-dark">
+                    <i class="fas fa-flask me-1"></i>Test Page
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Notifications Section -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="notifications-section">
+                <div class="notifications-header">
+                    <i class="fas fa-bell"></i> System Notifications
+                </div>
+                <div class="notifications-body">
+                    {% if notifications %}
+                        {% for notification in notifications %}
+                        <div class="notification-item">
+                            <span class="notification-icon">
+                                {% if notification.notification_type == 'maintenance' %}
+                                    <i class="fas fa-exclamation-circle text-warning"></i>
+                                {% elif notification.notification_type == 'downtime' %}
+                                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                                {% elif notification.notification_type == 'update' %}
+                                    <i class="fas fa-sync-alt text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle text-info"></i>
+                                {% endif %}
+                            </span>
+                            <span class="notification-text"><strong>{{ notification.get_notification_type_display }}:</strong> {{ notification.message }}</span>
+                            <span class="notification-time">{{ notification.created_at|timesince }} ago</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="notification-item">
+                            <span class="notification-icon"><i class="fas fa-check-circle text-success"></i></span>
+                            <span class="notification-text">No active system notifications at this time.</span>
+                            <span class="notification-time">-</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Requests Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="dropdown">
+                        <button class="btn btn-link dropdown-toggle p-0 text-decoration-none" type="button" id="requestsDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="color: #D09B2C; font-size: 1.25rem; font-weight: 500;">
+                            All Requests
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="requestsDropdown">
+                            <li><a class="dropdown-item" href="#">All Requests</a></li>
+                            <li><a class="dropdown-item" href="#">My Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Assigned Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Triage Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Governance Requests</a></li>
+                            <li><a class="dropdown-item" href="#">Final Governance Requests</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                        {% if all_projects %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 125px; max-width: 125px;">Request ID</th>
+                                    <th>Title</th>
+                                    <th>Requester</th>
+                                    <th>Technician</th>
+                                    <th>Committee</th>
+                                    <th>Stage</th>
+                                    <th>Created Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in all_projects %}
+                                <tr onclick="openRequestModal({{ project.id }}, '{{ project.title|escapejs }}', '{{ project.formatted_id|escapejs }}', '{{ project.priority|default:"Not Set" }}', '{% if project.submitted_by %}{{ project.submitted_by.get_full_name|default:project.submitted_by.username|escapejs }}{% else %}Unknown{% endif %}', '{{ project.submission_date|date:"M d, Y g:i A"|escapejs }}', '{{ project.get_status_display|escapejs }}', '{% if project.triaged_by %}{{ project.triaged_by.get_full_name|default:project.triaged_by.username|escapejs }}{% else %}Not Assigned{% endif %}', '{{ project.department|default:"Not Specified"|escapejs }}', '{{ project.contact_email|default:"Not Specified"|escapejs }}', '{{ project.contact_phone|default:"Not Specified"|escapejs }}', '{{ project.description|escapejs }}')">
+                                    <td style="width: 125px; max-width: 125px;">
+                                        <span class="badge" style="background-color: #D09B2C; color: white;">{{ project.formatted_id }}</span>
+                                    </td>
+                                    <td style="width: 200px; max-width: 200px; word-wrap: break-word; white-space: normal;">
+                                        {{ project.title }}
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        {% if project.submitted_by %}
+                                            {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.triaged_by %}
+                                            {{ project.triaged_by.get_full_name|default:project.triaged_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">Not Assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.project_type == 'ai_governance' %}
+                                            <span>AI Governance</span>
+                                        {% elif project.project_type == 'erp_governance' %}
+                                            <span>ERP Governance</span>
+                                        {% elif project.project_type == 'it_governance' %}
+                                            <span>IT Governance</span>
+                                        {% elif project.project_type == 'process_improvement' %}
+                                            <span>Process Improvement</span>
+                                        {% elif project.project_type == 'data_governance' %}
+                                            <span>Data Governance</span>
+                                        {% else %}
+                                            <span>{{ project.get_project_type_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.stage == 'Pending_Review' %}
+                                            <span>Pending Review</span>
+                                        {% elif project.stage == 'Under_Review_Triage' %}
+                                            <span>Under Review - Triage</span>
+                                        {% elif project.stage == 'Under_Review_governance' %}
+                                            <span>Under Review - Governance</span>
+                                        {% elif project.stage == 'Under_Review_Final_governance' %}
+                                            <span>Under Review - Final Governance</span>
+                                        {% elif project.stage == 'Governance_Closure' %}
+                                            <span>Governance Closed</span>
+                                        {% elif project.stage == 'Deleted' %}
+                                            <span>Deleted</span>
+                                        {% else %}
+                                            <span>{{ project.get_stage_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        <small>
+                                            {{ project.submission_date|date:"M d, Y g:i A" }} MST
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Requests Found</h5>
+                        <p class="text-muted">There are no requests in the system yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Request Detail Modal -->
+<div id="customRequestModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-overlay" onclick="closeCustomModal()"></div>
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title" id="requestTitleText">Request Details</h5>
+            <button type="button" class="custom-modal-close" onclick="closeCustomModal()">&times;</button>
+        </div>
+        <div class="custom-modal-body" id="customRequestModalBody">
+            <div id="requestMetadata" style="margin-bottom: 10px; padding-bottom: 10px; color: #666; font-size: 0.95rem;">
+                <!-- Request ID | Priority | Requested by | Date will be displayed here -->
+            </div>
+            
+            <div id="requestStatusInfo" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6; color: #666; font-size: 0.95rem;">
+                <!-- Status | Technician will be displayed here -->
+            </div>
+            
+            <!-- Tabs -->
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('conversations')">Conversations</button>
+                <button class="modal-tab" onclick="switchTab('details')">Details</button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div id="conversations-tab" class="tab-content active">
+                <!-- Action Buttons -->
+                <div style="margin-bottom: 15px; display: flex; gap: 8px;">
+                    <button id="toggleNoteBtn" onclick="toggleNoteForm()" class="btn btn-sm" style="background-color: #D09B2C; color: white; border: none; width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;" title="Add Note">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button id="replyBtn" class="btn btn-sm" style="background-color: #6c757d; color: white; border: none; width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;" title="Reply (Coming Soon)" disabled>
+                        <i class="fas fa-reply"></i>
+                    </button>
+                </div>
+                
+                <!-- Add New Note Form (Hidden by default) -->
+                <div id="addNoteSection" class="add-note-section" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 10px;">Add Note</h6>
+                    <form id="addNoteForm" onsubmit="addNote(event)">
+                        <textarea id="noteMessage" class="form-control" rows="3" placeholder="Type your note here..." style="margin-bottom: 10px; resize: vertical;"></textarea>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="submit" class="btn btn-sm" style="background-color: #D09B2C; color: white; border: none;">
+                                <i class="fas fa-paper-plane"></i> Submit Note
+                            </button>
+                            <button type="button" onclick="toggleNoteForm()" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Conversations List -->
+                <div id="conversationsList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Conversations will be loaded here -->
+                </div>
+            </div>
+            
+            <div id="details-tab" class="tab-content">
+                <div class="details-section" style="margin-bottom: 25px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #D09B2C;">
+                        Requester Information
+                    </h6>
+                    <div id="requesterInfo" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <!-- Requester information will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="details-section" style="margin-bottom: 25px;">
+                    <h6 style="color: #2c3e50; font-weight: 600; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #D09B2C;">
+                        Request Description
+                    </h6>
+                    <div id="requestDescription" style="color: #495057; line-height: 1.6; white-space: pre-wrap;">
+                        <!-- Request description will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCustomModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentRequestId = null;
+
+function openRequestModal(requestId, requestTitle, formattedId, priority, requestedBy, submissionDate, status, technician, department, contactEmail, contactPhone, description) {
+    console.log('Opening modal for request:', requestId, requestTitle);
+    
+    currentRequestId = requestId;
+    
+    // Update modal title with the request name
+    document.getElementById('requestTitleText').textContent = requestTitle;
+    
+    // Update metadata line with ID at the beginning
+    const metadataHtml = `<strong>Request ID:</strong> ${formattedId} | <strong>Priority:</strong> ${priority} | <strong>Requested by:</strong> ${requestedBy} | <strong>Date:</strong> ${submissionDate} MST`;
+    document.getElementById('requestMetadata').innerHTML = metadataHtml;
+    
+    // Update status info line
+    const statusInfoHtml = `<strong>Status:</strong> ${status} | <strong>Technician:</strong> ${technician}`;
+    document.getElementById('requestStatusInfo').innerHTML = statusInfoHtml;
+    
+    // Update requester information in Details tab
+    const requesterInfoHtml = `
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Submitted By</div>
+            <div style="color: #6c757d;">${requestedBy}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Submitted Date</div>
+            <div style="color: #6c757d;">${submissionDate} MST</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Department</div>
+            <div style="color: #6c757d;">${department}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Contact Email</div>
+            <div style="color: #6c757d;">${contactEmail}</div>
+        </div>
+        <div class="info-item">
+            <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">Contact Phone</div>
+            <div style="color: #6c757d;">${contactPhone}</div>
+        </div>
+    `;
+    document.getElementById('requesterInfo').innerHTML = requesterInfoHtml;
+    
+    // Update request description
+    document.getElementById('requestDescription').textContent = description;
+    
+    // Load conversations
+    loadConversations(requestId);
+    
+    // Show the modal
+    document.getElementById('customRequestModal').style.display = 'flex';
+}
+
+function loadConversations(requestId) {
+    fetch(`/${requestId}/conversations/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayConversations(data.conversations);
+            } else {
+                console.error('Error loading conversations:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching conversations:', error);
+        });
+}
+
+function displayConversations(conversations) {
+    const conversationsList = document.getElementById('conversationsList');
+    
+    if (conversations.length === 0) {
+        conversationsList.innerHTML = '<div class="no-conversations"><i class="fas fa-comments fa-2x mb-2"></i><p>No notes yet. Be the first to add one!</p></div>';
+        return;
+    }
+    
+    const conversationsHtml = conversations.map(conv => `
+        <div class="conversation-item">
+            <div class="conversation-header">
+                <span class="conversation-author">${conv.created_by}</span>
+                <span class="conversation-date">${conv.created_at}</span>
+            </div>
+            <div class="conversation-message">${conv.message}</div>
+        </div>
+    `).join('');
+    
+    conversationsList.innerHTML = conversationsHtml;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function addNote(event) {
+    event.preventDefault();
+    
+    const messageTextarea = document.getElementById('noteMessage');
+    const message = messageTextarea.value.trim();
+    
+    if (!message) {
+        alert('Please enter a note message');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    
+    // Get CSRF token from cookie
+    const csrfToken = getCookie('csrftoken');
+    
+    fetch(`/${currentRequestId}/conversations/add/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Clear the textarea
+            messageTextarea.value = '';
+            // Hide the form and show the button
+            toggleNoteForm();
+            // Reload conversations
+            loadConversations(currentRequestId);
+        } else {
+            console.error('Server error:', data.error);
+            alert('Error adding note: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error adding note:', error);
+        alert('Error adding note: ' + error.message + '. Please check the console for details.');
+    });
+}
+
+function toggleNoteForm() {
+    const noteSection = document.getElementById('addNoteSection');
+    const toggleBtn = document.getElementById('toggleNoteBtn');
+    
+    if (noteSection.style.display === 'none') {
+        noteSection.style.display = 'block';
+        toggleBtn.style.display = 'none';
+        // Focus on the textarea when opening
+        document.getElementById('noteMessage').focus();
+    } else {
+        noteSection.style.display = 'none';
+        toggleBtn.style.display = 'inline-block';
+        // Clear the textarea when closing
+        document.getElementById('noteMessage').value = '';
+    }
+}
+
+function closeCustomModal() {
+    document.getElementById('customRequestModal').style.display = 'none';
+    // Reset the note form when closing modal
+    document.getElementById('addNoteSection').style.display = 'none';
+    document.getElementById('toggleNoteBtn').style.display = 'inline-block';
+    document.getElementById('noteMessage').value = '';
+}
+
+function switchTab(tabName) {
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.modal-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+    
+    // Activate the selected tab
+    event.target.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+}
+
+// Close modal when pressing ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeCustomModal();
+    }
+});
+</script>
+{% endblock %}

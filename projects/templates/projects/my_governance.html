@@ -1023,6 +1023,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1089,6 +1096,13 @@
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Department</div>
                                     <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
                                 </div>
                                 {% endif %}
 
@@ -1159,6 +1173,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1183,8 +1204,8 @@
                 {% endif %}
             {% endif %}
             
-            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
-            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+            <!-- Final Governance Section (Visible for superusers, staff, and governance users only) -->
+            {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
                 {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
@@ -1339,6 +1360,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1409,6 +1437,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1463,7 +1498,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
-                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Request Scoring Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="finalScoringModalBody">
@@ -1547,12 +1582,9 @@ function showProjectDetails(projectId) {
                          <div class="row mt-3">
                              <div class="col-12">
                                  <div class="detail-card">
-                                     <div class="detail-title">Contact Information</div>
+                                     <div class="detail-title">Technician</div>
                                      <div class="detail-content">
-                                         <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
-                                         <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                                         <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
-                                         <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                         <p>${project.contact_person || 'Not Assigned'}</p>
                                      </div>
                                  </div>
                              </div>
@@ -1668,11 +1700,6 @@ function openTriageEditModal(projectId) {
                 // Show save and delete buttons
                 saveBtn.style.display = 'inline-block';
                 deleteBtn.style.display = 'inline-block';
-                
-                
-                // Initialize contact person autocomplete
-                initializeContactPersonAutocomplete();
-                
                 
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
@@ -1861,9 +1888,6 @@ function submitTriageEditForm(form, projectId) {
                             // Replace the form content
                             formElement.innerHTML = newForm.innerHTML;
                             
-                            // Re-initialize contact person autocomplete
-                            initializeContactPersonAutocomplete();
-                            
                             // Clear the file input
                             const fileInput = formElement.querySelector('input[type="file"]');
                             if (fileInput) {
@@ -1877,12 +1901,10 @@ function submitTriageEditForm(form, projectId) {
                     console.error('Error reloading form:', error);
                 });
             
-            // Auto-dismiss success message after 5 seconds
+            // Reload page after 2 seconds to update card displays
             setTimeout(() => {
-                if (successDiv && successDiv.parentNode) {
-                    successDiv.remove();
-                }
-            }, 5000);
+                window.location.reload();
+            }, 2000);
         } else {
             // Remove loading overlay
             const overlay = document.getElementById('loading-overlay');
@@ -1932,7 +1954,7 @@ function openGovernanceScoringModal(projectId) {
     const saveBtn = document.getElementById('saveChangesBtn');
     
     // Update modal title
-    modalTitle.textContent = 'Project Scoring - Governance';
+    modalTitle.textContent = 'Request Scoring - Governance';
     
     // Hide save button for scoring modal
     saveBtn.style.display = 'none';
@@ -1980,13 +2002,11 @@ function openGovernanceScoringModal(projectId) {
                     </div>
                 </div>
                 
-                <!-- Contact Information Section -->
+                <!-- Technician Section -->
                 <div class="contact-info-section mb-3">
-                    <h6 class="section-header small">Contact Information</h6>
+                    <h6 class="section-header small">Technician</h6>
                     <div class="info-content compact">
-                        <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                        <p class="mb-2">${project.contact_person || 'Not Assigned'}</p>
                     </div>
                 </div>
                 
@@ -2621,9 +2641,9 @@ function openSuperuserScoringModal(projectId, modalType) {
     
     // Update modal title based on type
     if (modalType === 'governance') {
-        modalTitle.textContent = 'Project Scoring - Governance (Superuser)';
+        modalTitle.textContent = 'Request Scoring - Governance (Superuser)';
     } else if (modalType === 'final-governance') {
-        modalTitle.textContent = 'Project Scoring - Final Governance (Superuser)';
+        modalTitle.textContent = 'Request Scoring - Final Governance (Superuser)';
     }
     
     // Show save button for superuser scoring

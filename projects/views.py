@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange
+from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -183,7 +183,11 @@ def get_user_allowed_project_types(user):
 @login_not_required
 def custom_login_view(request):
     if request.user.is_authenticated:
-        return redirect('projects:my_governance')
+        # Redirect based on user permissions
+        if request.user.is_staff or request.user.groups.exists():
+            return redirect('projects:my_governance')
+        else:
+            return redirect('projects:project_intake_form')
     
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -192,6 +196,7 @@ def custom_login_view(request):
         
         if user is not None:
             login(request, user)
+            # All users go to MyGovernance after login
             return redirect('projects:my_governance')
         else:
             messages.error(request, 'Invalid username or password.')
@@ -732,13 +737,17 @@ def project_update_form_ajax(request, pk):
             logger.info(f"Project {pk} is in Governance_Closure stage, cannot be edited")
             return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
         
-        # Get all users for the contact person dropdown
-        from django.contrib.auth.models import User
-        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        # Get users from Triage Group and Triage Group Lead for the technician dropdown
+        from django.contrib.auth.models import User, Group
+        triage_group = Group.objects.filter(name__in=['Triage Group', 'Triage Group Lead'])
+        triage_users = User.objects.filter(
+            is_active=True,
+            groups__in=triage_group
+        ).distinct().order_by('first_name', 'last_name', 'username')
         
         context = {
             'project': project,
-            'users': users,
+            'triage_users': triage_users,
         }
         logger.info(f"Rendering edit form template for project {pk}")
         
@@ -1329,9 +1338,9 @@ def project_scoring_details_modal(request, pk):
             'id': project.id,
             'title': project.title,
             'department': project.department,
+            'submitted_by': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
+            'submitted_by_email': project.submitted_by.email if project.submitted_by else 'N/A',
             'contact_person': project.contact_person,
-            'contact_email': project.contact_email,
-            'contact_phone': project.contact_phone,
             'project_type': project.project_type,
             'project_type_display': project.get_project_type_display(),
             'status': project.status,
@@ -1817,16 +1826,58 @@ def project_intake_form(request):
     
     return render(request, 'projects/intake_form.html')
 
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def my_governance_superuser(request):
+    """MyGovernance page specifically for SuperUsers - test page"""
+    # Get all projects for SuperUser dashboard
+    all_projects = Project.objects.all().order_by('-submission_date')
+    
+    # Get statistics
+    total_projects = all_projects.count()
+    pending_projects = all_projects.filter(stage='Pending_Review').count()
+    triage_projects = all_projects.filter(stage='Under_Review_Triage').count()
+    governance_projects = all_projects.filter(stage='Under_Review_governance').count()
+    final_governance_projects = all_projects.filter(stage='Under_Review_Final_governance').count()
+    closed_projects = all_projects.filter(stage='Governance_Closure').count()
+    
+    # Get recent projects
+    recent_projects = all_projects[:10]
+    
+    # Get projects by priority
+    priority_stats = {
+        'Top': all_projects.filter(priority='Top').count(),
+        'High': all_projects.filter(priority='High').count(),
+        'Normal': all_projects.filter(priority='Normal').count(),
+        'Low': all_projects.filter(priority='Low').count(),
+    }
+    
+    # Get projects by type
+    type_stats = {}
+    for type_code, type_name in Project.PROJECT_TYPE_CHOICES:
+        count = all_projects.filter(project_type=type_code).count()
+        if count > 0:
+            type_stats[type_name] = count
+    
+    context = {
+        'total_projects': total_projects,
+        'pending_projects': pending_projects,
+        'triage_projects': triage_projects,
+        'governance_projects': governance_projects,
+        'final_governance_projects': final_governance_projects,
+        'closed_projects': closed_projects,
+        'recent_projects': recent_projects,
+        'priority_stats': priority_stats,
+        'type_stats': type_stats,
+        'all_projects': all_projects,
+    }
+    
+    return render(request, 'projects/my_governance_superuser.html', context)
+
+@login_required
 def my_governance(request):
     """My Governance page - shows user's submitted requests and contact requests"""
-    # Handle anonymous users
-    if not request.user.is_authenticated:
-        user_projects = Project.objects.none()
-        contact_projects = Project.objects.none()
-        triage_projects = None
-        governance_projects = None
-        final_governance_projects = None
-    else:
+    if request.user.is_authenticated:
         # Get all projects submitted by the current user
         user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
         
@@ -1975,6 +2026,7 @@ def project_details_readonly(request, pk):
         'project_type_display': project.get_project_type_display(),
         'priority_display': project.get_priority_display(),
         'department': project.department,
+        'contact_person': project.contact_person,
         'stage_display': project.get_stage_display(),
         'status_display': project.get_status_display(),
         'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by else project.submitted_by.username if project.submitted_by else 'Unknown',
@@ -2058,3 +2110,55 @@ def project_delete_request(request, pk):
             'success': False,
             'message': 'An error occurred while deleting the request.'
         })
+
+@login_required
+def get_project_conversations(request, pk):
+    """Get all conversations for a specific project"""
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        conversations = project.conversations.all()
+        
+        data = [{
+            'id': conv.id,
+            'message': conv.message,
+            'created_by': conv.created_by.get_full_name() or conv.created_by.username,
+            'created_at': conv.created_at.strftime('%b %d, %Y %I:%M %p'),
+            'is_internal': conv.is_internal,
+        } for conv in conversations]
+        
+        return JsonResponse({'conversations': data, 'success': True})
+    except Exception as e:
+        logger.error(f"Error fetching conversations for project {pk}: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def add_project_conversation(request, pk):
+    """Add a new conversation/note to a project"""
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        message = request.POST.get('message', '').strip()
+        
+        if not message:
+            return JsonResponse({'success': False, 'error': 'Message cannot be empty'}, status=400)
+        
+        conversation = Conversation.objects.create(
+            project=project,
+            message=message,
+            created_by=request.user,
+            is_internal=True
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'conversation': {
+                'id': conversation.id,
+                'message': conversation.message,
+                'created_by': conversation.created_by.get_full_name() or conversation.created_by.username,
+                'created_at': conversation.created_at.strftime('%b %d, %Y %I:%M %p'),
+                'is_internal': conversation.is_internal,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error adding conversation to project {pk}: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
