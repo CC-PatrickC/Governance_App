@@ -1204,117 +1204,6 @@
                 {% endif %}
             {% endif %}
             
-            <!-- Final Governance Section (Visible for superusers, staff, and governance users only) -->
-            {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
-                {% if final_governance_projects %}
-            <div class="cc-content-area" style="margin-top: 2rem;">
-                <div class="cc-section-header">
-                    <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
-                    <p class="text-muted">Requests in final governance review phase</p>
-                </div>
-                
-                {% if final_governance_projects %}
-                    <div class="cc-final-scoring-table-container">
-                        <table class="cc-final-scoring-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Type</th>
-                                    <th>Priority</th>
-                                    <th>Department</th>
-                                    <th>Final Score</th>
-                                    <th>Final Priority</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for project in final_governance_projects %}
-                                <tr class="cc-project-row" data-project-id="{{ project.id }}" style="cursor: pointer;">
-                                    <td class="cc-project-id-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        <span class="cc-project-id">{{ project.formatted_id }}</span>
-                                    </td>
-                                    <td class="cc-project-title-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        <div class="cc-project-title">{{ project.title }}</div>
-                                        <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
-                                        <div class="cc-project-requested">
-                                            <small class="text-muted">
-                                                Requested by: 
-                                                {% if project.submitted_by %}
-                                                    {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                                {% else %}
-                                                    Unknown
-                                                {% endif %}
-                                                on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
-                                            </small>
-                                        </div>
-                                    </td>
-                                    <td class="cc-project-type-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </td>
-                                    <td class="cc-project-priority-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </td>
-                                    <td class="cc-project-department-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        {% if project.department %}
-                                            {{ project.department }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="cc-project-score-cell" onclick="openFinalScoringModal({{ project.id }})">
-                                        {% if project.final_score %}
-                                            <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
-                                        {% else %}
-                                            <span class="cc-score-value text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="cc-project-final-priority-cell">
-                                        {% if can_modify_final_priority %}
-                                        <div class="cc-rank-display d-flex align-items-center">
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
-                                                    data-project-id="{{ project.id }}"
-                                                    data-current-rank="{{ project.final_priority|default:0 }}"
-                                                    title="Move up in priority (lower rank number)"
-                                                    style="padding: 2px 6px; margin-right: 2px;">
-                                                <i class="fas fa-chevron-up"></i>
-                                            </button>
-                                            <span class="badge mx-2" style="font-size: 0.8rem; min-width: 30px; text-align: center; background-color: transparent; border: 1px solid #6c757d; color: #6c757d;">
-                                                {{ project.final_priority|default:"—" }}
-                                            </span>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
-                                                    data-project-id="{{ project.id }}"
-                                                    data-current-rank="{{ project.final_priority|default:0 }}"
-                                                    title="Move down in priority (higher rank number)"
-                                                    style="padding: 2px 6px; margin-left: 2px;">
-                                                <i class="fas fa-chevron-down"></i>
-                                            </button>
-                                        </div>
-                                        {% else %}
-                                        <div class="cc-rank-display d-flex align-items-center justify-content-center">
-                                            <span class="badge bg-secondary" style="font-size: 0.8rem;">
-                                                {{ project.final_priority|default:"—" }}
-                                            </span>
-                                        </div>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-clipboard-check"></i>
-                        <h4>No Final Governance Requests</h4>
-                        <p>There are no requests currently in the final governance review phase.</p>
-                    </div>
-                {% endif %}
-            </div>
-                {% endif %}
-            {% endif %}
-            
             <!-- MyRequests Section -->
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
@@ -1392,79 +1281,106 @@
                 {% endif %}
             </div>
             
-            <!-- My Contact Requests Section -->
+            <!-- Final Governance Section (Visible to all users) -->
+            {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
-                    <h2>My Contact Requests</h2>
-                    <p class="text-muted">Requests where you are listed as the contact person</p>
+                    <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
+                    <p class="text-muted">Requests in final governance review phase</p>
                 </div>
                 
-                {% if contact_projects %}
-                    <div class="cc-projects-grid">
-                        {% for project in contact_projects %}
-                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
-                            <div class="cc-project-header">
-                                <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
-                            </div>
-                            <div class="cc-project-body">
-                                <div class="cc-project-description">
-                                    {{ project.description|truncatechars:120 }}
-                                </div>
-                                <div class="cc-project-meta">
-                                    {% if project.project_type %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Request Type</div>
+                <div class="cc-final-scoring-table-container">
+                        <table class="cc-final-scoring-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Priority</th>
+                                    <th>Department</th>
+                                    <th>Final Score</th>
+                                    <th>Final Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in final_governance_projects %}
+                                <tr class="cc-project-row" data-project-id="{{ project.id }}" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}style="cursor: pointer;"{% endif %}>
+                                    <td class="cc-project-id-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
+                                        <span class="cc-project-id">{{ project.formatted_id }}</span>
+                                    </td>
+                                    <td class="cc-project-title-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
+                                        <div class="cc-project-title">{{ project.title }}</div>
+                                        <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
+                                        <div class="cc-project-requested">
+                                            <small class="text-muted">
+                                                Requested by: 
+                                                {% if project.submitted_by %}
+                                                    {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                                {% else %}
+                                                    Unknown
+                                                {% endif %}
+                                                on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td class="cc-project-type-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
                                         <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if project.priority %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Priority</div>
+                                    </td>
+                                    <td class="cc-project-priority-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
                                         <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
-                                    </div>
-                                </div>
-                                
-                                {% if project.department %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Department</div>
-                                    <span class="cc-meta-item">{{ project.department }}</span>
-                                </div>
-                                {% endif %}
-
-                                {% if project.contact_person %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Technician</div>
-                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
-                                </div>
-                                {% endif %}
-
-                                <div class="cc-project-meta-requested">
-                                    Requested by: 
-                                    {% if project.submitted_by %}
-                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+                                    </td>
+                                    <td class="cc-project-department-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
+                                        {% if project.department %}
+                                            {{ project.department }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cc-project-score-cell" {% if is_superuser or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}onclick="openFinalScoringModal({{ project.id }})"{% endif %}>
+                                        {% if project.final_score %}
+                                            <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="cc-score-value text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cc-project-final-priority-cell">
+                                        {% if can_modify_final_priority %}
+                                        <div class="cc-rank-display d-flex align-items-center">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move up in priority (lower rank number)"
+                                                    style="padding: 2px 6px; margin-right: 2px;">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
+                                            <span class="badge mx-2" style="font-size: 0.8rem; min-width: 30px; text-align: center; background-color: transparent; border: 1px solid #6c757d; color: #6c757d;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move down in priority (higher rank number)"
+                                                    style="padding: 2px 6px; margin-left: 2px;">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <div class="cc-rank-display d-flex align-items-center justify-content-center">
+                                            <span class="badge bg-secondary" style="font-size: 0.8rem;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-user-tie"></i>
-                        <h4>No Contact Requests</h4>
-                        <p>You are not listed as a contact person for any requests.</p>
-                    </div>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

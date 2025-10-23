@@ -1876,20 +1876,10 @@ def my_governance_superuser(request):
 
 @login_required
 def my_governance(request):
-    """My Governance page - shows user's submitted requests and contact requests"""
+    """My Governance page - shows user's submitted requests"""
     if request.user.is_authenticated:
         # Get all projects submitted by the current user
         user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
-        
-        # Get all projects where the user is the contact person
-        # Check by full name first, then by username if no match
-        user_full_name = request.user.get_full_name()
-        user_username = request.user.username
-        
-        contact_projects = Project.objects.filter(
-            Q(contact_person=user_full_name) | 
-            Q(contact_person=user_username)
-        ).exclude(submitted_by=request.user).order_by('-submission_date')
     
         # Get triage projects for users in Triage Group or Triage Group Lead, or superusers
         triage_projects = None
@@ -1933,24 +1923,15 @@ def my_governance(request):
             
             governance_projects = governance_projects.order_by('-submission_date')
         
-        # Get final governance projects for scoring users, superusers, or triage users
+        # Get final governance projects - visible to all authenticated users (read-only for end users)
         final_governance_projects = None
-        if request.user.is_superuser or is_scoring_user(request.user) or is_triage_user(request.user) or is_triage_lead_user(request.user):
-            # Get projects in final governance review stage
-            final_governance_projects = Project.objects.filter(
-                stage='Under_Review_Final_governance'
-            )
-            
-            # Apply group-based filtering if user is not staff or superuser
-            if not request.user.is_staff and not request.user.is_superuser:
-                allowed_types = get_user_allowed_project_types(request.user)
-                if allowed_types is not None:
-                    final_governance_projects = final_governance_projects.filter(project_type__in=allowed_types)
-            
-            final_governance_projects = final_governance_projects.order_by(
-                models.F('final_priority').asc(nulls_last=True), 
-                '-submission_date'
-            )
+        # Get projects in final governance review stage (visible to all users)
+        final_governance_projects = Project.objects.filter(
+            stage='Under_Review_Final_governance'
+        ).order_by(
+            models.F('final_priority').asc(nulls_last=True), 
+            '-submission_date'
+        )
     
     # Determine user's committee/role for display
     def get_user_committee_display(user):
@@ -1987,7 +1968,6 @@ def my_governance(request):
     
     context = {
         'user_projects': user_projects,
-        'contact_projects': contact_projects,
         'triage_projects': triage_projects,
         'governance_projects': governance_projects,
         'final_governance_projects': final_governance_projects,
