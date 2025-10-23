@@ -1023,6 +1023,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1092,6 +1099,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1156,6 +1170,13 @@
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Department</div>
                                     <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
                                 </div>
                                 {% endif %}
 
@@ -1339,6 +1360,13 @@
                                 </div>
                                 {% endif %}
 
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
+                                </div>
+                                {% endif %}
+
                                 <div class="cc-project-meta-requested">
                                     Requested by: 
                                     {% if project.submitted_by %}
@@ -1406,6 +1434,13 @@
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Department</div>
                                     <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if project.contact_person %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Technician</div>
+                                    <span class="cc-meta-item">{{ project.contact_person }}</span>
                                 </div>
                                 {% endif %}
 
@@ -1547,12 +1582,9 @@ function showProjectDetails(projectId) {
                          <div class="row mt-3">
                              <div class="col-12">
                                  <div class="detail-card">
-                                     <div class="detail-title">Contact Information</div>
+                                     <div class="detail-title">Technician</div>
                                      <div class="detail-content">
-                                         <p><strong>Submitted By:</strong> ${project.submitted_by || 'N/A'}</p>
-                                         <p><strong>Email:</strong> ${project.submitted_by_email || 'N/A'}</p>
-                                         <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
-                                         <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                         <p>${project.contact_person || 'Not Assigned'}</p>
                                      </div>
                                  </div>
                              </div>
@@ -1869,12 +1901,10 @@ function submitTriageEditForm(form, projectId) {
                     console.error('Error reloading form:', error);
                 });
             
-            // Auto-dismiss success message after 5 seconds
+            // Reload page after 2 seconds to update card displays
             setTimeout(() => {
-                if (successDiv && successDiv.parentNode) {
-                    successDiv.remove();
-                }
-            }, 5000);
+                window.location.reload();
+            }, 2000);
         } else {
             // Remove loading overlay
             const overlay = document.getElementById('loading-overlay');
@@ -1972,13 +2002,11 @@ function openGovernanceScoringModal(projectId) {
                     </div>
                 </div>
                 
-                <!-- Contact Information Section -->
+                <!-- Technician Section -->
                 <div class="contact-info-section mb-3">
-                    <h6 class="section-header small">Contact Information</h6>
+                    <h6 class="section-header small">Technician</h6>
                     <div class="info-content compact">
-                        <p class="mb-2"><strong>Submitted By:</strong> ${project.submitted_by || 'N/A'}</p>
-                        <p class="mb-2"><strong>Email:</strong> ${project.submitted_by_email || 'N/A'}</p>
-                        <p class="mb-2"><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                        <p class="mb-2">${project.contact_person || 'Not Assigned'}</p>
                     </div>
                 </div>
                 
