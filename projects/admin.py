@@ -1,13 +1,5 @@
 from django.contrib import admin
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-from .models import Project
-=======
 from .models import Project, Conversation, SystemNotification
->>>>>>> Stashed changes
-=======
-from .models import Project, Conversation, SystemNotification
->>>>>>> Stashed changes
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
@@ -16,8 +8,6 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description', 'department', 'contact_person')
     date_hierarchy = 'submission_date'
     ordering = ('-submission_date',)
-<<<<<<< Updated upstream
-=======
 
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
@@ -36,7 +26,3 @@ class SystemNotificationAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes

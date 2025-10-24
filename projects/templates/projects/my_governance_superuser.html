@@ -5,21 +5,20 @@
 
 {% block extra_css %}
 <style>
-    /* Force horizontal scroll at browser level */
+    /* Allow table to fit browser width */
     html, body {
-        overflow-x: auto !important;
-        min-width: 2000px !important;
+        overflow-x: auto;
     }
     
-    /* Make table extremely wide to force scroll */
+    /* Make table responsive to browser width */
     .table-responsive {
-        overflow-x: visible !important;
-        width: 100% !important;
+        overflow-x: auto;
+        width: 100%;
     }
     
     .table-responsive table {
-        width: 2000px !important;
-        min-width: 2000px !important;
+        width: 100%;
+        table-layout: auto;
     }
     
     /* Set table font size to 14px */
@@ -44,18 +43,6 @@
     .col-12 {
         max-width: none !important;
         width: 100% !important;
-    }
-<<<<<<< Updated upstream
-=======
-    
-    /* Make table rows clickable */
-    tbody tr {
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-    
-    tbody tr:hover {
-        background-color: #f8f9fa !important;
     }
     
     /* Custom Modal Styles */
@@ -320,10 +307,6 @@
     .notifications-body::-webkit-scrollbar-thumb:hover {
         background: #B8860B;
     }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 </style>
 {% endblock %}
 
@@ -477,8 +460,6 @@
         </div>
     </div>
 </div>
-<<<<<<< Updated upstream
-=======
 
 <!-- Custom Request Detail Modal -->
 <div id="customRequestModal" class="custom-modal" style="display: none;">
@@ -776,5 +757,5 @@ document.addEventListener('keydown', function(event) {
     }
 });
 </script>
->>>>>>> Stashed changes
 {% endblock %}
+

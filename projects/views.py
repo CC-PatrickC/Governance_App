@@ -1,22 +1,207 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-<<<<<<< Updated upstream
-from .models import Project, ProjectFile
-=======
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate, login
+from django.utils import timezone
+from django.urls import reverse
+from django.db import models
 from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation, SystemNotification
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 from .forms import ProjectForm
 import json
+import logging
 
+logger = logging.getLogger('projects')
+
+def sync_status_with_stage(project):
+    """
+    Synchronize the status field with the stage field.
+    The stage field is the primary field that determines workflow progression.
+    """
+    # Mapping from stage to status
+    stage_to_status_mapping = {
+        'Pending_Review': 'pending',
+        'Under_Review_Triage': 'under_review_triage',
+        'Under_Review_governance': 'under_review_scoring',
+        'Under_Review_Final_governance': 'under_review_final_scoring',
+    }
+    
+    # Get the expected status based on stage
+    expected_status = stage_to_status_mapping.get(project.stage, project.status)
+    
+    # Only update if the status doesn't match the stage
+    if project.status != expected_status:
+        project.status = expected_status
+        logger.info(f"Synced status from '{project.status}' to '{expected_status}' based on stage '{project.stage}'")
+    
+    return project
+
+def is_triage_user(user):
+    return user.is_staff or user.groups.filter(name='Triage Group').exists()
+
+def is_triage_lead_user(user):
+    return user.is_staff or user.groups.filter(name='Triage Group Lead').exists()
+
+def is_ai_governance_user(user):
+    return user.is_staff or user.groups.filter(name='AI Governance Group').exists()
+
+def is_ai_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='AI Governance Group Lead').exists()
+
+def is_erp_governance_user(user):
+    return user.is_staff or user.groups.filter(name='ERP Governance Group').exists()
+
+def is_erp_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='ERP Governance Group Lead').exists()
+
+def is_it_governance_user(user):
+    return user.is_staff or user.groups.filter(name='IT Governance Group').exists()
+
+def is_it_governance_lead_user(user):
+    return user.is_staff or user.groups.filter(name='IT Governance Group Lead').exists()
+
+def is_process_improvement_user(user):
+    return user.is_staff or user.groups.filter(name='Process Improvement Group').exists() or user.groups.filter(name='Process Improvement Governance Group').exists()
+
+def is_process_improvement_lead_user(user):
+    return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists()
+
+def track_project_changes(project, form_data, user):
+    """Track changes made to project fields during triage updates"""
+    # Define fields to track with their human-readable labels
+    tracked_fields = {
+        'title': 'Title',
+        'description': 'Description',
+        'project_type': 'Request Type',
+        'priority': 'Priority',
+        'stage': 'Stage',
+        'department': 'Department',
+        'contact_person': 'Contact Person',
+        'contact_email': 'Contact Email',
+    }
+    
+    changes_made = []
+    
+    for field_name, field_label in tracked_fields.items():
+        old_value = getattr(project, field_name, '')
+        new_value = form_data.get(field_name, '')
+        
+        # Convert choice fields to display values
+        if field_name == 'project_type' and new_value:
+            new_value = dict(Project.PROJECT_TYPE_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.PROJECT_TYPE_CHOICES).get(old_value, old_value)
+        elif field_name == 'stage' and new_value:
+            new_value = dict(Project.STAGE_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.STAGE_CHOICES).get(old_value, old_value)
+        elif field_name == 'status' and new_value:
+            new_value = dict(Project.STATUS_CHOICES).get(new_value, new_value)
+            if old_value:
+                old_value = dict(Project.STATUS_CHOICES).get(old_value, old_value)
+        
+        # Track the change if values are different
+        if str(old_value) != str(new_value):
+            TriageChange.objects.create(
+                project=project,
+                field_name=field_name,
+                field_label=field_label,
+                old_value=str(old_value) if old_value else '',
+                new_value=str(new_value) if new_value else '',
+                changed_by=user
+            )
+            changes_made.append(f"{field_label}: {old_value} → {new_value}")
+    
+    return changes_made
+
+def is_scoring_user(user):
+    return (user.is_superuser or user.is_staff or 
+            user.groups.filter(name='AI Governance Group').exists() or 
+            user.groups.filter(name='AI Governance Group Lead').exists() or
+            user.groups.filter(name='ERP Governance Group').exists() or 
+            user.groups.filter(name='ERP Governance Group Lead').exists() or
+            user.groups.filter(name='IT Governance Group').exists() or 
+            user.groups.filter(name='IT Governance Group Lead').exists() or
+            user.groups.filter(name='Process Improvement Group').exists() or 
+            user.groups.filter(name='Process Improvement Group Lead').exists() or
+            (not user.groups.filter(name='Cabinet Group').exists() and not user.groups.filter(name='Triage Group').exists()))
+
+def can_modify_final_priority(user):
+    """Check if user can modify final priority ranks in Under Review - Final Governance section.
+    Excludes AI/ERP/IT/Process Improvement Lead groups from modifying final priority."""
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Allow regular governance group members (not leads) to modify final priority
+    return (user.groups.filter(name='AI Governance Group').exists() or 
+            user.groups.filter(name='ERP Governance Group').exists() or
+            user.groups.filter(name='IT Governance Group').exists() or
+            user.groups.filter(name='Process Improvement Group').exists())
+
+def is_it_governance_scoring_user(user):
+    return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
+
+def is_cabinet_user(user):
+    return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+
+def is_patrick(user):
+    """Check if the user is Patrick (for test dashboard access)"""
+    return user.username == 'pcondon' or user.email == 'pcondon@ccgov.org'
+
+
+
+def get_user_allowed_project_types(user):
+    """
+    Returns a list of project types that the user is allowed to see based on their groups.
+    Staff users can see all project types.
+    """
+    if user.is_staff:
+        return None  # None means no filtering (see all types)
+    
+    # Map group names to project types
+    group_to_project_type = {
+        'IT Governance Scoring Group': 'it_governance',
+        'ERP Governance Scoring Group': 'erp_governance', 
+        'Data Governance Scoring Group': 'data_governance',
+        'Process Improvement Scoring Group': 'process_improvement',
+    }
+    
+    allowed_types = []
+    user_groups = user.groups.all()
+    
+    for group in user_groups:
+        if group.name in group_to_project_type:
+            allowed_types.append(group_to_project_type[group.name])
+    
+    return allowed_types if allowed_types else None
+
+def custom_login_view(request):
+    if request.user.is_authenticated:
+        # Redirect based on user permissions
+        if request.user.is_staff or request.user.groups.exists():
+            return redirect('projects:my_governance')
+        else:
+            return redirect('projects:project_intake_form')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            # All users go to MyGovernance after login
+            return redirect('projects:my_governance')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    
+    return render(request, 'registration/login.html')
+
+@login_required
 def project_list(request):
     projects = Project.objects.all().select_related('submitted_by')
     return render(request, 'projects/project_list.html', {'projects': projects})
@@ -182,9 +367,33 @@ def project_scoring_list(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
-<<<<<<< Updated upstream
 def project_scoring(request, pk):
-=======
+    """Project scoring view - displays project scoring form"""
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        project.final_priority = request.POST.get('final_priority')
+        project.final_score = request.POST.get('final_score')
+        project.scoring_notes = request.POST.get('scoring_notes')
+        project.strategic_alignment = request.POST.get('strategic_alignment')
+        project.cost_benefit = request.POST.get('cost_benefit')
+        project.user_impact = request.POST.get('user_impact')
+        project.ease_of_implementation = request.POST.get('ease_of_implementation')
+        project.vendor_reputation_support = request.POST.get('vendor_reputation_support')
+        project.security_compliance = request.POST.get('security_compliance')
+        project.student_centered = request.POST.get('student_centered')
+        
+        try:
+            project.save()
+            messages.success(request, 'Project scoring updated successfully!')
+            return redirect('projects:project_scoring_list')
+        except Exception as e:
+            messages.error(request, f'Error updating project scoring: {str(e)}')
+    
+    return render(request, 'projects/project_scoring.html', {'project': project})
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
 def cabinet_dashboard(request):
     # Get all projects for statistics
     projects = Project.objects.all()
@@ -486,7 +695,7 @@ def project_update_status(request, pk):
     
     return redirect('projects:project_update', pk=pk)
 
-@login_not_required
+@login_required
 def logout_view(request):
     """Simple logout view that logs out the user and redirects to home page"""
     from django.contrib.auth import logout as django_logout
@@ -761,7 +970,6 @@ def my_governance(request):
 @login_required
 def project_details_readonly(request, pk):
     """API endpoint to get project details for superuser read-only view"""
->>>>>>> Stashed changes
     project = get_object_or_404(Project, pk=pk)
     
     if request.method == 'POST':
@@ -783,9 +991,6 @@ def project_details_readonly(request, pk):
         except Exception as e:
             messages.error(request, f'Error updating project scoring: {str(e)}')
     
-<<<<<<< Updated upstream
-    return render(request, 'projects/project_scoring.html', {'project': project})
-=======
     # Prepare project data for read-only display
     project_data = {
         'id': project.id,
@@ -878,6 +1083,23 @@ def project_delete_request(request, pk):
             'success': False,
             'message': 'An error occurred while deleting the request.'
         })
+
+@login_required
+def debug_project_files(request, pk):
+    """Debugging endpoint to list files for a specific project"""
+    project = get_object_or_404(Project, pk=pk)
+    files = project.projectfile_set.all()
+    
+    file_data = []
+    for file in files:
+        file_data.append({
+            'id': file.id,
+            'name': file.file.name,
+            'size': file.file.size,
+            'upload_date': file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    return JsonResponse({'files': file_data})
 
 @login_required
 def get_project_conversations(request, pk):
@@ -1018,7 +1240,3 @@ def delete_notification(request, pk):
     except Exception as e:
         logger.error(f"Error deleting notification {pk}: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
