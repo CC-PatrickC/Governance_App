@@ -171,3 +171,4 @@ Thumbs.db
 /project_intake/__pycache__
 /projects/__pycache__
 *.pyc
+*.sqlite3
