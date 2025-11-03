@@ -5,8 +5,8 @@ from django.utils import timezone
 class Project(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
+        ('approved', 'Recommended'),
+        ('rejected', 'Not Recommended'),
         ('under_review_triage', 'Under Review - Triage'),
         ('under_review_governance', 'Under Review - Governance'),
         ('under_review_final_governance', 'Under Review - Final Governance'),
