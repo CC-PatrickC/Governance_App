@@ -2071,6 +2071,54 @@ def project_details_readonly(request, pk):
     return JsonResponse({'project': project_data})
 
 @login_required
+def project_details_modal(request, pk):
+    """API endpoint to get project details for general viewing in modals"""
+    try:
+        import traceback
+        logger.info(f"project_details_modal called for pk={pk}")
+        
+        project = get_object_or_404(Project, pk=pk)
+        logger.info(f"Project found: {project.title}")
+        
+        # Prepare project data with safer field access
+        project_data = {
+            'id': project.id,
+            'title': project.title or '',
+            'description': project.description or '',
+            'formatted_id': project.formatted_id,
+            'project_type': project.project_type or '',
+            'project_type_display': project.get_project_type_display() if project.project_type else '',
+            'priority': project.priority or '',
+            'stage': project.stage or '',
+            'stage_display': project.get_stage_display() if project.stage else '',
+            'status': project.status or '',
+            'status_display': project.get_status_display() if project.status else '',
+            'department': project.department or '',
+            'contact_person': project.contact_person or '',
+            'contact_email': project.contact_email or '',
+            'contact_phone': project.contact_phone or '',
+            'budget': str(project.budget) if project.budget else '',
+            'budget_formatted': f"${project.budget:,.2f}" if project.budget else 'N/A',
+            'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else 'N/A',
+            'start_date_formatted': project.start_date.strftime('%B %d, %Y') if project.start_date else 'N/A',
+            'end_date_formatted': project.end_date.strftime('%B %d, %Y') if project.end_date else 'N/A',
+            'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
+            'triage_notes': project.triage_notes or '',
+            'scoring_notes': project.scoring_notes or '',
+        }
+        
+        logger.info(f"Successfully prepared project data")
+        
+        return JsonResponse({
+            'success': True,
+            'project': project_data
+        })
+    except Exception as e:
+        logger.error(f"Error in project_details_modal: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
 def api_users(request):
     """API endpoint to get all users for autocomplete"""
     users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')

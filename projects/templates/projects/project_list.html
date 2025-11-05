@@ -763,7 +763,7 @@ function loadProjectDetails(projectId) {
         </div>
     `;
     
-    const url = `/${projectId}/scoring-details-modal/`;
+    const url = `/${projectId}/project-details-modal/`;
     console.log('Fetching from URL:', url);
     
     // Get CSRF token
@@ -782,15 +782,17 @@ function loadProjectDetails(projectId) {
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);
             if (!response.ok) {
-                return response.json().then(errorData => {
-                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-                });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             return response.json();
         })
         .then(data => {
             console.log('Received data:', data);
-            displayProjectDetails(data);
+            if (data.success) {
+                displayProjectDetails(data);
+            } else {
+                throw new Error(data.error || 'Failed to load project details');
+            }
         })
         .catch(error => {
             console.error('Error:', error);

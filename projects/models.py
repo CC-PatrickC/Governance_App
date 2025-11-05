@@ -59,7 +59,7 @@ class Project(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     submission_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
-    stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
+    stage = models.CharField(max_length=40, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
