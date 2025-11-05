@@ -471,9 +471,6 @@ def project_update_ajax(request, pk):
         project.sdp_ticket_number = request.POST.get('sdp_ticket_number', '')
         project.sdp_link = request.POST.get('sdp_link', '')
         
-        # Sync status with stage before saving
-        project = sync_status_with_stage(project)
-        
         # Auto-assign final priority rank when moving to Under_Review_Final_governance
         if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
             # Get the highest existing rank
@@ -659,9 +656,6 @@ def project_update(request, pk):
             
             # Clear the triage notes field after saving to history
             project.triage_notes = ''
-            
-            # Sync status with stage before saving
-            project = sync_status_with_stage(project)
             
             # Auto-assign final priority rank when moving to Under_Review_Final_governance
             if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
@@ -1318,15 +1312,25 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
-        # Get stage changes for this project
-        stage_changes = project.triage_change_history.filter(field_name='stage').order_by('-changed_at')
-        stage_changes_data = []
-        for change in stage_changes:
-            stage_changes_data.append({
-                'old_value': change.old_value,
-                'new_value': change.new_value,
-                'changed_at': change.changed_at.isoformat(),
-                'changed_by': change.changed_by.get_full_name() or change.changed_by.username
+        # Get triage notes for this project
+        triage_notes = project.triage_note_history.all().order_by('-created_at')
+        triage_notes_data = []
+        for note in triage_notes:
+            triage_notes_data.append({
+                'notes': note.notes,
+                'created_at': note.created_at.isoformat(),
+                'created_at_formatted': note.created_at.strftime('%B %d, %Y at %I:%M %p') if note.created_at else None,
+                'created_by': note.created_by.get_full_name() if note.created_by and (note.created_by.first_name or note.created_by.last_name) else note.created_by.username if note.created_by else 'Unknown'
+            })
+        
+        # Get project files/attachments
+        files_data = []
+        for file in project.files.all():
+            files_data.append({
+                'id': file.id,
+                'name': file.file.name.split('/')[-1],  # Get just the filename
+                'url': file.file.url,
+                'uploaded_at': file.uploaded_at.isoformat() if file.uploaded_at else None,
             })
         
         # Prepare project data for JSON response with safe date handling
@@ -1335,6 +1339,7 @@ def project_scoring_details_modal(request, pk):
             'title': project.title,
             'department': project.department,
             'submitted_by': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
+            'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
             'submitted_by_email': project.submitted_by.email if project.submitted_by else 'N/A',
             'contact_person': project.contact_person,
             'sdp_ticket_number': project.sdp_ticket_number,
@@ -1354,7 +1359,8 @@ def project_scoring_details_modal(request, pk):
             'description': project.description,
             'priority': project.priority,
             'stage': project.stage,
-            'stage_changes': stage_changes_data,
+            'triage_notes': triage_notes_data,
+            'files': files_data,
         }
         
         # Prepare user score data if it exists
@@ -1372,19 +1378,37 @@ def project_scoring_details_modal(request, pk):
                 'student_centered': user_score.student_centered,
             }
         
-        # Get condensed scores for AI Governance Group Lead users
+        # Get scores for Lead users to view
         condensed_scores_data = None
+        group_name_map = {
+            'ai_governance': 'AI Governance Group',
+            'erp_governance': 'ERP Governance Group',
+            'it_governance': 'IT Governance Group',
+            'process_improvement': 'Process Improvement Group'
+        }
+        
+        # Determine which group scores to show based on Lead user type and project type
+        group_to_check = None
         if is_ai_governance_lead_user(request.user) and project.project_type == 'ai_governance':
-            # Get all AI Governance Group members
-            ai_governance_group = Group.objects.filter(name='AI Governance Group').first()
-            if ai_governance_group:
-                ai_governance_users = ai_governance_group.user_set.all()
+            group_to_check = 'AI Governance Group'
+        elif is_erp_governance_lead_user(request.user) and project.project_type == 'erp_governance':
+            group_to_check = 'ERP Governance Group'
+        elif is_it_governance_lead_user(request.user) and project.project_type == 'it_governance':
+            group_to_check = 'IT Governance Group'
+        elif is_process_improvement_lead_user(request.user) and project.project_type == 'process_improvement':
+            group_to_check = 'Process Improvement Group'
+        
+        if group_to_check:
+            # Get the governance group members
+            governance_group = Group.objects.filter(name=group_to_check).first()
+            if governance_group:
+                governance_users = governance_group.user_set.all()
                 
-                # Get all scores from AI Governance Group members for this project
-                ai_scores = project.scores.filter(scored_by__in=ai_governance_users).select_related('scored_by')
+                # Get all scores from governance group members for this project
+                group_scores = project.scores.filter(scored_by__in=governance_users).select_related('scored_by')
                 
                 condensed_scores_data = []
-                for score in ai_scores:
+                for score in group_scores:
                     condensed_scores_data.append({
                         'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
                         'final_score': score.final_score,
@@ -1890,9 +1914,10 @@ def my_governance(request):
                 stage='Deleted'
             ).order_by('-submission_date')
         
-        # Get governance projects for users in governance groups or superusers
+        # Get governance projects for users in governance groups, triage groups, or superusers
         governance_projects = None
         if (request.user.is_superuser or 
+            is_triage_user(request.user) or is_triage_lead_user(request.user) or
             is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or 
             is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
             is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
@@ -1902,8 +1927,8 @@ def my_governance(request):
                 stage='Under_Review_governance'
             )
             
-            # Filter by project type based on user's group (superusers see all types)
-            if not request.user.is_superuser:
+            # Filter by project type based on user's group (superusers and triage users see all types)
+            if not request.user.is_superuser and not is_triage_user(request.user) and not is_triage_lead_user(request.user):
                 allowed_types = []
                 if is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user):
                     allowed_types.append('ai_governance')

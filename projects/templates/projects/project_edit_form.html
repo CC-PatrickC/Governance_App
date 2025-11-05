@@ -96,7 +96,6 @@
 
 <form id="project-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="hidden" name="status" value="{{ project.status }}">
     
     <div class="mb-3">
         <label for="title" class="form-label">Request Title *</label>
@@ -131,24 +130,15 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="stage" class="form-label">Stage *</label>
-            <select class="form-select" id="stage" name="stage" required>
-                {% for value, label in project.STAGE_CHOICES %}
-                <option value="{{ value }}" {% if project.stage == value %}selected{% endif %}>
-                    {{ label }}
-                </option>
-                {% endfor %}
-            </select>
-            <small class="form-text text-muted">The status will automatically update to match the selected stage.</small>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Current Status</label>
-            <input type="text" class="form-control" value="{{ project.get_status_display }}" readonly>
-            <small class="form-text text-muted">This will update automatically when you change the stage.</small>
-        </div>
+    <div class="mb-3">
+        <label for="stage" class="form-label">Stage *</label>
+        <select class="form-select" id="stage" name="stage" required>
+            {% for value, label in project.STAGE_CHOICES %}
+            <option value="{{ value }}" {% if project.stage == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="mb-3">

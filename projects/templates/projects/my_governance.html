@@ -1164,7 +1164,7 @@
                 {% endif %}
             </div>
             {% else %}
-                {% if is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+                {% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
@@ -1571,26 +1571,6 @@ function showProjectDetails(projectId) {
                           <div class="row mt-3">
                               <div class="col-12">
                                   <div class="detail-card">
-                                      <div class="detail-title">Attachments</div>
-                                      <div class="detail-content">
-                                          ${project.files && project.files.length > 0 ? 
-                                              project.files.map(file => `
-                                                  <div class="attachment-item mb-2">
-                                                      <a href="${file.file}" target="_blank" class="text-decoration-none">
-                                                          <i class="fas fa-paperclip"></i> ${file.filename || 'Attachment'}
-                                                      </a>
-                                                  </div>
-                                              `).join('') : 
-                                              '<p class="text-muted">No attachments available.</p>'
-                                          }
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                          
-                          <div class="row mt-3">
-                              <div class="col-12">
-                                  <div class="detail-card">
                                       <div class="detail-title">Stage Updates</div>
                                       <div class="detail-content" id="stageUpdatesContent">
                                           <p class="text-muted">Loading stage updates...</p>
@@ -1921,9 +1901,9 @@ function openGovernanceScoringModal(projectId) {
     const saveBtn = document.getElementById('saveChangesBtn');
     
     // Update modal title
-    modalTitle.textContent = 'Request Scoring - Governance';
+    modalTitle.textContent = 'Request Details - Governance';
     
-    // Hide save button for scoring modal
+    // Hide save button initially for scoring modal
     saveBtn.style.display = 'none';
     
     // Show loading state
@@ -1932,7 +1912,7 @@ function openGovernanceScoringModal(projectId) {
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Loading project details and scoring form...</p>
+            <p class="mt-2">Loading project details...</p>
         </div>
     `;
     
@@ -1952,37 +1932,55 @@ function openGovernanceScoringModal(projectId) {
             const userScore = data.user_score;
             const condensedScores = data.condensed_scores;
             
-            // Create the modal content with project details and scoring form
+            // Create the modal content with tabs
             modalBody.innerHTML = `
                 <div class="mb-3">
                     <h5 class="mb-2">${project.title}</h5>
                     <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
-                </div>
+                    
+                    <!-- Tabs Navigation -->
+                    <ul class="nav nav-tabs" id="governanceModalTabs" role="tablist">
+                        {% if is_triage_user or is_triage_lead_user %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="triage-tab" data-bs-toggle="tab" data-bs-target="#triage-content" type="button" role="tab" aria-controls="triage-content" aria-selected="false">
+                                <i class="fas fa-edit me-1"></i> Triage
+                            </button>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="scoring-tab" data-bs-toggle="tab" data-bs-target="#scoring-content" type="button" role="tab" aria-controls="scoring-content" aria-selected="true">
+                                <i class="fas fa-star me-1"></i> Scoring
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tabs Content -->
+                    <div class="tab-content mt-3" id="governanceModalTabsContent">
+                        {% if is_triage_user or is_triage_lead_user %}
+                        <!-- Triage Tab -->
+                        <div class="tab-pane fade" id="triage-content" role="tabpanel" aria-labelledby="triage-tab">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading triage form...</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Scoring Tab -->
+                        <div class="tab-pane fade show active" id="scoring-content" role="tabpanel" aria-labelledby="scoring-tab">
                 
                 <!-- Request Information Section -->
                 <div class="request-info-section mb-3">
                     <h6 class="section-header small">Request Information</h6>
                     <div class="info-content compact">
+                        <p class="mb-2"><strong>Requested By:</strong> ${project.submitted_by_name || 'N/A'}</p>
+                        <p class="mb-2"><strong>Department:</strong> ${project.department || 'Not specified'}</p>
                         <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
                         <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
-                        ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
                         ${project.sdp_ticket_number && project.sdp_link ? `<p class="mb-2"><strong>SDP:</strong> <a href="${project.sdp_link}" target="_blank" rel="noopener noreferrer">${project.sdp_ticket_number}</a></p>` : ''}
-                    </div>
-                </div>
-                
-                <!-- Technician Section -->
-                <div class="contact-info-section mb-3">
-                    <h6 class="section-header small">Technician</h6>
-                    <div class="info-content compact">
-                        <p class="mb-2">${project.contact_person || 'Not Assigned'}</p>
-                    </div>
-                </div>
-                
-                <!-- Description Section -->
-                <div class="description-section mb-3">
-                    <h6 class="section-header small">Description</h6>
-                    <div class="info-content compact">
-                        <p class="mb-2">${project.description || 'No description available.'}</p>
+                        <p class="mb-2"><strong>Technician:</strong> ${project.contact_person || 'Not Assigned'}</p>
                     </div>
                 </div>
                 
@@ -1990,27 +1988,101 @@ function openGovernanceScoringModal(projectId) {
                 <div class="attachments-section mb-3">
                     <h6 class="section-header small">Attachments</h6>
                     <div class="info-content compact">
-                        ${project.project_file ? `
-                            <div class="attachment-item">
-                                <i class="fas fa-file-pdf text-danger"></i>
-                                <a href="${project.project_file}" target="_blank" class="attachment-link">
-                                    ${project.project_file.split('/').pop()}
-                                </a>
-                            </div>
-                        ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                        ${project.files && project.files.length > 0 ? 
+                            project.files.map(file => `
+                                <div class="attachment-item mb-2">
+                                    <i class="fas fa-file text-primary me-1"></i>
+                                    <a href="${file.url}" target="_blank" class="attachment-link">
+                                        ${file.name}
+                                    </a>
+                                </div>
+                            `).join('') 
+                            : '<p class="text-muted mb-0">No attachments available.</p>'
+                        }
                     </div>
                 </div>
                 
-                <!-- Stage Updates Section -->
-                <div class="stage-updates-section mb-3">
-                    <h6 class="section-header small">Stage Updates</h6>
-                    <div class="info-content compact" id="stageUpdatesContent">
-                        <p class="text-muted mb-0">Loading stage updates...</p>
+                <!-- Triage Notes History Section -->
+                <div class="triage-notes-section mb-3">
+                    <h6 class="section-header small">Triage Notes History</h6>
+                    <div class="info-content compact">
+                        ${project.triage_notes && project.triage_notes.length > 0 ? 
+                            project.triage_notes.map(note => `
+                                <div class="triage-note-item mb-3 pb-2 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>${note.created_by}
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>${note.created_at_formatted}
+                                        </small>
+                                    </div>
+                                    <p class="mb-0 small">${note.notes}</p>
+                                </div>
+                            `).join('') 
+                            : '<p class="text-muted mb-0">No triage notes available.</p>'
+                        }
                     </div>
                 </div>
                 
-                <!-- Scoring Form Section -->
+                <!-- Scoring Section -->
                 <div class="scoring-form-section">
+                    {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                    <!-- Scores Table for Lead Users -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="section-header small mb-0">Team Member Scores</h6>
+                        ${condensedScores && condensedScores.length > 0 ? `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
+                            <label class="form-check-label small" for="hideScorerNames">
+                                Hide scorer names
+                            </label>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${condensedScores && condensedScores.length > 0 ? `
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered" id="scoresTable">
+                                <thead>
+                                    <tr>
+                                        <th class="scorer-name-column">Scored By</th>
+                                        <th>Strategic<br><small class="text-muted">(20%)</small></th>
+                                        <th>Cost<br><small class="text-muted">(15%)</small></th>
+                                        <th>Impact<br><small class="text-muted">(20%)</small></th>
+                                        <th>Ease<br><small class="text-muted">(15%)</small></th>
+                                        <th>Vendor<br><small class="text-muted">(10%)</small></th>
+                                        <th>Security<br><small class="text-muted">(10%)</small></th>
+                                        <th>Student<br><small class="text-muted">(10%)</small></th>
+                                        <th>Final Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${condensedScores.map(score => `
+                                        <tr>
+                                            <td class="small scorer-name-cell">${score.scored_by}</td>
+                                            <td class="text-center">${score.strategic_alignment || '-'}</td>
+                                            <td class="text-center">${score.cost_benefit || '-'}</td>
+                                            <td class="text-center">${score.user_impact || '-'}</td>
+                                            <td class="text-center">${score.ease_of_implementation || '-'}</td>
+                                            <td class="text-center">${score.vendor_reputation_support || '-'}</td>
+                                            <td class="text-center">${score.security_compliance || '-'}</td>
+                                            <td class="text-center">${score.student_centered || '-'}</td>
+                                            <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
+                                        </tr>
+                                        ${score.scoring_notes && score.scoring_notes.trim() ? `
+                                        <tr class="notes-row">
+                                            <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
+                                                <strong>Notes:</strong> ${score.scoring_notes.trim()}
+                                            </td>
+                                        </tr>
+                                        ` : ''}
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : '<p class="text-muted">No team members have scored this project yet.</p>'}
+                    {% else %}
+                    <!-- Scoring Form for Non-Lead Users -->
                     <h6 class="section-header small">Score This Project</h6>
                     <form id="scoringForm">
                         <div class="table-responsive">
@@ -2035,8 +2107,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.strategic_alignment || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2053,8 +2124,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="cost_benefit" id="cost_benefit" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.cost_benefit || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="cost_benefit_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2071,8 +2141,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="user_impact" id="user_impact" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.user_impact || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2089,8 +2158,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.ease_of_implementation || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="ease_of_implementation_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2107,8 +2175,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2125,8 +2192,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="security_compliance" id="security_compliance" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.security_compliance || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2143,8 +2209,7 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="student_centered" id="student_centered" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.student_centered || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)"
-                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                                       onchange="calculateWeightedScore(this)">
                                             </td>
                                             <td>
                                                 <span id="student_centered_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2163,100 +2228,228 @@ function openGovernanceScoringModal(projectId) {
                             <div class="form-group mb-3">
                                 <label for="scoring_notes">Scoring Notes</label>
                                 <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                                        rows="4" placeholder="Add your detailed scoring notes here..."
-                                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>${userScore ? userScore.scoring_notes || '' : ''}</textarea>
+                                        rows="4" placeholder="Add your detailed scoring notes here...">${userScore ? userScore.scoring_notes || '' : ''}</textarea>
                             </div>
 
                             <input type="hidden" name="final_score" id="final_score" value="${userScore ? userScore.final_score || 0 : 0}">
-                            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
-                            <div class="alert alert-info mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Lead User:</strong> You can view the scoring form and other users' scores, but you cannot submit your own scores.
-                            </div>
-                            {% endif %}
                             <div class="d-flex justify-content-between align-items-center">
-                                {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
                                 <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
                                     <i class="fas fa-save me-2"></i>Save Scoring
                                 </button>
-                                {% endif %}
                                 <div id="saveStatus" class="text-muted"></div>
                             </div>
                         </form>
+                    {% endif %}
                     </div>
                 </div>
-                
-                ${condensedScores && condensedScores.length > 0 ? `
-                <!-- Condensed Scores Section for AI Governance Group Lead -->
-                <div class="condensed-scores-section mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
-                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
-                            <label class="form-check-label small" for="hideScorerNames">
-                                Hide scorer names
-                            </label>
                         </div>
-                        {% endif %}
+                        <!-- End Scoring Tab -->
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered" id="scoresTable">
-                            <thead>
-                                <tr>
-                                    <th class="scorer-name-column">Scored By</th>
-                                    <th>Strategic</th>
-                                    <th>Cost</th>
-                                    <th>Impact</th>
-                                    <th>Ease</th>
-                                    <th>Vendor</th>
-                                    <th>Security</th>
-                                    <th>Student</th>
-                                    <th>Final</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${condensedScores.map(score => `
-                                    <tr>
-                                        <td class="small scorer-name-cell">${score.scored_by}</td>
-                                        <td class="text-center">${score.strategic_alignment || '-'}</td>
-                                        <td class="text-center">${score.cost_benefit || '-'}</td>
-                                        <td class="text-center">${score.user_impact || '-'}</td>
-                                        <td class="text-center">${score.ease_of_implementation || '-'}</td>
-                                        <td class="text-center">${score.vendor_reputation_support || '-'}</td>
-                                        <td class="text-center">${score.security_compliance || '-'}</td>
-                                        <td class="text-center">${score.student_centered || '-'}</td>
-                                        <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
-                                    </tr>
-                                    <tr class="notes-row">
-                                        <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
-                                            <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
-                                                score.scoring_notes.trim() : 
-                                                'Member did not provide any scoring notes.'}
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                    <!-- End Tabs Content -->
                 </div>
-                ` : ''}
             `;
+            
+            {% if is_triage_user or is_triage_lead_user %}
+            // Load triage form when triage tab is clicked
+            const triageTab = document.getElementById('triage-tab');
+            if (triageTab) {
+                triageTab.addEventListener('click', function() {
+                    const triageContent = document.getElementById('triage-content');
+                    // Only load if not already loaded
+                    if (triageContent.querySelector('.spinner-border')) {
+                        fetch(`/${projectId}/edit-form/`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                triageContent.innerHTML = html;
+                                
+                                // Get the form element
+                                const form = triageContent.querySelector('form');
+                                
+                                if (form) {
+                                    // Remove form action to prevent default submission
+                                    form.removeAttribute('action');
+                                    form.method = 'POST';
+                                    
+                                    // Show save button when in triage tab
+                                    saveBtn.style.display = 'inline-block';
+                                    
+                                    // Add form submit handler
+                                    form.addEventListener('submit', function(e) {
+                                        e.preventDefault();
+                                        submitTriageEditForm(form, projectId);
+                                    });
+                                    
+                                    // Add click handler to save button
+                                    saveBtn.onclick = function() {
+                                        submitTriageEditForm(form, projectId);
+                                    };
+                                    
+                                    // Add delete attachment functionality
+                                    window.deleteAttachment = function(projectId, fileId, buttonElement) {
+                                        if (!confirm('Are you sure you want to delete this attachment?')) {
+                                            return;
+                                        }
+                                        
+                                        // Get CSRF token
+                                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                                        
+                                        // Show loading state on button
+                                        const originalContent = buttonElement.innerHTML;
+                                        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                                        buttonElement.disabled = true;
+                                        
+                                        fetch(`/${projectId}/attachment/${fileId}/delete/`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'X-CSRFToken': csrfToken
+                                            }
+                                        })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data.success) {
+                                                // Remove the attachment row from the DOM
+                                                const attachmentRow = buttonElement.closest('.list-group-item');
+                                                if (attachmentRow) {
+                                                    attachmentRow.remove();
+                                                }
+                                                
+                                                // Show success message
+                                                const triageContent = document.getElementById('triage-content');
+                                                const successDiv = document.createElement('div');
+                                                successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+                                                successDiv.innerHTML = `
+                                                    <strong>Success!</strong> Attachment deleted successfully.
+                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                `;
+                                                triageContent.insertBefore(successDiv, triageContent.firstChild);
+                                                
+                                                // Auto-dismiss after 3 seconds
+                                                setTimeout(() => {
+                                                    successDiv.remove();
+                                                }, 3000);
+                                            } else {
+                                                // Show error and restore button
+                                                alert('Error: ' + (data.message || 'Failed to delete attachment'));
+                                                buttonElement.innerHTML = originalContent;
+                                                buttonElement.disabled = false;
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            alert('Error deleting attachment');
+                                            buttonElement.innerHTML = originalContent;
+                                            buttonElement.disabled = false;
+                                        });
+                                    };
+                                    
+                                    // Initialize drag and drop file upload functionality
+                                    const dropZone = triageContent.querySelector('#file-drop-zone');
+                                    const fileInput = triageContent.querySelector('#files');
+                                    
+                                    if (dropZone && fileInput) {
+                                        // Prevent default drag behaviors
+                                        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                                            dropZone.addEventListener(eventName, function(e) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            }, false);
+                                        });
+                                        
+                                        // Highlight drop zone when item is dragged over it
+                                        ['dragenter', 'dragover'].forEach(eventName => {
+                                            dropZone.addEventListener(eventName, function() {
+                                                dropZone.classList.add('drag-over');
+                                            }, false);
+                                        });
+                                        
+                                        ['dragleave', 'drop'].forEach(eventName => {
+                                            dropZone.addEventListener(eventName, function() {
+                                                dropZone.classList.remove('drag-over');
+                                            }, false);
+                                        });
+                                        
+                                        // Handle dropped files
+                                        dropZone.addEventListener('drop', function(e) {
+                                            const dt = e.dataTransfer;
+                                            const files = dt.files;
+                                            
+                                            // Set the files to the file input
+                                            fileInput.files = files;
+                                            
+                                            // Trigger change event to notify any listeners
+                                            const event = new Event('change', { bubbles: true });
+                                            fileInput.dispatchEvent(event);
+                                        }, false);
+                                        
+                                        // Handle click to browse
+                                        dropZone.addEventListener('click', function() {
+                                            fileInput.click();
+                                        }, false);
+                                        
+                                        // Show selected files
+                                        fileInput.addEventListener('change', function(e) {
+                                            const files = e.target.files;
+                                            if (files.length > 0) {
+                                                // Show file count or file names
+                                                const fileDropContent = dropZone.querySelector('.file-drop-content');
+                                                if (fileDropContent) {
+                                                    const fileNames = Array.from(files).map(f => f.name).join(', ');
+                                                    fileDropContent.innerHTML = `
+                                                        <i class="fas fa-check-circle fa-2x mb-3 text-success"></i>
+                                                        <p class="mb-2"><strong>${files.length} file(s) selected</strong></p>
+                                                        <small class="text-muted">${fileNames}</small>
+                                                    `;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error loading triage form:', error);
+                                triageContent.innerHTML = '<div class="alert alert-danger">Error loading triage form.</div>';
+                            });
+                    }
+                });
+            }
+            
+            // Hide save button when switching to scoring tab (for triage users)
+            const scoringTab = document.getElementById('scoring-tab');
+            if (scoringTab) {
+                scoringTab.addEventListener('click', function() {
+                    saveBtn.style.display = 'none';
+                });
+            }
+            {% endif %}
             
             // Add event listener for the scoring form (only for non-lead users)
             {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
-            document.getElementById('scoringForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveGovernanceScore(projectId);
-            });
+            const scoringForm = document.getElementById('scoringForm');
+            if (scoringForm) {
+                scoringForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveGovernanceScore(projectId);
+                });
+            }
             {% endif %}
             
-            // Initialize scorer names visibility (checkbox is checked by default)
+            // Initialize scorer names visibility (hide by default for Lead users)
+            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
             setTimeout(function() {
-                toggleScorerNames();
+                if (typeof toggleScorerNames === 'function') {
+                    toggleScorerNames();
+                }
             }, 100);
+            {% endif %}
             
-            // Initialize tooltips and calculate initial scores
+            // Initialize tooltips and calculate initial scores (only for non-lead users with scoring form)
+            {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
             setTimeout(() => {
                 // Initialize Bootstrap tooltips
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -2269,6 +2462,7 @@ function openGovernanceScoringModal(projectId) {
                     calculateWeightedScore(input);
                 });
             }, 100);
+            {% endif %}
         })
         .catch(error => {
             console.error('Error loading project details:', error);
