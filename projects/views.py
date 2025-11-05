@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test, login_not_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate, login
 from django.http import JsonResponse, HttpResponseRedirect
@@ -180,7 +180,6 @@ def get_user_allowed_project_types(user):
     
     return allowed_types if allowed_types else None
 
-@login_not_required
 def custom_login_view(request):
     if request.user.is_authenticated:
         # Redirect based on user permissions
@@ -1745,7 +1744,6 @@ def project_update_status(request, pk):
     
     return redirect('projects:project_update', pk=pk)
 
-@login_not_required
 def logout_view(request):
     """Simple logout view that logs out the user and redirects to home page"""
     from django.contrib.auth import logout as django_logout
