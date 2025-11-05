@@ -1780,6 +1780,9 @@ function submitTriageEditForm(form, projectId) {
     modalBody.appendChild(loadingOverlay);
     
     
+    console.log('Submitting form to:', `/${projectId}/update-ajax/`);
+    console.log('CSRF Token:', csrfToken ? csrfToken.value : 'NOT FOUND');
+    
     fetch(`/${projectId}/update-ajax/`, {
         method: 'POST',
         body: formData,
@@ -1789,10 +1792,16 @@ function submitTriageEditForm(form, projectId) {
         }
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        return data;
     })
     .then(data => {
         if (data.success) {
@@ -1813,6 +1822,11 @@ function submitTriageEditForm(form, projectId) {
             // Re-show save button
             const saveBtn = document.getElementById('saveChangesBtn');
             if (saveBtn) saveBtn.style.display = 'inline-block';
+            
+            // Update the card in the list with new data
+            if (data.project) {
+                updateProjectCard(data.project);
+            }
             
             // Reload the form to show updated attachments
             fetch(`/${projectId}/edit-form/`)
@@ -1847,11 +1861,6 @@ function submitTriageEditForm(form, projectId) {
                 .catch(error => {
                     console.error('Error reloading form:', error);
                 });
-            
-            // Reload page after 2 seconds to update card displays
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
         } else {
             // Remove loading overlay
             const overlay = document.getElementById('loading-overlay');
@@ -1874,17 +1883,128 @@ function submitTriageEditForm(form, projectId) {
     })
     .catch(error => {
         console.error('Error submitting form:', error);
-        modalBody.innerHTML = `
-            <div class="alert alert-danger">
-                <h5>Error Updating Request</h5>
-                <p>An error occurred while saving the request.</p>
-                <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(${projectId})">
-                    <i class="fas fa-redo"></i> Try Again
-                </button>
-            </div>
+        
+        // Remove loading overlay
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.remove();
+        
+        // Show detailed error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show mb-3';
+        errorDiv.innerHTML = `
+            <h5><i class="fas fa-exclamation-circle me-2"></i>Error Updating Request</h5>
+            <p>An error occurred while saving the request.</p>
+            <p class="small"><strong>Error details:</strong> ${error.message || 'Unknown error'}</p>
+            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(${projectId})">
+                <i class="fas fa-redo"></i> Try Again
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-        // Don't show save button on error - user needs to reload form
+        modalBody.insertBefore(errorDiv, modalBody.firstChild);
+        
+        // Re-show save button
+        const saveBtn = document.getElementById('saveChangesBtn');
+        if (saveBtn) saveBtn.style.display = 'inline-block';
     });
+}
+
+// Function to update project card in the list
+function updateProjectCard(project) {
+    console.log('updateProjectCard called with project:', project);
+    
+    // Find the card by project ID
+    const card = document.querySelector(`.cc-project-card[data-project-id="${project.id}"]`);
+    if (!card) {
+        console.log('Card not found for project ID:', project.id);
+        return;
+    }
+    
+    console.log('Card found, updating...');
+    
+    // Add a visual indicator that the card was updated
+    card.style.transition = 'all 0.3s ease';
+    card.style.backgroundColor = '#d4edda'; // Light green background
+    
+    // Update card title
+    const titleElement = card.querySelector('.cc-project-title');
+    if (titleElement) {
+        console.log('Updating title from', titleElement.textContent, 'to', project.title);
+        titleElement.textContent = project.title;
+    }
+    
+    // Update card ID - format as #XXX to match template
+    const idElement = card.querySelector('.cc-project-id');
+    if (idElement) {
+        const formattedId = `#${String(project.id).padStart(3, '0')}`;
+        console.log('Updating ID from', idElement.textContent, 'to', formattedId);
+        idElement.textContent = formattedId;
+    }
+    
+    // Update description
+    const descElement = card.querySelector('.cc-project-description');
+    if (descElement) {
+        // Truncate to 120 characters like the template does
+        const truncated = project.description && project.description.length > 120 
+            ? project.description.substring(0, 117) + '...' 
+            : project.description;
+        console.log('Updating description');
+        descElement.textContent = truncated;
+    }
+    
+    // Update all meta sections
+    const metaSections = card.querySelectorAll('.cc-meta-section');
+    console.log('Found', metaSections.length, 'meta sections');
+    metaSections.forEach(section => {
+        const title = section.querySelector('.cc-meta-title');
+        const item = section.querySelector('.cc-meta-item');
+        if (!title || !item) return;
+        
+        const titleText = title.textContent.trim();
+        console.log('Processing section:', titleText);
+        
+        if (titleText === 'Request Type' && project.project_type_display) {
+            console.log('Updating Request Type to:', project.project_type_display);
+            item.textContent = project.project_type_display;
+        } else if (titleText === 'Priority' && project.priority) {
+            console.log('Updating Priority to:', project.priority);
+            item.textContent = project.priority;
+            // Update priority class
+            item.className = 'cc-meta-item cc-priority-' + project.priority.toLowerCase();
+        } else if (titleText === 'Stage' && project.stage_display) {
+            console.log('Updating Stage to:', project.stage_display);
+            item.textContent = project.stage_display;
+        }
+    });
+    
+    // Update department sections (using cc-department-section class)
+    const deptSections = card.querySelectorAll('.cc-department-section');
+    console.log('Found', deptSections.length, 'department sections');
+    deptSections.forEach(section => {
+        const title = section.querySelector('.cc-department-title');
+        const item = section.querySelector('.cc-meta-item');
+        if (!title || !item) return;
+        
+        const titleText = title.textContent.trim();
+        console.log('Processing department section:', titleText);
+        
+        if (titleText === 'Department' && project.department) {
+            console.log('Updating Department to:', project.department);
+            item.textContent = project.department;
+        } else if (titleText === 'Technician' && project.contact_person) {
+            console.log('Updating Technician to:', project.contact_person);
+            item.textContent = project.contact_person;
+        } else if (titleText === 'SDP' && project.sdp_ticket_number && project.sdp_link) {
+            console.log('Updating SDP to:', project.sdp_ticket_number);
+            item.innerHTML = `<a href="${project.sdp_link}" target="_blank" rel="noopener noreferrer">${project.sdp_ticket_number}</a>`;
+        }
+    });
+    
+    // Fade back to normal background after 2 seconds
+    setTimeout(() => {
+        card.style.backgroundColor = '';
+    }, 2000);
+    
+    console.log('Card update completed for project ID:', project.id);
 }
 
 // Function to open governance scoring modal

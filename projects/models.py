@@ -21,7 +21,8 @@ class Project(models.Model):
         ('Under_Review_Triage', 'Under Review - Triage'),
         ('Under_Review_governance', 'Under Review - Governance'),
         ('Under_Review_Final_governance', 'Under Review - Final Governance'),
-        ('Governance_Closure', 'Governance Closed'),
+        ('Governance_Closure', 'Governance Closed - Recommended'),
+        ('Governance_Closure_Not_Recommended', 'Governance Closed - Not Recommended'),
         ('Deleted', 'Deleted'),
     ]
 

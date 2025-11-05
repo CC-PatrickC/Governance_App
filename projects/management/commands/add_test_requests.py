@@ -71,7 +71,7 @@ class Command(BaseCommand):
         ]
 
         priorities = ['Low', 'Normal', 'High', 'Top']
-        statuses = ['pending', 'approved', 'rejected', 'under_review_triage', 'under_review_scoring', 'under_review_final_scoring', 'completed', 'archived', 'on_hold', 'cancelled']
+        statuses = ['pending', 'approved', 'rejected', 'under_review_triage', 'under_review_governance', 'under_review_final_governance', 'completed', 'archived', 'on_hold', 'cancelled']
 
         # Calculate date range (2 years back from today)
         end_date = timezone.now().date()

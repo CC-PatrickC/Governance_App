@@ -27,8 +27,8 @@ def sync_status_with_stage(project):
     stage_to_status_mapping = {
         'Pending_Review': 'pending',
         'Under_Review_Triage': 'under_review_triage',
-        'Under_Review_governance': 'under_review_scoring',
-        'Under_Review_Final_governance': 'under_review_final_scoring',
+        'Under_Review_governance': 'under_review_governance',
+        'Under_Review_Final_governance': 'under_review_final_governance',
     }
     
     # Get the expected status based on stage
@@ -535,9 +535,39 @@ def project_update_ajax(request, pk):
         # Don't set Django messages for AJAX requests - they'll be handled by JavaScript
         # messages.success(request, 'Project updated successfully!')
         
-        # Always return JSON for the update endpoint
+        # Refresh project from database to get latest data
+        project.refresh_from_db()
+        
+        # Build project data safely to avoid serialization errors
+        try:
+            project_data = {
+                'id': project.id,
+                'title': project.title,
+                'description': project.description,
+                'formatted_id': project.formatted_id,
+                'project_type': project.project_type if project.project_type else '',
+                'project_type_display': project.get_project_type_display() if project.project_type else '',
+                'priority': project.priority if project.priority else '',
+                'stage': project.stage if project.stage else '',
+                'stage_display': project.get_stage_display() if project.stage else '',
+                'status': project.status if project.status else '',
+                'status_display': project.get_status_display() if project.status else '',
+                'department': project.department if project.department else '',
+                'contact_person': project.contact_person if project.contact_person else '',
+                'contact_email': project.contact_email if project.contact_email else '',
+                'sdp_ticket_number': project.sdp_ticket_number if project.sdp_ticket_number else '',
+                'sdp_link': project.sdp_link if project.sdp_link else '',
+            }
+            logger.info(f"Successfully built project data for response: {project_data}")
+        except Exception as e:
+            logger.error(f"Error building project data: {str(e)}")
+            # Return basic success without project data if there's a serialization issue
+            return JsonResponse({'success': True})
+        
+        # Return JSON with updated project data for card refresh
         return JsonResponse({
-            'success': True
+            'success': True,
+            'project': project_data
         })
     except ValueError as e:
         logger.error(f"\nValidation error: {str(e)}")
