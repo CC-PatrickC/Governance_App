@@ -5,3 +5,16 @@ python-dotenv>=1.0.0
 django-allauth>=0.57.0
 requests>=2.31.0
 psycopg2-binary>=2.9.9 
+asgiref==3.8.1
+certifi==2025.4.26
+charset-normalizer==3.4.2
+gunicorn==23.0.0
+idna==3.10
+packaging==25.0
+python-dotenv==1.1.0
+sqlparse==0.5.3
+tzdata==2025.2
+urllib3==2.4.0
+whitenoise==6.9.0
+django-cas-client>=1.5.3
+

@@ -1345,6 +1345,7 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
+Fixed-Scoring
         # Get triage notes for this project
         triage_notes = project.triage_note_history.all().order_by('-created_at')
         triage_notes_data = []
@@ -1365,6 +1366,7 @@ def project_scoring_details_modal(request, pk):
                 'url': file.file.url,
                 'uploaded_at': file.uploaded_at.isoformat() if file.uploaded_at else None,
             })
+
         
         # Prepare project data for JSON response with safe date handling
         project_data = {
