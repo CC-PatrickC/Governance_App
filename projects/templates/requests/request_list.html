@@ -572,7 +572,15 @@
                     <div class="cc-request-meta">
                         <span class="cc-meta-item">{{ request.get_request_type_display }}</span>
                         <span class="cc-meta-item cc-priority-{{ request.priority|lower }}">{{ request.priority }}</span>
-                        <span class="cc-meta-item">{{ request.get_status_display }}</span>
+                        <span class="cc-meta-item status-badge" 
+                              data-bs-toggle="tooltip" 
+                              data-bs-placement="top"
+                              data-bs-html="true"
+                              onclick="event.stopPropagation();"
+                              title="{% if request.status == 'pending' %}Request is awaiting initial review by the triage team{% elif request.status == 'approved' %}Request has been recommended for implementation{% elif request.status == 'rejected' %}Request has been reviewed and not recommended for implementation{% elif request.status == 'under_review_triage' %}Request is being reviewed and evaluated by the triage team{% elif request.status == 'under_review_governance' %}Request is being scored by the governance committee{% elif request.status == 'under_review_final_governance' %}Request is undergoing final prioritization and ranking{% elif request.status == 'completed' %}Request has been fully processed and completed{% elif request.status == 'archived' %}Request has been archived and is no longer active{% elif request.status == 'on_hold' %}Request is temporarily on hold pending further information{% elif request.status == 'cancelled' %}Request has been cancelled and will not proceed{% endif %}" 
+                              style="cursor: help; position: relative; z-index: 1;">
+                            {{ request.get_status_display }}
+                        </span>
                         {% if request.department %}
                         <span class="cc-meta-item">{{ request.department }}</span>
                         {% endif %}
