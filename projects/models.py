@@ -7,8 +7,22 @@ class Project(models.Model):
         ('pending', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('in_progress', 'In Progress'),
+        ('under_review_triage', 'Under Review - Triage'),
+        ('under_review_governance', 'Under Review - Governance'),
+        ('under_review_final_governance', 'Under Review - Final Governance'),
         ('completed', 'Completed'),
+        ('archived', 'Archived'),
+        ('on_hold', 'On Hold'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    STAGE_CHOICES = [
+        ('Pending_Review', 'Pending Review'),
+        ('Under_Review_Triage', 'Under Review - Triage'),
+        ('Under_Review_governance', 'Under Review - Governance'),
+        ('Under_Review_Final_governance', 'Under Review - Final Governance'),
+        ('Governance_Closure', 'Governance Closed'),
+        ('Deleted', 'Deleted'),
     ]
 
     PRIORITY_CHOICES = [
@@ -29,15 +43,22 @@ class Project(models.Model):
         ('process_improvement', 'Process Improvement'),
         ('it_governance', 'IT Governance'),
         ('erp_governance', 'ERP Governance'),
-        ('data_governance', 'Data Governance'),
+        ('ai_governance', 'AI Governance'),
     ]
 
     title = models.CharField(max_length=200)
     description = models.TextField()
-    project_type = models.CharField(max_length=20, choices=PROJECT_TYPE_CHOICES, default='not_yet_decided', help_text="Type of project submission")
+    project_type = models.CharField(
+        max_length=20, 
+        choices=PROJECT_TYPE_CHOICES, 
+        default='not_yet_decided', 
+        verbose_name="Request Type",
+        help_text="Type of request submission"
+    )
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     submission_date = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', null=True, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
@@ -48,8 +69,8 @@ class Project(models.Model):
     triage_notes = models.TextField(blank=True, null=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Normal')
     scoring_notes = models.TextField(blank=True, null=True, help_text="Notes related to project scoring or evaluation")
-    final_priority = models.IntegerField(choices=FINAL_PRIORITY_CHOICES, null=True, blank=True, help_text="Final priority score (1=Low, 2=Medium, 3=High)")
-    final_score = models.IntegerField(null=True, blank=True, help_text="Final score (0-100)")
+    final_priority = models.IntegerField(null=True, blank=True, help_text="Project ranking (lower number = higher priority)")
+    final_score = models.FloatField(null=True, blank=True, help_text="Final score")
     strategic_alignment = models.IntegerField(null=True, blank=True, help_text="Strategic alignment score (1-5)")
     cost_benefit = models.IntegerField(null=True, blank=True, help_text="Cost benefit score (1-5)")
     user_impact = models.IntegerField(null=True, blank=True, help_text="User impact and adoption score (1-5)")
@@ -64,6 +85,56 @@ class Project(models.Model):
     @property
     def formatted_id(self):
         return f"PRJ-{self.id:03d}"
+
+    @property
+    def average_score(self):
+        """Calculate the average of individual criteria scores from all ProjectScore instances."""
+        scores = self.scores.all()
+        if not scores:
+            return None
+        
+        # Calculate the average of individual criteria scores
+        total_score = 0
+        count = 0
+        
+        for score in scores:
+            if score.calculate_final_score() is not None:
+                total_score += score.calculate_final_score()
+                count += 1
+        
+        if count == 0:
+            return None
+            
+        return total_score / count
+
+    @property
+    def average_final_score(self):
+        """Calculate the average of weighted final scores from all users."""
+        scores = self.scores.all()
+        if not scores:
+            return None
+        
+        # Calculate the average of weighted final scores
+        total_score = 0
+        count = 0
+        
+        for score in scores:
+            if score.final_score is not None:
+                total_score += score.final_score
+                count += 1
+        
+        if count == 0:
+            return None
+            
+        return total_score / count
+
+    def update_final_score(self):
+        """Update the project's final score based on the average of individual scores"""
+        avg_score = self.average_final_score
+        if avg_score is not None:
+            # Store the raw final score value
+            self.final_score = avg_score
+            self.save(update_fields=['final_score'])
 
     class Meta:
         ordering = ['-submission_date']

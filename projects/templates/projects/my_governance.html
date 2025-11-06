@@ -1,0 +1,3280 @@
+{% extends 'base_cc.html' %}
+{% load tz %}
+
+{% block title %}MyGovernance{% endblock %}
+
+{% block extra_css %}
+{% csrf_token %}
+<style>
+    .cc-content-area {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-top: 1rem;
+    }
+
+    .cc-section-header {
+        border-bottom: 2px solid #D09B2C;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .cc-section-header h2 {
+        color: #2c3e50;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .cc-projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .cc-project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+    }
+
+    .cc-project-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-project-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        padding: 0.4rem 0.6rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cc-project-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin: 0;
+        color: white;
+    }
+
+    .cc-project-id {
+        font-size: 0.7rem;
+        font-weight: 500;
+        opacity: 0.8;
+        color: black;
+    }
+
+    .cc-project-body {
+        padding: 0.6rem;
+    }
+
+    .cc-project-description {
+        color: #495057;
+        margin-bottom: 0.4rem;
+        line-height: 1.2;
+        font-size: 0.8rem;
+        max-height: 1.9rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+
+    .cc-project-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .cc-meta-title {
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 0.1rem 0.25rem;
+        border-radius: 2px;
+        font-size: 0.6rem;
+        font-weight: 500;
+    }
+
+    .cc-priority-high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .cc-priority-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .cc-priority-low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .cc-department-section {
+        margin-top: 6px;
+    }
+
+    .cc-department-title {
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1px;
+    }
+
+    .cc-project-meta-requested {
+        font-size: 0.6rem;
+        color: #6c757d;
+        margin-top: 0.4rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .cc-empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .cc-empty-state h4 {
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+
+    .cc-empty-state p {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .cc-projects-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Modal Styles */
+    
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: black;
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 2rem;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    /* Request Details Section Styling */
+    .request-details-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .detail-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .detail-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #D09B2C;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .detail-content p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .detail-content strong {
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .detail-content .text-muted {
+        color: #6c757d !important;
+    }
+    
+         /* Project Title Styling */
+     .project-title {
+         color: #495057;
+         font-weight: 600;
+         margin-bottom: 0;
+         padding: 0.5rem 1rem;
+         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+         border-radius: 6px;
+         border-left: 4px solid #D09B2C;
+     }
+     
+     /* Attachment Styling */
+     .attachment-item {
+         padding: 0.5rem;
+         background: #f8f9fa;
+         border-radius: 4px;
+         border: 1px solid #e9ecef;
+         transition: all 0.2s ease-in-out;
+     }
+     
+     .attachment-item:hover {
+         background: #e9ecef;
+         border-color: #D09B2C;
+     }
+     
+     .attachment-item a {
+         color: #495057;
+         font-weight: 500;
+     }
+     
+     .attachment-item a:hover {
+         color: #D09B2C;
+     }
+     
+     .attachment-item i {
+         margin-right: 0.5rem;
+         color: #D09B2C;
+     }
+     
+     /* Meeting Notes and Notifications Styling */
+     .cc-notification-card,
+     .cc-meeting-notes-card {
+         background: white;
+         border: 1px solid #e9ecef;
+         border-radius: 6px;
+         overflow: hidden;
+         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+         height: 100%;
+     }
+     
+     .cc-notification-header,
+     .cc-meeting-notes-header {
+         background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+         color: white;
+         padding: 0.75rem 1rem;
+         display: flex;
+         align-items: center;
+         gap: 0.5rem;
+     }
+     
+     .cc-notification-header h4,
+     .cc-meeting-notes-header h4 {
+         margin: 0;
+         font-weight: 600;
+         font-size: 1rem;
+     }
+     
+     .cc-notification-list,
+     .cc-meeting-notes-list {
+         padding: 0.4rem;
+         max-height: 250px;
+         overflow-y: auto;
+     }
+     
+     .cc-notification-item {
+         display: flex;
+         gap: 0.4rem;
+         padding: 0.4rem;
+         border-bottom: 1px solid #f1f3f4;
+         transition: background-color 0.2s ease;
+     }
+     
+     .cc-notification-item:last-child {
+         border-bottom: none;
+     }
+     
+     .cc-notification-item:hover {
+         background-color: #f8f9fa;
+     }
+     
+     .cc-notification-icon {
+         flex-shrink: 0;
+         width: 24px;
+         height: 24px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         border-radius: 50%;
+         background: #f8f9fa;
+     }
+     
+     .cc-notification-content {
+         flex: 1;
+     }
+     
+     .cc-notification-title {
+         font-weight: 600;
+         color: #2c3e50;
+         margin-bottom: 0.2rem;
+         font-size: 0.9rem;
+     }
+     
+     .cc-notification-text {
+         color: #6c757d;
+         font-size: 0.75rem;
+         line-height: 1.2;
+         margin-bottom: 0.3rem;
+     }
+     
+     .cc-notification-time {
+         color: #adb5bd;
+         font-size: 0.75rem;
+         font-style: italic;
+     }
+     
+     .cc-meeting-note-item {
+         padding: 0.4rem;
+         border-bottom: 1px solid #f1f3f4;
+         transition: background-color 0.2s ease;
+     }
+     
+     .cc-meeting-note-item:last-child {
+         border-bottom: none;
+     }
+     
+     .cc-meeting-note-item:hover {
+         background-color: #f8f9fa;
+     }
+     
+     .cc-meeting-note-header {
+         display: flex;
+         justify-content: space-between;
+         align-items: flex-start;
+         margin-bottom: 0.4rem;
+     }
+     
+     .cc-meeting-note-title {
+         font-weight: 600;
+         color: #2c3e50;
+         font-size: 0.9rem;
+         line-height: 1.2;
+     }
+     
+     .cc-meeting-note-date {
+         color: #adb5bd;
+         font-size: 0.75rem;
+         font-style: italic;
+         flex-shrink: 0;
+         margin-left: 1rem;
+     }
+     
+     .cc-meeting-note-summary {
+         color: #6c757d;
+         font-size: 0.75rem;
+         line-height: 1.2;
+         margin-bottom: 0.5rem;
+     }
+     
+     .cc-meeting-note-actions {
+         display: flex;
+         gap: 0.5rem;
+     }
+     
+     .cc-meeting-note-actions .btn {
+         font-size: 0.8rem;
+         padding: 0.25rem 0.75rem;
+     }
+     
+     /* Responsive adjustments */
+     @media (max-width: 768px) {
+         .cc-meeting-note-header {
+             flex-direction: column;
+             align-items: flex-start;
+         }
+         
+         .cc-meeting-note-date {
+             margin-left: 0;
+             margin-top: 0.25rem;
+         }
+         
+         /* Make weighted scores bold */
+         .weighted-score {
+             font-weight: bold !important;
+             color: black !important;
+         }
+         
+         /* Ensure table cells with weighted scores are bold */
+         .table .weighted-score {
+             font-weight: bold !important;
+             color: black !important;
+         }
+         
+         /* Target specific weighted score elements */
+         #strategic_alignment_weighted,
+         #cost_benefit_weighted,
+         #user_impact_weighted,
+         #ease_of_implementation_weighted,
+         #vendor_reputation_support_weighted,
+         #security_compliance_weighted,
+         #student_centered_weighted,
+         #final_score_display {
+             font-weight: bold !important;
+             color: black !important;
+         }
+     }
+     
+     /* Request Information Section Styling */
+     .request-info-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .section-header {
+         color: #495057;
+         font-weight: 600;
+         margin-bottom: 1rem;
+         padding-bottom: 0.5rem;
+         border-bottom: 2px solid #D09B2C;
+         font-size: 1rem;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+     }
+     
+     .info-item {
+         background: white;
+         border: 1px solid #e9ecef;
+         border-radius: 6px;
+         padding: 0.75rem;
+         height: 100%;
+         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+     }
+     
+     .info-item strong {
+         color: #495057;
+         font-weight: 600;
+         font-size: 0.8rem;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+     }
+     
+     .info-value {
+         color: #6c757d;
+         font-size: 0.9rem;
+         font-weight: 500;
+         margin-top: 0.25rem;
+         display: block;
+     }
+     
+     /* Custom Modal Styling to match MyRequest modal */
+     .modal-dialog[style*="300px"] .modal-content {
+         border-radius: 8px;
+         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+         max-height: 80vh;
+         overflow: hidden;
+     }
+     
+     .modal-dialog[style*="300px"] .modal-header {
+         background: #f8f9fa !important;
+         padding: 15px 20px;
+         border-bottom: 1px solid #dee2e6;
+         border-radius: 8px 8px 0 0;
+     }
+     
+     .modal-dialog[style*="300px"] .modal-title {
+         margin: 0;
+         font-size: 1.1rem;
+         font-weight: 600;
+         color: #333;
+     }
+     
+     .modal-dialog[style*="300px"] .modal-body {
+         padding: 20px;
+         max-height: 60vh;
+         overflow-y: auto;
+     }
+     
+     .modal-dialog[style*="300px"] .modal-footer {
+         background: #f8f9fa;
+         padding: 15px 20px;
+         border-top: 1px solid #dee2e6;
+         border-radius: 0 0 8px 8px;
+     }
+     
+     /* Compact styling for 300px modal */
+     .modal-dialog[style*="300px"] .section-header.small {
+         font-size: 0.9rem;
+         margin-bottom: 0.75rem;
+         padding-bottom: 0.25rem;
+     }
+     
+     .modal-dialog[style*="300px"] .info-content.compact {
+         padding: 1rem;
+     }
+     
+     .modal-dialog[style*="300px"] .info-content.compact p {
+         margin-bottom: 0.5rem;
+         font-size: 0.8rem;
+     }
+     
+     .modal-dialog[style*="300px"] .table-sm th,
+     .modal-dialog[style*="300px"] .table-sm td {
+         padding: 0.25rem 0.5rem;
+         font-size: 0.8rem;
+     }
+     
+     .info-stack {
+         display: flex;
+         flex-direction: column;
+         gap: 0.75rem;
+     }
+     
+     .info-stack .info-item {
+         margin-bottom: 0;
+     }
+     
+     .info-content {
+         background: white;
+         border: 1px solid #e9ecef;
+         border-radius: 6px;
+         padding: 1.5rem;
+         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+     }
+     
+     .info-content p {
+         margin-bottom: 0.75rem;
+         font-size: 0.9rem;
+         line-height: 1.4;
+     }
+     
+     .info-content p:last-child {
+         margin-bottom: 0;
+     }
+     
+     .info-content strong {
+         color: #495057;
+         font-weight: 600;
+         margin-right: 0.5rem;
+     }
+     
+     .contact-info-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .description-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .attachments-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .stage-updates-section {
+         background: #f8f9fa;
+         border-radius: 8px;
+         padding: 1.5rem;
+         margin-bottom: 1.5rem;
+         border: 1px solid #e9ecef;
+     }
+     
+     .stage-update-item {
+         padding: 0.5rem;
+         border-left: 3px solid #D09B2C;
+         background: white;
+         border-radius: 4px;
+         margin-bottom: 0.5rem;
+     }
+     
+     .attachment-item {
+         display: flex;
+         align-items: center;
+         gap: 0.5rem;
+         padding: 0.5rem;
+         background: white;
+         border: 1px solid #e9ecef;
+         border-radius: 4px;
+         margin-bottom: 0.5rem;
+     }
+     
+     .attachment-item:last-child {
+         margin-bottom: 0;
+     }
+     
+     .attachment-link {
+         color: #495057;
+         text-decoration: none;
+         font-weight: 500;
+     }
+     
+     .attachment-link:hover {
+         color: #D09B2C;
+         text-decoration: underline;
+     }
+     
+     /* Final Governance Table Styles */
+     .cc-final-scoring-table-container {
+         background: white;
+         border: 1px solid #e9ecef;
+         border-radius: 8px;
+         overflow: hidden;
+         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+         height: 500px;
+         overflow-y: auto;
+     }
+     
+     .cc-final-scoring-table {
+         width: 100%;
+         border-collapse: collapse;
+         font-size: 0.875rem;
+     }
+     
+     .cc-final-scoring-table th {
+         background: #D09B2C;
+         color: white;
+         font-weight: 600;
+         padding: 12px 16px;
+         text-align: left;
+         border-bottom: 2px solid #B8860B;
+         font-size: 0.75rem;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         position: sticky;
+         top: 0;
+         z-index: 10;
+     }
+     
+     .cc-final-scoring-table td {
+         padding: 16px;
+         border-bottom: 1px solid #f8f9fa;
+         vertical-align: top;
+     }
+     
+     .cc-final-scoring-table tr:hover {
+         background-color: #f8f9fa;
+     }
+     
+     .cc-project-id {
+         font-weight: 600;
+         color: #495057;
+         font-size: 0.8rem;
+     }
+     
+     .cc-project-title {
+         font-weight: 600;
+         color: #495057;
+         margin-bottom: 0.5rem;
+     }
+     
+     .cc-project-description {
+         color: #6c757d;
+         font-size: 0.8rem;
+         margin-bottom: 0.5rem;
+         line-height: 1.4;
+     }
+     
+     .cc-project-requested {
+         font-size: 0.75rem;
+     }
+     
+     .cc-score-value {
+         font-weight: 600;
+         color: #495057;
+     }
+     
+    .cc-priority-input {
+        width: 60px;
+        padding: 4px 8px;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    
+    /* Remove number input arrows/spinners */
+    .cc-priority-input::-webkit-outer-spin-button,
+    .cc-priority-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .cc-priority-input[type=number] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+     
+     .cc-priority-input:focus {
+         outline: none;
+         border-color: #D09B2C;
+         box-shadow: 0 0 0 2px rgba(208, 155, 44, 0.25);
+     }
+     
+     /* Custom Scrollbar Styling */
+     .cc-final-scoring-table-container::-webkit-scrollbar {
+         width: 8px;
+     }
+     
+     .cc-final-scoring-table-container::-webkit-scrollbar-track {
+         background: #f1f1f1;
+         border-radius: 4px;
+     }
+     
+     .cc-final-scoring-table-container::-webkit-scrollbar-thumb {
+         background: #D09B2C;
+         border-radius: 4px;
+     }
+     
+     .cc-final-scoring-table-container::-webkit-scrollbar-thumb:hover {
+         background: #B8860B;
+     }
+
+    /* Autocomplete styles */
+    .autocomplete-suggestions {
+        position: absolute;
+        background: white;
+        border: 1px solid #ced4da;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        width: 100%;
+    }
+
+    .autocomplete-suggestion {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .autocomplete-suggestion:hover,
+    .autocomplete-suggestion.active {
+        background-color: #f8f9fa;
+    }
+
+    .autocomplete-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .user-username {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-left: 8px;
+    }
+
+    /* Hide/Show Scorer Names Checkbox Styles */
+    .form-check {
+        margin-bottom: 0;
+    }
+
+    .form-check-input {
+        margin-top: 0.2rem;
+    }
+
+    .form-check-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+
+    .form-check-input:checked {
+        background-color: #D09B2C;
+        border-color: #D09B2C;
+    }
+
+    .form-check-input:focus {
+        border-color: #D09B2C;
+        box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+                         <div class="cc-page-header">
+                 <h1>MyGovernance</h1>
+             </div>
+            
+            <!-- Meeting Notes and Notifications Section -->
+            <div class="cc-content-area">
+                <div class="cc-section-header">
+                    <h2>{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}Meeting Notes & {% endif %}Notifications</h2>
+                    <p class="text-muted">{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}Latest updates and important information{% else %}Recent notifications and updates{% endif %}</p>
+                </div>
+                
+                <div class="row">
+                    <!-- Notifications Column -->
+                    <div class="{% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}col-md-6{% else %}col-12{% endif %} mb-4">
+                        <div class="cc-notification-card">
+                            <div class="cc-notification-header">
+                                <i class="fas fa-bell"></i>
+                                <h4>Recent Notifications</h4>
+                            </div>
+                            <div class="cc-notification-list">
+                                <div class="cc-notification-item">
+                                    <div class="cc-notification-icon">
+                                        <i class="fas fa-info-circle text-info"></i>
+                                    </div>
+                                    <div class="cc-notification-content">
+                                        <div class="cc-notification-title">System Update</div>
+                                        <div class="cc-notification-text">New scoring criteria have been implemented for project evaluation.</div>
+                                        <div class="cc-notification-time">2 hours ago</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cc-notification-item">
+                                    <div class="cc-notification-icon">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                    </div>
+                                    <div class="cc-notification-content">
+                                        <div class="cc-notification-title">Deadline Reminder</div>
+                                        <div class="cc-notification-text">Q4 project submissions close on December 15th.</div>
+                                        <div class="cc-notification-time">1 day ago</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cc-notification-item">
+                                    <div class="cc-notification-icon">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    </div>
+                                    <div class="cc-notification-content">
+                                        <div class="cc-notification-title">Request Approved</div>
+                                        <div class="cc-notification-text">Your request #PRJ-045 has been approved and moved to implementation.</div>
+                                        <div class="cc-notification-time">3 days ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Meeting Notes Column (Only visible for users in groups) -->
+                    {% if is_triage_user or is_triage_lead_user or is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+                    <div class="col-md-6 mb-4">
+                        <div class="cc-meeting-notes-card">
+                            <div class="cc-meeting-notes-header">
+                                <i class="fas fa-sticky-note"></i>
+                                <h4>Latest Meeting Notes</h4>
+                            </div>
+                            <div class="cc-meeting-notes-list">
+                                <div class="cc-meeting-note-item">
+                                    <div class="cc-meeting-note-header">
+                                        <div class="cc-meeting-note-title">IT Governance Committee - December 2024</div>
+                                        <div class="cc-meeting-note-date">Dec 10, 2024</div>
+                                    </div>
+                                    <div class="cc-meeting-note-summary">
+                                        <strong>Key Decisions:</strong> Approved 3 new projects, deferred 2 for additional review. Updated scoring matrix for 2025.
+                                    </div>
+                                    <div class="cc-meeting-note-actions">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View Full Notes</a>
+                                    </div>
+                                </div>
+                                
+                                <div class="cc-meeting-note-item">
+                                    <div class="cc-meeting-note-header">
+                                        <div class="cc-meeting-note-title">Triage Review Session</div>
+                                        <div class="cc-meeting-note-date">Dec 8, 2024</div>
+                                    </div>
+                                    <div class="cc-meeting-note-summary">
+                                        <strong>Reviewed:</strong> 12 pending requests, moved 8 to scoring phase, 4 require additional information.
+                                    </div>
+                                    <div class="cc-meeting-note-actions">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View Full Notes</a>
+                                    </div>
+                                </div>
+                                
+                                <div class="cc-meeting-note-item">
+                                    <div class="cc-meeting-note-header">
+                                        <div class="cc-meeting-note-title">Scoring Committee Meeting</div>
+                                        <div class="cc-meeting-note-date">Dec 5, 2024</div>
+                                    </div>
+                                    <div class="cc-meeting-note-summary">
+                                        <strong>Scored:</strong> 15 projects using new evaluation criteria. Top 5 projects identified for final review.
+                                    </div>
+                                    <div class="cc-meeting-note-actions">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View Full Notes</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Triage Section (Visible for Triage Group, Triage Group Lead users, and superusers) -->
+            {% if is_superuser or is_triage_user or is_triage_lead_user %}
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>Triage Requests ({{ triage_projects.count }})</h2>
+                    <p class="text-muted">Requests pending triage review</p>
+                </div>
+                
+                {% if triage_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in triage_projects %}
+                        <div class="cc-project-card triage-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="openTriageEditModal({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h4>No Triage Requests</h4>
+                        <p>There are no requests currently pending triage review.</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Governance Section (Visible for governance group users and superusers) -->
+            {% if is_superuser %}
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
+                    <p class="text-muted">Requests currently being reviewed by governance committee</p>
+                </div>
+                
+                {% if governance_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in governance_projects %}
+                        <div class="cc-project-card governance-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="openGovernanceScoringModal({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-gavel"></i>
+                        <h4>No Governance Requests</h4>
+                        <p>There are no requests currently in the governance review phase.</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% else %}
+                {% if is_ai_governance_user or is_ai_governance_lead_user or is_erp_governance_user or is_erp_governance_lead_user or is_it_governance_user or is_it_governance_lead_user or is_process_improvement_user or is_process_improvement_lead_user %}
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>Under Review - Governance ({{ governance_projects.count }})</h2>
+                    <p class="text-muted">Requests currently being reviewed by governance committee</p>
+                </div>
+                
+                {% if governance_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in governance_projects %}
+                        <div class="cc-project-card governance-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="openGovernanceScoringModal({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-gavel"></i>
+                        <h4>No Governance Requests</h4>
+                        <p>There are no requests currently in the governance review phase.</p>
+                    </div>
+                {% endif %}
+            </div>
+                {% endif %}
+            {% endif %}
+            
+            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
+            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+                {% if final_governance_projects %}
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
+                    <p class="text-muted">Requests in final governance review phase</p>
+                </div>
+                
+                {% if final_governance_projects %}
+                    <div class="cc-final-scoring-table-container">
+                        <table class="cc-final-scoring-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Priority</th>
+                                    <th>Department</th>
+                                    <th>Final Score</th>
+                                    <th>Final Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in final_governance_projects %}
+                                <tr class="cc-project-row" data-project-id="{{ project.id }}" style="cursor: pointer;">
+                                    <td class="cc-project-id-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        <span class="cc-project-id">{{ project.formatted_id }}</span>
+                                    </td>
+                                    <td class="cc-project-title-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        <div class="cc-project-title">{{ project.title }}</div>
+                                        <div class="cc-project-description">{{ project.description|truncatechars:80 }}</div>
+                                        <div class="cc-project-requested">
+                                            <small class="text-muted">
+                                                Requested by: 
+                                                {% if project.submitted_by %}
+                                                    {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                                {% else %}
+                                                    Unknown
+                                                {% endif %}
+                                                on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td class="cc-project-type-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </td>
+                                    <td class="cc-project-priority-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </td>
+                                    <td class="cc-project-department-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        {% if project.department %}
+                                            {{ project.department }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cc-project-score-cell" onclick="openFinalScoringModal({{ project.id }})">
+                                        {% if project.final_score %}
+                                            <span class="cc-score-value">{{ project.final_score|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="cc-score-value text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="cc-project-final-priority-cell">
+                                        {% if can_modify_final_priority %}
+                                        <div class="cc-rank-display d-flex align-items-center">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-up-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move up in priority (lower rank number)"
+                                                    style="padding: 2px 6px; margin-right: 2px;">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
+                                            <span class="badge mx-2" style="font-size: 0.8rem; min-width: 30px; text-align: center; background-color: transparent; border: 1px solid #6c757d; color: #6c757d;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary rank-arrow-btn rank-down-btn" 
+                                                    data-project-id="{{ project.id }}"
+                                                    data-current-rank="{{ project.final_priority|default:0 }}"
+                                                    title="Move down in priority (higher rank number)"
+                                                    style="padding: 2px 6px; margin-left: 2px;">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <div class="cc-rank-display d-flex align-items-center justify-content-center">
+                                            <span class="badge bg-secondary" style="font-size: 0.8rem;">
+                                                {{ project.final_priority|default:"—" }}
+                                            </span>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h4>No Final Governance Requests</h4>
+                        <p>There are no requests currently in the final governance review phase.</p>
+                    </div>
+                {% endif %}
+            </div>
+                {% endif %}
+            {% endif %}
+            
+            <!-- MyRequests Section -->
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>MyRequests</h2>
+                    <p class="text-muted">Requests you have submitted</p>
+                </div>
+                
+                {% if user_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in user_projects %}
+                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>No Requests Yet</h4>
+                        <p>You haven't submitted any requests yet.</p>
+                        <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
+                            <i class="fas fa-plus-circle"></i> Submit Your First Request
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- My Contact Requests Section -->
+            <div class="cc-content-area" style="margin-top: 2rem;">
+                <div class="cc-section-header">
+                    <h2>My Contact Requests</h2>
+                    <p class="text-muted">Requests where you are listed as the contact person</p>
+                </div>
+                
+                {% if contact_projects %}
+                    <div class="cc-projects-grid">
+                        {% for project in contact_projects %}
+                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
+                            <div class="cc-project-header">
+                                <div class="cc-project-title">{{ project.title }}</div>
+                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                            </div>
+                            <div class="cc-project-body">
+                                <div class="cc-project-description">
+                                    {{ project.description|truncatechars:120 }}
+                                </div>
+                                <div class="cc-project-meta">
+                                    {% if project.project_type %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Request Type</div>
+                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if project.priority %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Priority</div>
+                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="cc-meta-section">
+                                        <div class="cc-meta-title">Stage</div>
+                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if project.department %}
+                                <div class="cc-department-section">
+                                    <div class="cc-department-title">Department</div>
+                                    <span class="cc-meta-item">{{ project.department }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="cc-project-meta-requested">
+                                    Requested by: 
+                                    {% if project.submitted_by %}
+                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="cc-empty-state">
+                        <i class="fas fa-user-tie"></i>
+                        <h4>No Contact Requests</h4>
+                        <p>You are not listed as a contact person for any requests.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Details Modal -->
+<div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="projectDetailsModalLabel">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Project details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex justify-content-between w-100">
+                    <button type="button" class="btn btn-danger" id="deleteRequestBtn" style="display: none;">Delete Request</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveChangesBtn" style="display: none; background-color: #D09B2C; border-color: #D09B2C;">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final Scoring Details Modal -->
+<div class="modal fade" id="finalScoringModal" tabindex="-1" aria-labelledby="finalScoringModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                <h5 class="modal-title" id="finalScoringModalLabel">Final Scoring Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="finalScoringModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Request Modal -->
+<div class="modal fade" id="deleteRequestModal" tabindex="-1" aria-labelledby="deleteRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #dc3545; color: white;">
+                <h5 class="modal-title" id="deleteRequestModalLabel">Delete Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action will mark the request as deleted and cannot be undone.
+                </div>
+                <p><strong>Are you sure you want to delete this request?</strong></p>
+                <div class="mb-3">
+                    <label for="deleteRequestReason" class="form-label">Please provide a reason for deletion:</label>
+                    <textarea class="form-control" id="deleteRequestReason" rows="3" placeholder="Enter reason for deletion..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteRequestBtn">Delete Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showProjectDetails(projectId) {
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of details
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    // Load project details via AJAX for non-triage users
+    fetch(`/${projectId}/scoring-details-modal/`)
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const project = data.project;
+                const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+                const saveBtn = document.getElementById('saveChangesBtn');
+                
+                // Hide save button for project details view
+                saveBtn.style.display = 'none';
+                
+                modalBody.innerHTML = `
+                    <div class="project-title mb-3 d-flex justify-content-between align-items-center">
+                        <span>${project.title}</span>
+                        <span class="text-muted" style="font-size: 0.9em;">#${project.id.toString().padStart(3, '0')}</span>
+                    </div>
+                    
+                                                              <div class="request-details-section">
+                         <div class="row">
+                             <div class="col-12">
+                                 <div class="detail-card">
+                                     <div class="detail-title">Request Information</div>
+                                                                           <div class="detail-content">
+                                          <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                                          <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                                          <p><strong>Priority:</strong> ${project.priority}</p>
+                                      </div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         <div class="row mt-3">
+                             <div class="col-12">
+                                 <div class="detail-card">
+                                     <div class="detail-title">Contact Information</div>
+                                     <div class="detail-content">
+                                         <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
+                                         <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                                         <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                         <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                                                   <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Description</div>
+                                      <div class="detail-content">
+                                          <p>${project.description || 'No description available.'}</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Attachments</div>
+                                      <div class="detail-content">
+                                          ${project.files && project.files.length > 0 ? 
+                                              project.files.map(file => `
+                                                  <div class="attachment-item mb-2">
+                                                      <a href="${file.file}" target="_blank" class="text-decoration-none">
+                                                          <i class="fas fa-paperclip"></i> ${file.filename || 'Attachment'}
+                                                      </a>
+                                                  </div>
+                                              `).join('') : 
+                                              '<p class="text-muted">No attachments available.</p>'
+                                          }
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Stage Updates</div>
+                                      <div class="detail-content" id="stageUpdatesContent">
+                                          <p class="text-muted">Loading stage updates...</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                `;
+                
+                // Populate stage updates immediately after setting modal content
+                populateStageUpdates(project.stage_changes);
+                
+                const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+                modal.show();
+            } else {
+                alert('Error loading project details');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading project details');
+        });
+}
+
+// Function to open triage edit modal (same size as current MyGovernance modal)
+function openTriageEditModal(projectId) {
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    const deleteBtn = document.getElementById('deleteRequestBtn');
+    
+    // Update modal title
+    modalTitle.textContent = 'Edit Request - Triage';
+    
+    // Hide buttons initially
+    saveBtn.style.display = 'none';
+    deleteBtn.style.display = 'none';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading edit form...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load the edit form via AJAX (same as triage page)
+    fetch(`/${projectId}/edit-form/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Replace modal content with the edit form HTML
+            modalBody.innerHTML = html;
+            
+            // Get the form element
+            const form = modalBody.querySelector('form');
+            
+            if (form) {
+                // Remove form action to prevent default submission
+                form.removeAttribute('action');
+                form.method = 'POST';
+                
+                // Show save and delete buttons
+                saveBtn.style.display = 'inline-block';
+                deleteBtn.style.display = 'inline-block';
+                
+                
+                // Initialize contact person autocomplete
+                initializeContactPersonAutocomplete();
+                
+                
+                // Add form submit handler
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitTriageEditForm(form, projectId);
+                });
+                
+                // Add click handler to save button
+                saveBtn.addEventListener('click', function() {
+                    submitTriageEditForm(form, projectId);
+                });
+                
+                // Add click handler to delete button
+                deleteBtn.addEventListener('click', function() {
+                    openDeleteRequestModal(projectId);
+                });
+                
+                // Add delete attachment functionality
+                window.deleteAttachment = function(projectId, fileId, buttonElement) {
+                    if (!confirm('Are you sure you want to delete this attachment?')) {
+                        return;
+                    }
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    // Show loading state on button
+                    const originalContent = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    buttonElement.disabled = true;
+                    
+                    fetch(`/${projectId}/attachment/${fileId}/delete/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the attachment row from the DOM
+                            const attachmentRow = buttonElement.closest('.list-group-item');
+                            if (attachmentRow) {
+                                attachmentRow.remove();
+                            }
+                            
+                            // Show success message
+                            const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+                            const successDiv = document.createElement('div');
+                            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+                            successDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Success!</strong> ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+                            modalBody.insertBefore(successDiv, modalBody.firstChild);
+                            
+                            // Auto-dismiss success message after 3 seconds
+                            setTimeout(() => {
+                                if (successDiv && successDiv.parentNode) {
+                                    successDiv.remove();
+                                }
+                            }, 3000);
+                        } else {
+                            // Show error message
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting attachment:', error);
+                        alert('Error deleting attachment. Please try again.');
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        buttonElement.innerHTML = originalContent;
+                        buttonElement.disabled = false;
+                    });
+                };
+            } else {
+                modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+                saveBtn.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading edit form:', error);
+            modalBody.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';
+            saveBtn.style.display = 'none';
+        });
+}
+
+// Function to submit triage edit form
+function submitTriageEditForm(form, projectId) {
+    const formData = new FormData(form);
+    
+    // Get modal body reference first
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Hide save button during save process
+    if (saveBtn) saveBtn.style.display = 'none';
+    
+    // Get CSRF token BEFORE we modify the DOM
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    
+    // Add loading overlay instead of replacing content
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading-overlay';
+    loadingOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    loadingOverlay.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Saving changes...</p>
+        </div>
+    `;
+    modalBody.style.position = 'relative';
+    modalBody.appendChild(loadingOverlay);
+    
+    
+    fetch(`/${projectId}/update-ajax/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken ? csrfToken.value : ''
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Remove loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.remove();
+            
+            // Show success message at top of form
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> Your changes have been saved, including any new attachments.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            modalBody.insertBefore(successDiv, modalBody.firstChild);
+            
+            // Re-show save button
+            const saveBtn = document.getElementById('saveChangesBtn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            
+            // Reload the form to show updated attachments
+            fetch(`/${projectId}/edit-form/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Replace the form content (but keep the success message)
+                    const formElement = modalBody.querySelector('form');
+                    if (formElement) {
+                        // Create a temporary container to parse the new HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        const newForm = tempDiv.querySelector('form');
+                        
+                        if (newForm) {
+                            // Replace the form content
+                            formElement.innerHTML = newForm.innerHTML;
+                            
+                            // Re-initialize contact person autocomplete
+                            initializeContactPersonAutocomplete();
+                            
+                            // Clear the file input
+                            const fileInput = formElement.querySelector('input[type="file"]');
+                            if (fileInput) {
+                                fileInput.value = '';
+                            }
+                            
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error reloading form:', error);
+                });
+            
+            // Auto-dismiss success message after 5 seconds
+            setTimeout(() => {
+                if (successDiv && successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 5000);
+        } else {
+            // Remove loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.remove();
+            
+            // Show error message at top of form
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger alert-dismissible fade show mb-3';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Error!</strong> ${data.message || 'An error occurred while saving the request.'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            modalBody.insertBefore(errorDiv, modalBody.firstChild);
+            
+            // Re-show save button
+            const saveBtn = document.getElementById('saveChangesBtn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        modalBody.innerHTML = `
+            <div class="alert alert-danger">
+                <h5>Error Updating Request</h5>
+                <p>An error occurred while saving the request.</p>
+                <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(${projectId})">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        `;
+        // Don't show save button on error - user needs to reload form
+    });
+}
+
+// Function to open governance scoring modal
+function openGovernanceScoringModal(projectId) {
+    {% if is_triage_user and not is_superuser or is_triage_lead_user and not is_superuser %}
+    // Triage users (but not superusers) get the edit form instead of scoring modal
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Update modal title
+    modalTitle.textContent = 'Project Scoring - Governance';
+    
+    // Hide save button for scoring modal
+    saveBtn.style.display = 'none';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details and scoring form...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load project details and scoring form
+    fetch(`/${projectId}/scoring-details-modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const project = data.project;
+            const userScore = data.user_score;
+            const condensedScores = data.condensed_scores;
+            
+            // Create the modal content with project details and scoring form
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h5 class="mb-2">${project.title}</h5>
+                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
+                </div>
+                
+                <!-- Request Information Section -->
+                <div class="request-info-section mb-3">
+                    <h6 class="section-header small">Request Information</h6>
+                    <div class="info-content compact">
+                        <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
+                        <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
+                        ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
+                    </div>
+                </div>
+                
+                <!-- Contact Information Section -->
+                <div class="contact-info-section mb-3">
+                    <h6 class="section-header small">Contact Information</h6>
+                    <div class="info-content compact">
+                        <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
+                        <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                        <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <!-- Description Section -->
+                <div class="description-section mb-3">
+                    <h6 class="section-header small">Description</h6>
+                    <div class="info-content compact">
+                        <p class="mb-2">${project.description || 'No description available.'}</p>
+                    </div>
+                </div>
+                
+                <!-- Attachments Section -->
+                <div class="attachments-section mb-3">
+                    <h6 class="section-header small">Attachments</h6>
+                    <div class="info-content compact">
+                        ${project.project_file ? `
+                            <div class="attachment-item">
+                                <i class="fas fa-file-pdf text-danger"></i>
+                                <a href="${project.project_file}" target="_blank" class="attachment-link">
+                                    ${project.project_file.split('/').pop()}
+                                </a>
+                            </div>
+                        ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                    </div>
+                </div>
+                
+                <!-- Stage Updates Section -->
+                <div class="stage-updates-section mb-3">
+                    <h6 class="section-header small">Stage Updates</h6>
+                    <div class="info-content compact" id="stageUpdatesContent">
+                        <p class="text-muted mb-0">Loading stage updates...</p>
+                    </div>
+                </div>
+                
+                <!-- Scoring Form Section -->
+                <div class="scoring-form-section">
+                    <h6 class="section-header small">Score This Project</h6>
+                    <form id="scoringForm">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Criteria</th>
+                                        <th>Weight</th>
+                                        <th>Your Score (1-5)</th>
+                                        <th>Weighted Score</th>
+                                    </tr>
+                                </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                Strategic Alignment
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Measures how well the project aligns with institutional strategic goals and priorities. Consider the project's impact on key strategic initiatives and its contribution to long-term objectives."></i>
+                                            </td>
+                                            <td>20%</td>
+                                            <td>
+                                                <input type="number" name="strategic_alignment" id="strategic_alignment" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.strategic_alignment || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Cost Benefit
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates the financial viability and return on investment. Consider both direct and indirect costs, potential savings, and the overall value proposition."></i>
+                                            </td>
+                                            <td>15%</td>
+                                            <td>
+                                                <input type="number" name="cost_benefit" id="cost_benefit" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.cost_benefit || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="cost_benefit_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                User Impact and Adoption
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Assesses the potential impact on users and the likelihood of successful adoption. Consider user needs, training requirements, and change management implications."></i>
+                                            </td>
+                                            <td>20%</td>
+                                            <td>
+                                                <input type="number" name="user_impact" id="user_impact" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.user_impact || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Ease of Implementation
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates the complexity and feasibility of implementation. Consider technical requirements, resource needs, timeline, and potential risks."></i>
+                                            </td>
+                                            <td>15%</td>
+                                            <td>
+                                                <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.ease_of_implementation || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="ease_of_implementation_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Vendor Reputation and Support
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Assesses the vendor's track record, reliability, and support capabilities. Consider past performance, customer service, and long-term viability."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Security and Compliance
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates security requirements and compliance obligations. Consider data protection, regulatory requirements, and risk management."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="security_compliance" id="security_compliance" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.security_compliance || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Student-Centered
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Measures the project's impact on student success and experience. Consider direct benefits to students, learning outcomes, and student engagement."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="student_centered" id="student_centered" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.student_centered || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)"
+                                                       {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <span id="student_centered_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-end"><strong>Your Final Score:</strong></td>
+                                            <td><span id="final_score_display" class="weighted-score" style="font-weight: bold; color: black;">0</span></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="scoring_notes">Scoring Notes</label>
+                                <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
+                                        rows="4" placeholder="Add your detailed scoring notes here..."
+                                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}disabled{% endif %}>${userScore ? userScore.scoring_notes || '' : ''}</textarea>
+                            </div>
+
+                            <input type="hidden" name="final_score" id="final_score" value="${userScore ? userScore.final_score || 0 : 0}">
+                            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Lead User:</strong> You can view the scoring form and other users' scores, but you cannot submit your own scores.
+                            </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
+                                <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
+                                    <i class="fas fa-save me-2"></i>Save Scoring
+                                </button>
+                                {% endif %}
+                                <div id="saveStatus" class="text-muted"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                ${condensedScores && condensedScores.length > 0 ? `
+                <!-- Condensed Scores Section for AI Governance Group Lead -->
+                <div class="condensed-scores-section mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
+                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
+                            <label class="form-check-label small" for="hideScorerNames">
+                                Hide scorer names
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="scoresTable">
+                            <thead>
+                                <tr>
+                                    <th class="scorer-name-column">Scored By</th>
+                                    <th>Strategic</th>
+                                    <th>Cost</th>
+                                    <th>Impact</th>
+                                    <th>Ease</th>
+                                    <th>Vendor</th>
+                                    <th>Security</th>
+                                    <th>Student</th>
+                                    <th>Final</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${condensedScores.map(score => `
+                                    <tr>
+                                        <td class="small scorer-name-cell">${score.scored_by}</td>
+                                        <td class="text-center">${score.strategic_alignment || '-'}</td>
+                                        <td class="text-center">${score.cost_benefit || '-'}</td>
+                                        <td class="text-center">${score.user_impact || '-'}</td>
+                                        <td class="text-center">${score.ease_of_implementation || '-'}</td>
+                                        <td class="text-center">${score.vendor_reputation_support || '-'}</td>
+                                        <td class="text-center">${score.security_compliance || '-'}</td>
+                                        <td class="text-center">${score.student_centered || '-'}</td>
+                                        <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
+                                    </tr>
+                                    <tr class="notes-row">
+                                        <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
+                                            <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
+                                                score.scoring_notes.trim() : 
+                                                'Member did not provide any scoring notes.'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Add event listener for the scoring form (only for non-lead users)
+            {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
+            document.getElementById('scoringForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveGovernanceScore(projectId);
+            });
+            {% endif %}
+            
+            // Initialize scorer names visibility (checkbox is checked by default)
+            setTimeout(function() {
+                toggleScorerNames();
+            }, 100);
+            
+            // Initialize tooltips and calculate initial scores
+            setTimeout(() => {
+                // Initialize Bootstrap tooltips
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+                
+                // Calculate initial weighted scores
+                document.querySelectorAll('.score-input').forEach(input => {
+                    calculateWeightedScore(input);
+                });
+            }, 100);
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            modalBody.innerHTML = '<div class="alert alert-danger">Error loading project details and scoring form.</div>';
+        });
+}
+
+// Function to calculate weighted scores for governance scoring
+function calculateWeightedScore(input) {
+    const score = parseFloat(input.value) || 0;
+    let weight = 0.2; // Default weight for strategic alignment and user impact
+    
+    // Determine weight based on field name
+    switch(input.name) {
+        case 'strategic_alignment':
+        case 'user_impact':
+            weight = 0.2; // 20%
+            break;
+        case 'cost_benefit':
+        case 'ease_of_implementation':
+            weight = 0.15; // 15%
+            break;
+        case 'vendor_reputation_support':
+        case 'security_compliance':
+        case 'student_centered':
+            weight = 0.1; // 10%
+            break;
+    }
+    
+    const weightedScore = score * weight;
+    const weightedId = input.name + '_weighted';
+    const weightedElement = document.getElementById(weightedId);
+    
+    if (weightedElement) {
+        weightedElement.textContent = weightedScore.toFixed(2);
+        // Ensure styling is maintained
+        weightedElement.style.fontWeight = 'bold';
+        weightedElement.style.color = 'black';
+    }
+    
+    // Calculate final score
+    calculateFinalScore();
+}
+
+// Function to calculate final score
+function calculateFinalScore() {
+    let totalScore = 0;
+    
+    // Sum all weighted scores
+    document.querySelectorAll('.weighted-score').forEach(span => {
+        if (span.id !== 'final_score_display') {
+            totalScore += parseFloat(span.textContent) || 0;
+        }
+    });
+    
+    // Update final score display and hidden input
+    const finalScoreElement = document.getElementById('final_score_display');
+    finalScoreElement.textContent = totalScore.toFixed(2);
+    finalScoreElement.style.fontWeight = 'bold';
+    finalScoreElement.style.color = 'black';
+    document.getElementById('final_score').value = totalScore.toFixed(2);
+}
+
+// Function to save governance score
+function saveGovernanceScore(projectId) {
+    const form = document.getElementById('scoringForm');
+    const formData = new FormData(form);
+    const saveStatus = document.getElementById('saveStatus');
+    
+    // Show saving status
+    saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    fetch(`/${projectId}/score/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            saveStatus.innerHTML = '<i class="fas fa-check text-success"></i> Score saved successfully!';
+            setTimeout(() => {
+                saveStatus.innerHTML = '';
+            }, 3000);
+        } else {
+            saveStatus.innerHTML = `<i class="fas fa-exclamation-triangle text-danger"></i> ${data.message || 'Error saving score'}`;
+            setTimeout(() => {
+                saveStatus.innerHTML = '';
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving score:', error);
+        saveStatus.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Error saving score';
+        setTimeout(() => {
+            saveStatus.innerHTML = '';
+        }, 3000);
+    });
+}
+
+// Function to move rank up (lower rank number = higher priority)
+function moveRankUp(projectId, currentRank) {
+    if (currentRank <= 1) {
+        console.log('Project is already at the highest priority (rank 1)');
+        return;
+    }
+    const newRank = currentRank - 1;
+    console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (up in priority)`);
+    updateFinalPriority(projectId, newRank);
+}
+
+// Function to move rank down (higher rank number = lower priority)
+function moveRankDown(projectId, currentRank) {
+    // Get the total number of projects to determine the maximum rank
+    const totalProjects = document.querySelectorAll('.cc-project-row').length;
+    if (currentRank >= totalProjects) {
+        console.log('Project is already at the lowest priority (rank ' + totalProjects + ')');
+        return;
+    }
+    const newRank = currentRank + 1;
+    console.log(`Moving project ${projectId} from rank ${currentRank} to rank ${newRank} (down in priority)`);
+    updateFinalPriority(projectId, newRank);
+}
+
+// Function to update final priority rank
+function updateFinalPriority(projectId, priority) {
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    console.log(`Updating project ${projectId} to priority ${priority}`);
+    
+    // Check if user is still authenticated
+    if (!csrfToken) {
+        alert('Authentication error. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Save the priority via AJAX
+    fetch(`/${projectId}/update-final-priority/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            final_priority: priority
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (response.status === 302 || response.status === 401) {
+            throw new Error('Authentication required');
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            console.log(`Priority updated successfully for project ${projectId}`);
+            
+            // Broadcast the update to other tabs/windows
+            broadcastPriorityUpdate(projectId, priority);
+            
+            // Refresh the table without full page reload
+            console.log('Refreshing table to show updated ranks...');
+            refreshFinalGovernanceTable();
+        } else {
+            console.error('Error updating priority:', data.error);
+            alert('Error updating priority: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (error.message.includes('JSON.parse') || error.message.includes('Authentication required')) {
+            alert('Authentication error. Please refresh the page and try again.');
+        } else {
+            alert('Error updating priority. Please try again. Error: ' + error.message);
+        }
+    });
+}
+
+// Function to broadcast priority updates to other tabs/windows
+function broadcastPriorityUpdate(projectId, priority) {
+    try {
+        // Use Broadcast Channel API if available (modern browsers)
+        if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('final-priority-updates');
+            channel.postMessage({
+                type: 'priority-updated',
+                projectId: projectId,
+                priority: priority,
+                timestamp: Date.now()
+            });
+            channel.close();
+        }
+        
+        // Fallback to localStorage events for older browsers
+        const updateEvent = {
+            type: 'priority-updated',
+            projectId: projectId,
+            priority: priority,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('final-priority-update', JSON.stringify(updateEvent));
+        localStorage.removeItem('final-priority-update');
+    } catch (error) {
+        console.warn('Could not broadcast priority update:', error);
+    }
+}
+
+// Function to listen for priority updates from other tabs/windows
+function listenForPriorityUpdates() {
+    try {
+        // Listen for Broadcast Channel messages
+        if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('final-priority-updates');
+            channel.addEventListener('message', function(event) {
+                if (event.data.type === 'priority-updated') {
+                    console.log('Received priority update from another tab:', event.data);
+                    refreshFinalGovernanceTable();
+                }
+            });
+        }
+        
+        // Listen for localStorage events (fallback)
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'final-priority-update' && event.newValue) {
+                try {
+                    const updateData = JSON.parse(event.newValue);
+                    if (updateData.type === 'priority-updated') {
+                        console.log('Received priority update from localStorage:', updateData);
+                        refreshFinalGovernanceTable();
+                    }
+                } catch (error) {
+                    console.warn('Error parsing priority update:', error);
+                }
+            }
+        });
+    } catch (error) {
+        console.warn('Could not set up priority update listeners:', error);
+    }
+}
+
+// Function to refresh the final governance table without full page reload
+function refreshFinalGovernanceTable() {
+    // Check if we're on a page with the final governance table
+    const finalGovernanceTable = document.querySelector('.cc-final-scoring-table-container');
+    if (finalGovernanceTable) {
+        console.log('Refreshing final governance table...');
+        
+        // Fetch updated data from the server
+        fetch(window.location.href.split('?')[0], {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary DOM element to parse the new HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Find the new table content
+            const newTableContainer = tempDiv.querySelector('.cc-final-scoring-table-container');
+            if (newTableContainer) {
+                // Replace the current table with the updated one
+                finalGovernanceTable.innerHTML = newTableContainer.innerHTML;
+                
+                // Re-attach event listeners to the new input fields
+                attachPriorityInputListeners();
+                
+                console.log('Table refreshed successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing table:', error);
+            // Fallback to full page reload if AJAX refresh fails
+            window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        });
+    }
+}
+
+// Function to attach event listeners to priority input fields and arrow buttons
+function attachPriorityInputListeners() {
+    const priorityInputs = document.querySelectorAll('.final-priority-input');
+    priorityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updateFinalPriority(this.dataset.projectId, this.value);
+        });
+        
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur(); // Trigger the change event
+            }
+        });
+    });
+
+    // Attach event listeners to arrow buttons
+    const upButtons = document.querySelectorAll('.rank-up-btn');
+    upButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent row click
+            const projectId = this.dataset.projectId;
+            const currentRank = parseInt(this.dataset.currentRank);
+            moveRankUp(projectId, currentRank);
+        });
+    });
+
+    const downButtons = document.querySelectorAll('.rank-down-btn');
+    downButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent row click
+            const projectId = this.dataset.projectId;
+            const currentRank = parseInt(this.dataset.currentRank);
+            moveRankDown(projectId, currentRank);
+        });
+    });
+}
+
+// Function to open scoring modal for superusers
+function openSuperuserScoringModal(projectId, modalType) {
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Update modal title based on type
+    if (modalType === 'governance') {
+        modalTitle.textContent = 'Project Scoring - Governance (Superuser)';
+    } else if (modalType === 'final-governance') {
+        modalTitle.textContent = 'Project Scoring - Final Governance (Superuser)';
+    }
+    
+    // Show save button for superuser scoring
+    saveBtn.style.display = 'block';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details and scoring form...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load project details and scoring form (same as regular users but with superuser access)
+    fetch(`/${projectId}/scoring-details-modal/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const project = data.project;
+            const userScore = data.user_score;
+            const condensedScores = data.condensed_scores;
+            
+            // Create the modal content with project details and scoring form
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h5 class="mb-2">${project.title}</h5>
+                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Project ID:</label>
+                            <p class="mb-0">${project.formatted_id || '#' + project.id}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Type:</label>
+                            <p class="mb-0">${project.project_type_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="mb-0">${project.priority_display || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stage:</label>
+                            <p class="mb-0">${project.stage_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="mb-0">${project.status_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submitted By:</label>
+                            <p class="mb-0">${project.submitted_by_name || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="mb-4">
+                    <h6 class="mb-3">Project Scoring</h6>
+                    <form id="scoringForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="strategic_alignment" class="form-label">Strategic Alignment (1-10)</label>
+                                    <input type="number" class="form-control" id="strategic_alignment" name="strategic_alignment" 
+                                           min="1" max="10" value="${userScore?.strategic_alignment || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cost_benefit" class="form-label">Cost/Benefit Analysis (1-10)</label>
+                                    <input type="number" class="form-control" id="cost_benefit" name="cost_benefit" 
+                                           min="1" max="10" value="${userScore?.cost_benefit || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="user_impact" class="form-label">User Impact (1-10)</label>
+                                    <input type="number" class="form-control" id="user_impact" name="user_impact" 
+                                           min="1" max="10" value="${userScore?.user_impact || ''}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ease_of_implementation" class="form-label">Ease of Implementation (1-10)</label>
+                                    <input type="number" class="form-control" id="ease_of_implementation" name="ease_of_implementation" 
+                                           min="1" max="10" value="${userScore?.ease_of_implementation || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vendor_reputation_support" class="form-label">Vendor Reputation/Support (1-10)</label>
+                                    <input type="number" class="form-control" id="vendor_reputation_support" name="vendor_reputation_support" 
+                                           min="1" max="10" value="${userScore?.vendor_reputation_support || ''}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="security_compliance" class="form-label">Security/Compliance (1-10)</label>
+                                    <input type="number" class="form-control" id="security_compliance" name="security_compliance" 
+                                           min="1" max="10" value="${userScore?.security_compliance || ''}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="scoring_notes" class="form-label">Scoring Notes</label>
+                            <textarea class="form-control" id="scoring_notes" name="scoring_notes" rows="3" 
+                                      placeholder="Add any additional notes about your scoring...">${userScore?.scoring_notes || ''}</textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Superuser Access:</strong> You have full access to score this project as a superuser.
+                        </div>
+                    </form>
+                </div>
+                
+                ${condensedScores && condensedScores.length > 0 ? `
+                <div class="mb-4">
+                    <h6 class="mb-3">Previous Scores</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Scorer</th>
+                                    <th>Strategic</th>
+                                    <th>Cost/Benefit</th>
+                                    <th>User Impact</th>
+                                    <th>Implementation</th>
+                                    <th>Vendor</th>
+                                    <th>Security</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${condensedScores.map(score => `
+                                    <tr>
+                                        <td>${score.scorer_name}</td>
+                                        <td>${score.strategic_alignment || '-'}</td>
+                                        <td>${score.cost_benefit || '-'}</td>
+                                        <td>${score.user_impact || '-'}</td>
+                                        <td>${score.ease_of_implementation || '-'}</td>
+                                        <td>${score.vendor_reputation_support || '-'}</td>
+                                        <td>${score.security_compliance || '-'}</td>
+                                        <td><strong>${score.total_score || '-'}</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            // Set up form submission handler
+            document.getElementById('scoringForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitScoringForm(projectId);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Unable to load project details. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Function to submit scoring form
+function submitScoringForm(projectId) {
+    const form = document.getElementById('scoringForm');
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Show loading state
+    const saveBtn = document.getElementById('saveChangesBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    saveBtn.disabled = true;
+    
+    fetch(`/${projectId}/score/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Network response was not ok');
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success alert-dismissible fade show mb-3';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Success!</strong> Your scoring has been saved successfully.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            modalBody.insertBefore(successDiv, modalBody.firstChild);
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (successDiv && successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        } else {
+            alert('Error saving scoring: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error saving scoring:', error);
+        alert('Error saving scoring. Please try again.');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Function to open read-only modal for superusers
+function openSuperuserReadOnlyModal(projectId, modalType) {
+    const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+    const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+    const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    // Update modal title based on type
+    if (modalType === 'governance') {
+        modalTitle.textContent = 'Project Details - Governance (Read Only)';
+    } else if (modalType === 'final-governance') {
+        modalTitle.textContent = 'Project Details - Final Governance (Read Only)';
+    }
+    
+    // Hide save button for read-only view
+    saveBtn.style.display = 'none';
+    
+    // Show loading state
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project details...</p>
+        </div>
+    `;
+    
+    // Show modal
+    modal.show();
+    
+    // Load project details (read-only)
+    fetch(`/${projectId}/project-details-readonly/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const project = data.project;
+            
+            // Create read-only modal content
+            modalBody.innerHTML = `
+                <div class="mb-3">
+                    <h5 class="mb-2">${project.title}</h5>
+                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Project ID:</label>
+                            <p class="mb-0">${project.formatted_id || '#' + project.id}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Type:</label>
+                            <p class="mb-0">${project.project_type_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="mb-0">${project.priority_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Department:</label>
+                            <p class="mb-0">${project.department || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stage:</label>
+                            <p class="mb-0">${project.stage_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="mb-0">${project.status_display || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submitted By:</label>
+                            <p class="mb-0">${project.submitted_by_name || 'N/A'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Submission Date:</label>
+                            <p class="mb-0">${project.submission_date_formatted || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${project.final_score ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Final Score:</label>
+                            <p class="mb-0">${project.final_score}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${project.final_priority ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Final Priority Rank:</label>
+                            <p class="mb-0">${project.final_priority}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${project.triage_notes ? `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Triage Notes:</label>
+                            <p class="mb-0">${project.triage_notes}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Read-Only View:</strong> As a superuser, you can view project details but cannot make edits through this interface.
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Unable to load project details. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Function to open final scoring modal
+function openFinalScoringModal(projectId) {
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of final scoring modal
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    {% if is_superuser %}
+    // Superusers get read-only view of final governance projects
+    openSuperuserReadOnlyModal(projectId, 'final-governance');
+    return;
+    {% endif %}
+    
+    // Load project details via AJAX
+    fetch(`/${projectId}/final-scoring-details-modal/`)
+        .then(response => response.text())
+        .then(html => {
+            // Use the entire response as the modal content
+            document.getElementById('finalScoringModalBody').innerHTML = html;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading project details:', error);
+            document.getElementById('finalScoringModalBody').innerHTML = '<p>Error loading project details.</p>';
+            const modal = new bootstrap.Modal(document.getElementById('finalScoringModal'));
+            modal.show();
+        });
+}
+
+// Initialize listeners when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    listenForPriorityUpdates();
+    attachPriorityInputListeners();
+});
+
+// Global autocomplete function
+function initializeContactPersonAutocomplete() {
+    console.log('Initializing contact person autocomplete');
+    
+    const contactInput = document.getElementById('contact_person');
+    const suggestionsDiv = document.getElementById('contact_person_suggestions');
+    
+    if (!contactInput || !suggestionsDiv) {
+        console.log('Contact input or suggestions div not found');
+        return;
+    }
+    
+    console.log('Contact input and suggestions div found');
+    
+    let currentFocus = -1;
+    let users = [];
+    
+    // Load all users
+    fetch('{% url "projects:api_users" %}')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            users = data.users;
+            console.log('Loaded users for autocomplete:', users.length);
+        })
+        .catch(error => console.error('Error loading users:', error));
+    
+    // Remove any existing event listeners
+    const newContactInput = contactInput.cloneNode(true);
+    contactInput.parentNode.replaceChild(newContactInput, contactInput);
+    
+    newContactInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        currentFocus = -1;
+        
+        console.log('Input event triggered, query:', query, 'users loaded:', users.length);
+        
+        if (query.length < 1) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Filter users based on input
+        const filteredUsers = users.filter(user => {
+            const fullName = user.full_name.toLowerCase();
+            const username = user.username.toLowerCase();
+            return fullName.includes(query) || username.includes(query);
+        });
+        
+        console.log('Filtered users:', filteredUsers.length);
+        
+        if (filteredUsers.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Display suggestions
+        suggestionsDiv.innerHTML = '';
+        filteredUsers.slice(0, 10).forEach((user, index) => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'autocomplete-suggestion';
+            suggestion.innerHTML = `
+                <span class="user-name">${user.full_name}</span>
+                <span class="user-username">(${user.username})</span>
+            `;
+            
+            suggestion.addEventListener('click', function() {
+                newContactInput.value = user.full_name;
+                suggestionsDiv.style.display = 'none';
+            });
+            
+            suggestionsDiv.appendChild(suggestion);
+        });
+        
+        suggestionsDiv.style.display = 'block';
+    });
+    
+    // Handle keyboard navigation
+    newContactInput.addEventListener('keydown', function(e) {
+        const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentFocus++;
+            if (currentFocus >= suggestions.length) currentFocus = 0;
+            setActive(suggestions);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentFocus--;
+            if (currentFocus < 0) currentFocus = suggestions.length - 1;
+            setActive(suggestions);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentFocus > -1 && suggestions[currentFocus]) {
+                suggestions[currentFocus].click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsDiv.style.display = 'none';
+            currentFocus = -1;
+        }
+    });
+    
+    function setActive(suggestions) {
+        suggestions.forEach((suggestion, index) => {
+            suggestion.classList.toggle('active', index === currentFocus);
+        });
+    }
+}
+
+// Function to open delete request modal
+function openDeleteRequestModal(projectId) {
+    // Hide edit modal
+    const editModal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+    editModal.hide();
+    
+    // Show delete modal
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteRequestModal'));
+    deleteModal.show();
+    
+    // Clear previous reason
+    document.getElementById('deleteRequestReason').value = '';
+    
+    // Add click handler to confirm delete button
+    const confirmDeleteBtn = document.getElementById('confirmDeleteRequestBtn');
+    confirmDeleteBtn.onclick = function() {
+        deleteRequest(projectId);
+    };
+}
+
+// Function to populate stage updates
+function populateStageUpdates(stageChanges) {
+    console.log('DEBUG: populateStageUpdates called with:', stageChanges);
+    const stageUpdatesContent = document.getElementById('stageUpdatesContent');
+    
+    if (!stageUpdatesContent) {
+        console.log('DEBUG: stageUpdatesContent element not found');
+        return;
+    }
+    
+    if (stageChanges && stageChanges.length > 0) {
+        const stageUpdatesHtml = stageChanges.map(change => `
+            <div class="mb-2" style="padding: 0.5rem; border-left: 3px solid #D09B2C; background: white; border-radius: 4px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span>${change.old_value || 'Initial'}</span>
+                        <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                        <span class="fw-bold">${change.new_value || 'N/A'}</span>
+                    </div>
+                    <small class="text-muted">${new Date(change.changed_at).toLocaleString()}</small>
+                </div>
+            </div>
+        `).join('');
+        
+        stageUpdatesContent.innerHTML = stageUpdatesHtml;
+        console.log('DEBUG: Stage updates populated successfully');
+    } else {
+        stageUpdatesContent.innerHTML = '<p class="text-muted">No stage updates available.</p>';
+        console.log('DEBUG: No stage changes found');
+    }
+}
+
+// Function to delete request
+function deleteRequest(projectId) {
+    const deleteReason = document.getElementById('deleteRequestReason').value.trim();
+    const confirmDeleteBtn = document.getElementById('confirmDeleteRequestBtn');
+    
+    // Validate reason
+    if (!deleteReason) {
+        alert('Please provide a reason for deletion.');
+        return;
+    }
+    
+    // Disable button and show loading
+    confirmDeleteBtn.disabled = true;
+    confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('reason', deleteReason);
+    
+    fetch(`/${projectId}/delete-request/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Success - hide modal and reload page
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteRequestModal'));
+            deleteModal.hide();
+            window.location.reload();
+        } else {
+            // Error - show error message
+            alert(data.message || 'An error occurred while deleting the request.');
+            
+            // Re-enable button
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.innerHTML = 'Delete Request';
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting request:', error);
+        alert('An error occurred while deleting the request.');
+        
+        // Re-enable button
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.innerHTML = 'Delete Request';
+    });
+}
+
+// Function to toggle scorer names visibility
+function toggleScorerNames() {
+    const checkbox = document.getElementById('hideScorerNames');
+    const scorerColumns = document.querySelectorAll('.scorer-name-column');
+    const scorerCells = document.querySelectorAll('.scorer-name-cell');
+    
+    if (checkbox.checked) {
+        // Hide scorer names
+        scorerColumns.forEach(col => col.style.display = 'none');
+        scorerCells.forEach(cell => cell.style.display = 'none');
+    } else {
+        // Show scorer names
+        scorerColumns.forEach(col => col.style.display = '');
+        scorerCells.forEach(cell => cell.style.display = '');
+    }
+}
+</script>
+{% endblock %}

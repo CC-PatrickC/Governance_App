@@ -1,20 +1,22 @@
-{% extends 'base.html' %}
+{% extends 'base_cc.html' %}
 {% load static %}
+{% load tz %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid" style="width: 115%; padding-right: 15px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Edit Project</h2>
+        <h2>Edit Request</h2>
         <a href="{% url 'projects:project_triage' %}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Triage
         </a>
     </div>
 
     {% if messages %}
-    <div class="messages">
+    <div class="messages mb-4">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
     </div>
@@ -22,21 +24,22 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
+            <form id="project-form" method="post" action="{% url 'projects:project_update' project.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
+                
                 <div class="mb-3">
-                    <label for="title" class="form-label">Project Title</label>
+                    <label for="title" class="form-label">Project Title *</label>
                     <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
+                    <label for="description" class="form-label">Description *</label>
                     <textarea class="form-control" id="description" name="description" rows="4" required>{{ project.description }}</textarea>
                 </div>
 
                 <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label for="project_type" class="form-label">Project Type</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="project_type" class="form-label">Request Type *</label>
                         <select class="form-select" id="project_type" name="project_type" required>
                             {% for value, label in project.PROJECT_TYPE_CHOICES %}
                             <option value="{{ value }}" {% if project.project_type == value %}selected{% endif %}>
@@ -46,8 +49,8 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <label for="priority" class="form-label">Priority</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="priority" class="form-label">Priority *</label>
                         <select class="form-select" id="priority" name="priority" required>
                             <option value="Top" {% if project.priority == 'Top' %}selected{% endif %}>Top</option>
                             <option value="High" {% if project.priority == 'High' %}selected{% endif %}>High</option>
@@ -56,26 +59,65 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 mb-3">
-                        <label for="status" class="form-label">Status</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="status" class="form-label">Status *</label>
                         <select class="form-select" id="status" name="status" required>
-                            <option value="pending" {% if project.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in_progress" {% if project.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="approved" {% if project.status == 'approved' %}selected{% endif %}>Approved</option>
-                            <option value="rejected" {% if project.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                            {% for value, label in project.STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
                         </select>
-                    </div>
-
-                    <div class="col-md-3 mb-3">
-                        <label for="department" class="form-label">Department</label>
-                        <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="notes" class="form-label">Notes</label>
-                    <textarea class="form-control" id="notes" name="notes" rows="3">{{ project.notes|default:'' }}</textarea>
+                    <label for="department" class="form-label">Department</label>
+                    <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
                 </div>
+
+                <div class="mb-3" style="position: relative;">
+                    <label for="contact_person" class="form-label">Contact Person</label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="contact_person" 
+                           name="contact_person" 
+                           value="{{ project.contact_person|default:'' }}"
+                           placeholder="Start typing to search users..."
+                           autocomplete="off"
+                           required>
+                    <div id="contact_person_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                    <small class="form-text text-muted">Type to search and select the primary contact person for this request.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="triage_notes">Triage Notes</label>
+                    <textarea class="form-control" id="triage_notes" name="triage_notes" rows="3">{{ project.triage_notes }}</textarea>
+                </div>
+
+                {% if project.triage_note_history.exists %}
+                <div class="mt-4">
+                    <h5>Triage Note History</h5>
+                    <div class="list-group">
+                        {% for note in project.triage_note_history.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> 
+                                    {% if note.created_by.first_name and note.created_by.last_name %}
+                                        {{ note.created_by.get_full_name }}
+                                    {% else %}
+                                        {{ note.created_by.username }}
+                                    {% endif %}
+                                    <i class="fas fa-clock ms-2"></i> {% timezone "America/Denver" %}{{ note.created_at|date:"F j, Y, g:i a T" }}{% endtimezone %}
+                                </small>
+                            </div>
+                            <p class="mb-0">{{ note.notes|linebreaks }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
 
                 {% if project.files.all %}
                 <div class="mb-3">
@@ -87,7 +129,7 @@
                                 <i class="fas fa-file me-2"></i> {{ file.file.name|cut:"project_files/" }}
                             </a>
                             <div>
-                                <small class="text-muted me-3">Uploaded: {{ file.uploaded_at|date:"M d, Y" }}</small>
+                                <small class="text-muted me-3">Uploaded: {% timezone "America/Denver" %}{{ file.uploaded_at|date:"M d, Y g:i a T" }}{% endtimezone %}</small>
                                 <form method="post" action="{% url 'projects:delete_attachment' project.pk file.pk %}" class="d-inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?')">
@@ -103,15 +145,309 @@
 
                 <div class="mb-3">
                     <label for="files" class="form-label">Add New Attachments</label>
-                    <input type="file" class="form-control" id="files" name="files" multiple>
-                    <small class="form-text text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+                    <div class="file-drop-zone" id="file-drop-zone">
+                        <div class="file-drop-content">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-3"></i>
+                            <p class="mb-2">Drag and drop files here or click to browse</p>
+                            <small class="text-muted">You can upload up to 5 files. Maximum file size: 10MB each.</small>
+                        </div>
+                        <input type="file" class="form-control file-input" id="files" name="files" multiple>
+                    </div>
                 </div>
 
+                {% if project.triage_change_history.exists %}
+                <div class="mt-4">
+                    <h5>Triage Change History</h5>
+                    <div class="list-group">
+                        {% for change in project.triage_change_history.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> 
+                                    {% if change.changed_by.first_name and change.changed_by.last_name %}
+                                        {{ change.changed_by.get_full_name }}
+                                    {% else %}
+                                        {{ change.changed_by.username }}
+                                    {% endif %}
+                                    <i class="fas fa-clock ms-2"></i> {% timezone "America/Denver" %}{{ change.changed_at|date:"F j, Y, g:i a T" }}{% endtimezone %}
+                                </small>
+                            </div>
+                            <div class="change-details">
+                                <strong>{{ change.field_label }}:</strong> 
+                                <span class="text-muted">{{ change.old_value|default:"None" }}</span> 
+                                <i class="fas fa-arrow-right mx-2"></i> 
+                                <span style="font-weight: bold; color: black;">{{ change.new_value|default:"None" }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #D09B2C; border-color: #D09B2C;">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Drag and Drop File Upload Styles */
+.file-drop-zone {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover {
+    border-color: #D09B2C;
+    background-color: #fff8e1;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #D09B2C;
+    background-color: #fff3cd;
+    border-style: solid;
+    transform: scale(1.02);
+}
+
+.file-drop-content {
+    pointer-events: none;
+    color: #6c757d;
+}
+
+.file-drop-zone.drag-over .file-drop-content {
+    color: #D09B2C;
+}
+
+.file-drop-zone.drag-over .file-drop-content i {
+    color: #D09B2C;
+    transform: scale(1.1);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-drop-zone i {
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+}
+
+.autocomplete-suggestion {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.autocomplete-suggestion:hover,
+.autocomplete-suggestion.active {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.user-username {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-left: 8px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple logging to verify JavaScript is loaded
+console.log('JavaScript loaded for project edit page');
+
+document.addEventListener('DOMContentLoaded', function() {
+    const contactInput = document.getElementById('contact_person');
+    const suggestionsDiv = document.getElementById('contact_person_suggestions');
+    let currentFocus = -1;
+    let users = [];
+    
+    // Load all users when page loads
+    fetch('{% url "projects:api_users" %}')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            users = data.users;
+            console.log('Loaded users:', users.length);
+        })
+        .catch(error => console.error('Error loading users:', error));
+    
+    contactInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        currentFocus = -1;
+        
+        console.log('Input event triggered, query:', query, 'users loaded:', users.length);
+        
+        if (query.length < 1) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Filter users based on input
+        const filteredUsers = users.filter(user => {
+            const fullName = user.full_name.toLowerCase();
+            const username = user.username.toLowerCase();
+            return fullName.includes(query) || username.includes(query);
+        });
+        
+        if (filteredUsers.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Display suggestions
+        suggestionsDiv.innerHTML = '';
+        filteredUsers.slice(0, 10).forEach((user, index) => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'autocomplete-suggestion';
+            suggestion.innerHTML = `
+                <span class="user-name">${user.full_name}</span>
+                <span class="user-username">(${user.username})</span>
+            `;
+            
+            suggestion.addEventListener('click', function() {
+                contactInput.value = user.full_name;
+                suggestionsDiv.style.display = 'none';
+            });
+            
+            suggestionsDiv.appendChild(suggestion);
+        });
+        
+        suggestionsDiv.style.display = 'block';
+    });
+    
+    // Handle keyboard navigation
+    contactInput.addEventListener('keydown', function(e) {
+        const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentFocus++;
+            if (currentFocus >= suggestions.length) currentFocus = 0;
+            setActive(suggestions);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentFocus--;
+            if (currentFocus < 0) currentFocus = suggestions.length - 1;
+            setActive(suggestions);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentFocus > -1 && suggestions[currentFocus]) {
+                suggestions[currentFocus].click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsDiv.style.display = 'none';
+            currentFocus = -1;
+        }
+    });
+    
+    function setActive(suggestions) {
+        suggestions.forEach((suggestion, index) => {
+            suggestion.classList.toggle('active', index === currentFocus);
+        });
+    }
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!contactInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+            suggestionsDiv.style.display = 'none';
+        }
+    });
+    
+    // Drag and Drop File Upload Functionality
+    const dropZone = document.getElementById('file-drop-zone');
+    const fileInput = document.getElementById('files');
+    
+    if (dropZone && fileInput) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle click to browse
+        dropZone.addEventListener('click', function() {
+            fileInput.click();
+        });
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        dropZone.classList.add('drag-over');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        // Set the files to the file input
+        fileInput.files = files;
+        
+        // Trigger change event to notify any listeners
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    }
+});
+</script>
 {% endblock %} 

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test, login_not_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.http import require_POST
@@ -203,23 +203,210 @@ def custom_login_view(request):
 
 @login_required
 def project_list(request):
-    projects = Project.objects.all().select_related('submitted_by')
-    return render(request, 'projects/project_list.html', {'projects': projects})
+    search_query = request.GET.get('search', '')
+    filter_type = request.GET.get('filter', 'all')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    department_filter = request.GET.get('department', '')
 
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def project_triage(request):
+    # Base queryset
     projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
-    return render(request, 'projects/triage.html', {'projects': projects})
+    
+    # Apply search filter
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    # Apply my projects filter (only if user is authenticated)
+    if filter_type == 'my_projects' and request.user.is_authenticated:
+        projects = projects.filter(submitted_by=request.user)
+    
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'filter_type': filter_type,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/project_list.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
-@require_POST
-@csrf_exempt
+@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+def project_triage(request):
+    search_query = request.GET.get('search', '')
+    type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '')
+    status_filter = request.GET.get('status', '')
+    stage_filter = request.GET.get('stage', '')
+    department_filter = request.GET.get('department', '')
+
+    # Base queryset - Triage team can see all projects except Governance Closed
+    projects = Project.objects.all().exclude(
+        stage='Governance_Closure'
+    ).select_related('submitted_by').order_by('-submission_date')
+    
+    # Apply search filter
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    # Apply type filter
+    if type_filter:
+        projects = projects.filter(project_type=type_filter)
+    
+    # Apply priority filter
+    if priority_filter:
+        projects = projects.filter(priority=priority_filter)
+    
+    # Apply status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    # Apply stage filter
+    if stage_filter:
+        projects = projects.filter(stage=stage_filter)
+
+    # Apply department filter
+    if department_filter:
+        projects = projects.filter(department=department_filter)
+
+    # Get filtered choices based on current selection
+    filtered_projects = projects
+
+    # Get available project types
+    available_types = filtered_projects.values_list('project_type', flat=True).distinct()
+    project_types = [(t[0], t[1]) for t in Project.PROJECT_TYPE_CHOICES if t[0] in available_types]
+
+    # Get available priorities
+    available_priorities = filtered_projects.values_list('priority', flat=True).distinct()
+    priorities = [p for p in ['Top', 'High', 'Normal', 'Low'] if p in available_priorities]
+
+    # Get available statuses
+    available_statuses = filtered_projects.values_list('status', flat=True).distinct()
+    status_choices = [(s[0], s[1]) for s in Project.STATUS_CHOICES if s[0] in available_statuses]
+
+    # Get available stages
+    available_stages = filtered_projects.values_list('stage', flat=True).distinct()
+    stage_choices = [(s[0], s[1]) for s in Project.STAGE_CHOICES if s[0] in available_stages]
+
+    # Get available departments
+    departments = filtered_projects.exclude(department='').values_list('department', flat=True).distinct().order_by('department')
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'type_filter': type_filter,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'stage_filter': stage_filter,
+        'department_filter': department_filter,
+        'project_types': project_types,
+        'priorities': priorities,
+        'status_choices': status_choices,
+        'stage_choices': stage_choices,
+        'departments': departments,
+    }
+    
+    return render(request, 'projects/triage.html', context)
+
+@login_required
 def project_update_ajax(request, pk):
-    try:
+    project = get_object_or_404(Project, pk=pk)
+    
+    # Check if user has permission to edit projects
+    # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+    can_edit = (is_triage_user(request.user) or 
+                is_triage_lead_user(request.user) or 
+                project.submitted_by == request.user)
+    
+    if not can_edit:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'You do not have permission to edit this request.'})
+        else:
+            messages.error(request, 'You do not have permission to edit this request.')
+            return redirect('projects:project_detail', pk=pk)
+    
+    logger.info(f"=== Project Update Request ===")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"User: {request.user} (Staff: {request.user.is_staff}, Groups: {request.user.groups.all()})")
+    logger.info(f"Project ID: {pk}")
+    logger.info(f"X-Requested-With header: {request.headers.get('X-Requested-With')}")
+    logger.info(f"Is AJAX request: {request.headers.get('X-Requested-With') == 'XMLHttpRequest'}")
+    
+    if request.method != 'POST':
+        logger.info("Not a POST request, rendering form")
         project = get_object_or_404(Project, pk=pk)
-        data = json.loads(request.body)
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            return render(request, 'projects/project_detail.html', {
+                'project': project,
+                'error_message': 'This request is closed and cannot be edited.'
+            })
+        return render(request, 'projects/project_edit.html', {'project': project})
+        
+    try:
+        
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'This request is closed and cannot be edited.'})
+            else:
+                messages.error(request, 'This request is closed and cannot be edited.')
+                return redirect('projects:project_detail', pk=pk)
+        logger.info(f"\nProject details before update:")
+        logger.info(f"Title: {project.title}")
+        logger.info(f"Status: {project.status}")
+        logger.info(f"Description: {project.description}")
         
         # Debug print
         print(f"Updating project {pk} with data: {data}")
@@ -254,41 +441,119 @@ def project_create(request):
             
         if form.is_valid():
             project = form.save(commit=False)
-            project.submitted_by = request.user if request.user.is_authenticated else None
-            project.priority = 'Normal'  # Set default priority
+            project.submitted_by = request.user
+            project.status = 'pending'
+            project.priority = 'Normal'
             project.save()
-            
-            # Handle file uploads
-            for file in files:
-                ProjectFile.objects.create(project=project, file=file)
             
             messages.success(request, 'Project submitted successfully!')
             return redirect('projects:project_list')
     else:
         form = ProjectForm()
+    
     return render(request, 'projects/project_form.html', {'form': form})
 
+@login_required
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
+    
+    # If user is a triage team member, redirect them to the edit form (unless request is closed)
+    if (is_triage_user(request.user) or is_triage_lead_user(request.user)) and project.stage != 'Governance_Closure':
+        return redirect('projects:project_update', pk=pk)
+    
     return render(request, 'projects/project_detail.html', {'project': project})
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
 def project_update(request, pk):
-    project = get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
+    
+    # Check if user has permission to edit projects
+    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+        messages.error(request, 'You do not have permission to edit this request.')
+        return redirect('projects:project_detail', pk=pk)
+    
+    # Check if request is in Governance Closed stage (cannot be edited)
+    if project.stage == 'Governance_Closure':
+        messages.error(request, 'This request is closed and cannot be edited.')
+        return redirect('projects:project_detail', pk=pk)
+    
+    print(f"\n=== Project Update Debug ===")
+    print(f"Request method: {request.method}")
+    print(f"User: {request.user}")
+    print(f"User groups: {[g.name for g in request.user.groups.all()]}")
     
     if request.method == 'POST':
-        # Update project fields
-        project.title = request.POST.get('title')
-        project.description = request.POST.get('description')
-        project.project_type = request.POST.get('project_type')
-        project.priority = request.POST.get('priority')
-        project.status = request.POST.get('status')
-        project.department = request.POST.get('department')
-        project.notes = request.POST.get('notes')
-        
         try:
+            print(f"\nPOST data: {request.POST}")
+            print(f"FILES data: {request.FILES}")
+            
+            # Get form data
+            title = request.POST.get('title')
+            if not title:
+                raise ValueError("Title is required")
+            
+            # Get triage notes
+            new_triage_notes = request.POST.get('triage_notes', '')
+            
+            # Track changes before updating
+            changes_made = track_project_changes(project, request.POST, request.user)
+            
+            # Update project fields
+            project.title = title
+            project.description = request.POST.get('description', '')
+            project.project_type = request.POST.get('project_type')
+            project.priority = request.POST.get('priority')
+            project.department = request.POST.get('department', '')
+            project.notes = request.POST.get('notes', '')
+            project.contact_person = request.POST.get('contact_person', '')
+            
+            # Update stage if provided
+            new_stage = request.POST.get('stage')
+            if new_stage:
+                valid_stages = dict(Project.STAGE_CHOICES).keys()
+                if new_stage in valid_stages:
+                    project.stage = new_stage
+                    print(f"Updated stage to: {new_stage}")
+            
+            # Only create a new TriageNote if the notes have changed and are not empty
+            if new_triage_notes and new_triage_notes != project.triage_notes:
+                TriageNote.objects.create(
+                    project=project,
+                    notes=new_triage_notes,
+                    created_by=request.user
+                )
+            
+            # Clear the triage notes field after saving to history
+            project.triage_notes = ''
+            
+            # Sync status with stage before saving
+            project = sync_status_with_stage(project)
+            
+            # Auto-assign final priority rank when moving to Under_Review_Final_governance
+            if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
+                # Get the highest existing rank
+                max_rank = Project.objects.filter(
+                    stage='Under_Review_Final_governance',
+                    final_priority__isnull=False
+                ).aggregate(max_rank=models.Max('final_priority'))['max_rank']
+                
+                # Set the new rank to be the next available number (append to end)
+                new_rank = (max_rank or 0) + 1
+                project.final_priority = new_rank
+                print(f"Auto-assigned final priority rank {new_rank} for project {pk} (appended to end)")
+            
+            print(f"\nAbout to save project...")
+            print(f"Project status before save: {project.status}")
+            
+            # Save the project
             project.save()
+            
+            print(f"Project saved successfully")
+            print(f"Project status after save: {project.status}")
+            
+            # Verify the status was saved
+            project.refresh_from_db()
+            print(f"Project status after refresh: {project.status}")
             
             # Handle file uploads
             files = request.FILES.getlist('files')
@@ -299,14 +564,87 @@ def project_update(request, pk):
                 
                 for file in files:
                     ProjectFile.objects.create(project=project, file=file)
-                messages.success(request, 'Files uploaded successfully!')
             
             messages.success(request, 'Project updated successfully!')
             return redirect('projects:project_triage')
+            
+        except ValueError as e:
+            print(f"\nValidation error: {str(e)}")
+            messages.error(request, str(e))
         except Exception as e:
+            print(f"\nError updating project: {str(e)}")
+            print(f"Error type: {type(e)}")
+            print(f"Error args: {e.args}")
             messages.error(request, f'Error updating project: {str(e)}')
     
     return render(request, 'projects/project_edit.html', {'project': project})
+
+@login_required
+def project_update_form_ajax(request, pk):
+    """AJAX endpoint to get just the edit form content"""
+    try:
+        logger.info(f"Loading edit form for project {pk}")
+        
+        # Check if user has permission to edit projects
+        # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
+        project = get_object_or_404(Project, pk=pk)
+        can_edit = (is_triage_user(request.user) or 
+                    is_triage_lead_user(request.user) or 
+                    project.submitted_by == request.user)
+        
+        if not can_edit:
+            logger.warning(f"User {request.user} lacks permission to edit project {pk}")
+            return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+        
+        project = Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by', 'files').get(pk=pk)
+        logger.info(f"Project {pk} loaded successfully, has {project.files.count()} files")
+        
+        # Check if request is in Governance Closed stage (cannot be edited)
+        if project.stage == 'Governance_Closure':
+            logger.info(f"Project {pk} is in Governance_Closure stage, cannot be edited")
+            return JsonResponse({'error': 'This request is closed and cannot be edited.'}, status=403)
+        
+        # Get all users for the contact person dropdown
+        from django.contrib.auth.models import User
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        
+        context = {
+            'project': project,
+            'users': users,
+        }
+        logger.info(f"Rendering edit form template for project {pk}")
+        
+        # Debug: Log the template context
+        logger.info(f"Template context - Project: {project.title}, Files count: {project.files.count()}")
+        
+        return render(request, 'projects/project_edit_form.html', context)
+    except Exception as e:
+        logger.error(f"Error loading edit form for project {pk}: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
+        return JsonResponse({'error': f'Error loading form: {str(e)}'}, status=500)
+
+@login_required
+def debug_project_files(request, pk):
+    """Debug endpoint to check project files"""
+    project = get_object_or_404(Project, pk=pk)
+    files = project.files.all()
+    
+    file_info = []
+    for file in files:
+        file_info.append({
+            'id': file.id,
+            'name': file.file.name,
+            'url': file.file.url,
+            'uploaded_at': file.uploaded_at.isoformat(),
+            'exists': file.file.storage.exists(file.file.name)
+        })
+    
+    return JsonResponse({
+        'project_id': pk,
+        'project_title': project.title,
+        'file_count': len(file_info),
+        'files': file_info
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -345,28 +683,87 @@ def project_delete(request, pk):
     return redirect('projects:project_detail', pk=pk)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
 def delete_attachment(request, project_pk, file_pk):
     project = get_object_or_404(Project, pk=project_pk)
     file = get_object_or_404(ProjectFile, pk=file_pk, project=project)
+    
+    # Check if user has permission to delete attachments
+    # Allow if user is staff, triage user, triage lead user, OR if user is the submitter of the request
+    can_delete = (request.user.is_staff or 
+                  is_triage_user(request.user) or 
+                  is_triage_lead_user(request.user) or 
+                  project.submitted_by == request.user)
+    
+    if not can_delete:
+        messages.error(request, 'You do not have permission to delete this attachment.')
+        return redirect('projects:project_update', pk=project_pk)
     
     if request.method == 'POST':
         try:
             file.delete()
             messages.success(request, 'Attachment deleted successfully.')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Attachment deleted successfully.'})
         except Exception as e:
             messages.error(request, f'Error deleting attachment: {str(e)}')
+            
+            # If this is an AJAX request (from modal), return JSON response
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': f'Error deleting attachment: {str(e)}'})
     
+    # For regular page requests, redirect to project update page
     return redirect('projects:project_update', pk=project_pk)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_scoring_list(request):
-    projects = Project.objects.all().select_related('submitted_by').order_by('-submission_date')
-    return render(request, 'projects/project_scoring_list.html', {'projects': projects})
+    search_query = request.GET.get('search', '')
+    
+    # Get projects that need governance review (stage is Under_Review_governance)
+    projects = Project.objects.filter(stage='Under_Review_governance').select_related('submitted_by').order_by('-submission_date')
+    
+    # Apply group-based filtering
+    allowed_types = get_user_allowed_project_types(request.user)
+    if allowed_types is not None:
+        # Filter projects based on user's allowed project types
+        projects = projects.filter(project_type__in=allowed_types)
+    
+    # Apply search filter
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query)
+        )
+    
+    # Get user's allowed project types for template display
+    allowed_types = get_user_allowed_project_types(request.user)
+    if allowed_types is not None:
+        # Convert project type codes to display names
+        type_display_names = []
+        for project_type in allowed_types:
+            for choice in Project.PROJECT_TYPE_CHOICES:
+                if choice[0] == project_type:
+                    type_display_names.append(choice[1])
+                    break
+    else:
+        type_display_names = None
+    
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+        'allowed_project_types': type_display_names,
+    }
+    
+    return render(request, 'projects/project_scoring_list.html', context)
+
+
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_scoring_user)
 def project_scoring(request, pk):
     """Project scoring view - displays project scoring form"""
     project = get_object_or_404(Project, pk=pk)
@@ -976,20 +1373,13 @@ def project_details_readonly(request, pk):
         project.final_priority = request.POST.get('final_priority')
         project.final_score = request.POST.get('final_score')
         project.scoring_notes = request.POST.get('scoring_notes')
-        project.strategic_alignment = request.POST.get('strategic_alignment')
-        project.cost_benefit = request.POST.get('cost_benefit')
-        project.user_impact = request.POST.get('user_impact')
-        project.ease_of_implementation = request.POST.get('ease_of_implementation')
-        project.vendor_reputation_support = request.POST.get('vendor_reputation_support')
-        project.security_compliance = request.POST.get('security_compliance')
-        project.student_centered = request.POST.get('student_centered')
         
         try:
             project.save()
-            messages.success(request, 'Project scoring updated successfully!')
-            return redirect('projects:project_scoring', pk=pk)
+            messages.success(request, 'Project final scoring updated successfully!')
+            return redirect('projects:project_final_scoring_list')
         except Exception as e:
-            messages.error(request, f'Error updating project scoring: {str(e)}')
+            messages.error(request, f'Error updating project final scoring: {str(e)}')
     
     # Prepare project data for read-only display
     project_data = {
