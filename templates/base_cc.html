@@ -830,6 +830,14 @@
                                 <span>Requests</span>
                             </a>
                         </li>
+                        {% if user.groups.exists or user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a href="{% url 'projects:archive' %}" class="nav-link {% if request.resolver_match.url_name == 'archive' %}active{% endif %}" data-tooltip="Archive">
+                                <i class="fas fa-archive nav-icon"></i>
+                                <span>Archive</span>
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
                 {% endif %}

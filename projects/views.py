@@ -128,20 +128,23 @@ def is_scoring_user(user):
             user.groups.filter(name='IT Governance Group').exists() or 
             user.groups.filter(name='IT Governance Group Lead').exists() or
             user.groups.filter(name='Process Improvement Group').exists() or 
-            user.groups.filter(name='Process Improvement Group Lead').exists() or
-            (not user.groups.filter(name='Cabinet Group').exists() and not user.groups.filter(name='Triage Group').exists()))
+            user.groups.filter(name='Process Improvement Group Lead').exists())
 
 def can_modify_final_priority(user):
     """Check if user can modify final priority ranks in Under Review - Final Governance section.
-    Excludes AI/ERP/IT/Process Improvement Lead groups from modifying final priority."""
+    Allows governance group members and lead group members to modify final priority."""
     if user.is_superuser or user.is_staff:
         return True
     
-    # Allow regular governance group members (not leads) to modify final priority
+    # Allow governance group members and lead group members to modify final priority
     return (user.groups.filter(name='AI Governance Group').exists() or 
-            user.groups.filter(name='ERP Governance Group').exists() or
-            user.groups.filter(name='IT Governance Group').exists() or
-            user.groups.filter(name='Process Improvement Group').exists())
+            user.groups.filter(name='AI Governance Group Lead').exists() or
+            user.groups.filter(name='ERP Governance Group').exists() or 
+            user.groups.filter(name='ERP Governance Group Lead').exists() or
+            user.groups.filter(name='IT Governance Group').exists() or 
+            user.groups.filter(name='IT Governance Group Lead').exists() or
+            user.groups.filter(name='Process Improvement Group').exists() or
+            user.groups.filter(name='Process Improvement Group Lead').exists())
 
 def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
@@ -2039,6 +2042,19 @@ def my_governance(request):
         'user_committee_display': get_user_committee_display(request.user),
     }
     return render(request, 'projects/my_governance.html', context)
+
+@login_required
+def archive(request):
+    """Archive page - visible only to users in groups"""
+    # Check if user is in any group
+    if not request.user.groups.exists() and not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('projects:my_governance')
+    
+    context = {
+        'user': request.user,
+    }
+    return render(request, 'projects/archive.html', context)
 
 @login_required
 def project_details_readonly(request, pk):

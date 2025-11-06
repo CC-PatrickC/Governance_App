@@ -2201,6 +2201,164 @@ function openGovernanceScoringModal(projectId) {
                             </table>
                         </div>
                     ` : '<p class="text-muted">No team members have scored this project yet.</p>'}
+                    
+                    <!-- Lead User's Own Scoring Form -->
+                    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e9ecef;">
+                        <h6 class="section-header small">Your Score</h6>
+                        <form id="scoringForm">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Criteria</th>
+                                            <th>Weight</th>
+                                            <th>Your Score (1-5)</th>
+                                            <th>Weighted Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                Strategic Alignment
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Measures how well the project aligns with institutional strategic goals and priorities. Consider the project's impact on key strategic initiatives and its contribution to long-term objectives."></i>
+                                            </td>
+                                            <td>20%</td>
+                                            <td>
+                                                <input type="number" name="strategic_alignment" id="strategic_alignment" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.strategic_alignment || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Cost Benefit
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates the financial viability and return on investment. Consider both direct and indirect costs, potential savings, and the overall value proposition."></i>
+                                            </td>
+                                            <td>15%</td>
+                                            <td>
+                                                <input type="number" name="cost_benefit" id="cost_benefit" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.cost_benefit || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="cost_benefit_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                User Impact and Adoption
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Assesses the potential impact on users and the likelihood of successful adoption. Consider user needs, training requirements, and change management implications."></i>
+                                            </td>
+                                            <td>20%</td>
+                                            <td>
+                                                <input type="number" name="user_impact" id="user_impact" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.user_impact || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Ease of Implementation
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates the complexity and feasibility of implementation. Consider technical requirements, resource needs, timeline, and potential risks."></i>
+                                            </td>
+                                            <td>15%</td>
+                                            <td>
+                                                <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.ease_of_implementation || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="ease_of_implementation_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Vendor Reputation and Support
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Assesses the vendor's track record, reliability, and support capabilities. Consider past performance, customer service, and long-term viability."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Security and Compliance
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Evaluates security measures, data protection, and regulatory compliance. Consider data privacy, cybersecurity risks, and adherence to relevant standards."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="security_compliance" id="security_compliance" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.security_compliance || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Student-Centered
+                                                <i class="fas fa-info-circle info-icon" data-bs-toggle="tooltip" 
+                                                   title="Measures how the project benefits and supports students. Consider impact on student services, academic success, engagement, and overall student experience."></i>
+                                            </td>
+                                            <td>10%</td>
+                                            <td>
+                                                <input type="number" name="student_centered" id="student_centered" 
+                                                       class="form-control score-input" min="1" max="5" 
+                                                       value="${userScore ? userScore.student_centered || '' : ''}"
+                                                       onchange="calculateWeightedScore(this)">
+                                            </td>
+                                            <td>
+                                                <span id="student_centered_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
+                                            </td>
+                                        </tr>
+                                        <tr class="table-active">
+                                            <td colspan="3" class="text-end"><strong>Total Final Score:</strong></td>
+                                            <td><strong><span id="total_score" style="font-weight: bold; font-size: 1.1em; color: black;">0</span></strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Notes Field -->
+                            <div class="mb-3">
+                                <label for="scoring_notes" class="form-label small">Scoring Notes (Optional)</label>
+                                <textarea name="scoring_notes" id="scoring_notes" class="form-control" rows="3" 
+                                          placeholder="Add any notes or comments about your scoring...">${userScore ? userScore.scoring_notes || '' : ''}</textarea>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i> ${userScore ? 'Update Score' : 'Submit Score'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                     {% else %}
                     <!-- Scoring Form for Non-Lead Users -->
                     <h6 class="section-header small">Score This Project</h6>
