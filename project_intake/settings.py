@@ -52,41 +52,24 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'projects',
-    'cas',
     'crispy_forms',
     'crispy_bootstrap5',
-    'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
-    'cas.middleware.CASMiddleware',
 ]
-
-PROXY_DOMAIN = 'govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-    'cas.backends.CASBackend',
 )
-
-CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
-CAS_LOGOUT_COMPLETELY = True
-CAS_PROVIDE_URL_TO_LOGOUT = True
-CAS_GATEWAY = True
 
 ROOT_URLCONF = 'project_intake.urls'
 
@@ -114,15 +97,8 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
-        'USER': os.getenv('POSTGRES_USER', 'csmart'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -161,7 +137,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-Fixed-Scoring
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
@@ -183,18 +158,6 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Authentication settings
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
-SITE_ID = 1
-
-# Allauth settings
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_LOGOUT_ON_GET = True
-ACCOUNT_LOGOUT_REDIRECT_URL = '/'
-ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True

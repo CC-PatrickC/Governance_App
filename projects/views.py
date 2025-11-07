@@ -1345,7 +1345,6 @@ def project_scoring_details_modal(request, pk):
             user_score = project.scores.filter(scored_by=request.user).first()
             print(f"DEBUG: User score found: {user_score is not None}")
         
-Fixed-Scoring
         # Get triage notes for this project
         triage_notes = project.triage_note_history.all().order_by('-created_at')
         triage_notes_data = []
@@ -1888,6 +1887,27 @@ def my_governance_superuser(request):
     """MyGovernance page specifically for SuperUsers - test page"""
     # Get all projects for SuperUser dashboard
     all_projects = Project.objects.all().order_by('-submission_date')
+
+    filter_param = request.GET.get('filter', 'all').lower()
+    display_projects = all_projects
+    filter_label = 'All Requests'
+
+    if filter_param == 'my':
+        display_projects = all_projects.filter(submitted_by=request.user)
+        filter_label = 'My Requests'
+    elif filter_param == 'assigned':
+        display_projects = all_projects.filter(triaged_by=request.user)
+        filter_label = 'Assigned Requests'
+    elif filter_param == 'triage':
+        display_projects = all_projects.filter(stage__in=['Pending_Review', 'Under_Review_Triage'])
+        filter_label = 'Triage Requests'
+    elif filter_param == 'governance':
+        display_projects = all_projects.filter(stage='Under_Review_governance')
+        filter_label = 'Governance Requests'
+    elif filter_param == 'final_governance':
+        display_projects = all_projects.filter(stage='Under_Review_Final_governance')
+        filter_label = 'Final Governance Requests'
+
     
     # Get statistics
     total_projects = all_projects.count()
@@ -1926,6 +1946,9 @@ def my_governance_superuser(request):
         'priority_stats': priority_stats,
         'type_stats': type_stats,
         'all_projects': all_projects,
+        'display_projects': display_projects,
+        'selected_filter': filter_param,
+        'selected_filter_label': filter_label,
     }
     
     return render(request, 'projects/my_governance_superuser.html', context)
