@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login
 from django.utils import timezone
 from django.urls import reverse
 from django.db import models
+from django.db.models import Q
 from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation, SystemNotification
 from .forms import ProjectForm
 import json
@@ -788,6 +789,322 @@ def project_scoring(request, pk):
             messages.error(request, f'Error updating project scoring: {str(e)}')
     
     return render(request, 'projects/project_scoring.html', {'project': project})
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+def project_scoring_details_modal(request, pk):
+    """Return project details and scoring data for the scoring modal (AJAX)."""
+    project = get_object_or_404(
+        Project.objects.prefetch_related(
+            'files',
+            'triage_note_history__created_by',
+            'scores__scored_by'
+        ),
+        pk=pk
+    )
+
+    allowed_types = get_user_allowed_project_types(request.user)
+    if allowed_types is not None and project.project_type not in allowed_types:
+        return JsonResponse({'error': 'You do not have permission to access this project.'}, status=403)
+
+    user_score = None
+    if request.user.is_authenticated:
+        user_score = project.scores.filter(scored_by=request.user).first()
+
+    triage_notes = project.triage_note_history.all().order_by('-created_at')
+    files = project.files.all()
+
+    project_data = {
+        'id': project.id,
+        'formatted_id': project.formatted_id,
+        'title': project.title,
+        'description': project.description,
+        'project_type': project.project_type,
+        'project_type_display': project.get_project_type_display(),
+        'priority': project.priority,
+        'department': project.department,
+        'stage': project.stage,
+        'status': project.status,
+        'submission_date': project.submission_date.isoformat() if project.submission_date else None,
+        'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else None,
+        'final_score': project.final_score,
+        'final_priority': project.final_priority,
+        'contact_person': project.contact_person,
+        'contact_email': project.contact_email,
+        'contact_phone': project.contact_phone,
+        'sdp_ticket_number': project.sdp_ticket_number,
+        'sdp_link': project.sdp_link,
+        'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
+        'submitted_by_email': project.submitted_by.email if project.submitted_by else None,
+        'files': [
+            {
+                'id': file.id,
+                'name': file.file.name.split('/')[-1],
+                'url': file.file.url,
+            }
+            for file in files
+        ],
+        'triage_notes': [
+            {
+                'notes': note.notes,
+                'created_at': note.created_at.isoformat() if note.created_at else None,
+                'created_at_formatted': note.created_at.strftime('%B %d, %Y at %I:%M %p') if note.created_at else None,
+                'created_by': note.created_by.get_full_name() if note.created_by and (note.created_by.first_name or note.created_by.last_name) else (note.created_by.username if note.created_by else 'Unknown'),
+            }
+            for note in triage_notes
+        ],
+    }
+
+    user_score_data = None
+    if user_score:
+        user_score_data = {
+            'final_score': user_score.final_score,
+            'scoring_notes': user_score.scoring_notes,
+            'strategic_alignment': user_score.strategic_alignment,
+            'cost_benefit': user_score.cost_benefit,
+            'user_impact': user_score.user_impact,
+            'ease_of_implementation': user_score.ease_of_implementation,
+            'vendor_reputation_support': user_score.vendor_reputation_support,
+            'security_compliance': user_score.security_compliance,
+            'student_centered': user_score.student_centered,
+        }
+
+    condensed_scores = []
+    group_to_check = None
+    if is_ai_governance_lead_user(request.user) and project.project_type == 'ai_governance':
+        group_to_check = 'AI Governance Group'
+    elif is_erp_governance_lead_user(request.user) and project.project_type == 'erp_governance':
+        group_to_check = 'ERP Governance Group'
+    elif is_it_governance_lead_user(request.user) and project.project_type == 'it_governance':
+        group_to_check = 'IT Governance Group'
+    elif is_process_improvement_lead_user(request.user) and project.project_type == 'process_improvement':
+        group_to_check = 'Process Improvement Group'
+
+    if group_to_check:
+        governance_group = Group.objects.filter(name=group_to_check).first()
+        if governance_group:
+            group_scores = project.scores.filter(scored_by__in=governance_group.user_set.all()).select_related('scored_by')
+            for score in group_scores:
+                condensed_scores.append({
+                    'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                    'final_score': score.final_score,
+                    'strategic_alignment': score.strategic_alignment,
+                    'cost_benefit': score.cost_benefit,
+                    'user_impact': score.user_impact,
+                    'ease_of_implementation': score.ease_of_implementation,
+                    'vendor_reputation_support': score.vendor_reputation_support,
+                    'security_compliance': score.security_compliance,
+                    'student_centered': score.student_centered,
+                    'scoring_notes': score.scoring_notes,
+                })
+
+    response_payload = {
+        'project': project_data,
+        'user_score': user_score_data,
+        'condensed_scores': condensed_scores,
+    }
+
+    return JsonResponse(response_payload)
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+def project_final_scoring_list(request):
+    """List view for projects in the final governance stage."""
+    search_query = request.GET.get('search', '').strip()
+
+    projects = Project.objects.filter(
+        stage='Under_Review_Final_governance'
+    ).select_related('submitted_by')
+
+    allowed_types = get_user_allowed_project_types(request.user)
+    if allowed_types is not None:
+        projects = projects.filter(project_type__in=allowed_types)
+
+    if search_query:
+        projects = projects.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(department__icontains=search_query) |
+            models.Q(submitted_by__username__icontains=search_query) |
+            models.Q(submitted_by__first_name__icontains=search_query) |
+            models.Q(submitted_by__last_name__icontains=search_query)
+        )
+
+    projects = projects.order_by(
+        models.F('final_priority').asc(nulls_last=True),
+        '-submission_date'
+    )
+
+    context = {
+        'projects': projects,
+        'search_query': search_query,
+    }
+
+    return render(request, 'projects/project_final_scoring_list.html', context)
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+def project_final_scoring(request, pk):
+    """Detail view for managing final scoring of a project."""
+    project = get_object_or_404(
+        Project.objects.prefetch_related(
+            'files',
+            'triage_note_history__created_by',
+            'scores__scored_by'
+        ),
+        pk=pk
+    )
+
+    if request.method == 'POST':
+        final_priority = request.POST.get('final_priority')
+        final_score = request.POST.get('final_score')
+        scoring_notes = request.POST.get('scoring_notes', '')
+
+        errors = False
+
+        if final_priority:
+            try:
+                project.final_priority = int(final_priority)
+            except (ValueError, TypeError):
+                messages.error(request, 'Final priority must be a whole number.')
+                errors = True
+
+        if final_score:
+            try:
+                project.final_score = float(final_score)
+            except (ValueError, TypeError):
+                messages.error(request, 'Final score must be a numeric value.')
+                errors = True
+
+        project.scoring_notes = scoring_notes
+
+        if not errors:
+            try:
+                project.save(update_fields=['final_priority', 'final_score', 'scoring_notes'])
+                messages.success(request, 'Final scoring updated successfully!')
+                return redirect('projects:project_final_scoring_list')
+            except Exception as exc:
+                messages.error(request, f'Error updating final scoring: {exc}')
+
+    scores = project.scores.select_related('scored_by').order_by('-created_at')
+
+    context = {
+        'project': project,
+        'scores': scores,
+    }
+
+    return render(request, 'projects/project_final_scoring.html', context)
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+def project_final_scoring_details(request, pk):
+    """Full-page read-only view of final scoring details for a project."""
+    project = get_object_or_404(
+        Project.objects.prefetch_related(
+            'files',
+            'triage_note_history__created_by',
+            'scores__scored_by'
+        ),
+        pk=pk
+    )
+
+    scores = project.scores.select_related('scored_by').order_by('-created_at')
+
+    context = {
+        'project': project,
+        'scores': scores,
+    }
+
+    return render(request, 'projects/project_final_scoring_details.html', context)
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+def project_final_scoring_details_modal(request, pk):
+    """Render final scoring details for use inside modal dialogs."""
+    project = get_object_or_404(
+        Project.objects.prefetch_related(
+            'files',
+            'triage_note_history__created_by',
+            'scores__scored_by'
+        ),
+        pk=pk
+    )
+
+    scores = project.scores.select_related('scored_by').order_by('-created_at')
+    triage_notes = project.triage_note_history.all().select_related('created_by').order_by('-created_at')
+
+    context = {
+        'project': project,
+        'scores': scores,
+        'triage_notes': triage_notes,
+    }
+
+    return render(request, 'projects/project_final_scoring_details_modal.html', context)
+
+
+@login_required
+@user_passes_test(is_scoring_user)
+@require_POST
+def update_final_priority(request, pk):
+    """AJAX endpoint to update the final priority ranking for a project."""
+    if not can_modify_final_priority(request.user):
+        return JsonResponse({'success': False, 'error': 'You do not have permission to modify final priority ranks.'}, status=403)
+
+    project = get_object_or_404(Project, pk=pk)
+
+    try:
+        data = json.loads(request.body or '{}')
+        new_priority = data.get('final_priority')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request payload.'}, status=400)
+
+    if new_priority is None:
+        return JsonResponse({'success': False, 'error': 'No priority value provided.'}, status=400)
+
+    try:
+        new_priority = int(new_priority)
+        if new_priority < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Final priority must be a positive integer.'}, status=400)
+
+    old_priority = project.final_priority
+
+    if old_priority == new_priority:
+        return JsonResponse({'success': True})
+
+    queryset = Project.objects.filter(
+        stage='Under_Review_Final_governance',
+        final_priority__isnull=False
+    ).exclude(pk=project.pk)
+
+    try:
+        if old_priority is not None:
+            if new_priority < old_priority:
+                queryset.filter(
+                    final_priority__gte=new_priority,
+                    final_priority__lt=old_priority
+                ).update(final_priority=models.F('final_priority') + 1)
+            else:
+                queryset.filter(
+                    final_priority__gt=old_priority,
+                    final_priority__lte=new_priority
+                ).update(final_priority=models.F('final_priority') - 1)
+        else:
+            queryset.filter(final_priority__gte=new_priority).update(final_priority=models.F('final_priority') + 1)
+
+        project.final_priority = new_priority
+        project.save(update_fields=['final_priority'])
+    except Exception as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+    return JsonResponse({'success': True})
+
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)

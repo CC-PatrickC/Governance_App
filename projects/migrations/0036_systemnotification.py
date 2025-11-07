@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('projects', '0035_alter_project_stage_conversation'),
+        ('projects', '0034_add_triage_change_model'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

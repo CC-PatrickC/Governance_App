@@ -23,30 +23,6 @@ INSTALLED_APPS = [
 
 # SITE_ID = 1
 
-# # Azure AD Configuration
-# SOCIALACCOUNT_PROVIDERS = {
-#     'microsoft': {
-#         'TENANT': 'your-tenant-id',  # Replace with your Azure AD tenant ID
-#         'SCOPE': ['User.Read', 'GroupMember.Read.All'],
-#         'AUTH_PARAMS': {'prompt': 'select_account'},
-#         'METHOD': 'oauth2',
-#         'VERIFIED_EMAIL': True,
-#     }
-# }
-
-# # Add the pipeline to the social auth pipeline
-# SOCIAL_AUTH_PIPELINE = (
-#     'social_core.pipeline.social_auth.social_details',
-#     'social_core.pipeline.social_auth.social_uid',
-#     'social_core.pipeline.social_auth.auth_allowed',
-#     'social_core.pipeline.social_auth.social_user',
-#     'social_core.pipeline.user.get_username',
-#     'social_core.pipeline.user.create_user',
-#     'social_core.pipeline.social_auth.associate_user',
-#     'social_core.pipeline.social_auth.load_extra_data',
-#     'social_core.pipeline.user.user_details',
-#     'projects.auth_pipeline.sync_azure_groups',  # Add our custom pipeline
-# )
 
 # # AllAuth Settings
 # ACCOUNT_EMAIL_REQUIRED = True
