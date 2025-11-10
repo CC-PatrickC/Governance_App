@@ -556,6 +556,10 @@
                             <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
                         </div>
                         <div class="cc-meta-section">
+                            <div class="cc-meta-title">Stage</div>
+                            <span class="cc-meta-item" data-bs-toggle="tooltip" title="{% if project.stage == 'Pending_Review' %}Request has been received. It will be processed soon.{% elif project.stage == 'Under_Review_Triage' %}Request is currently being reviewed by the Triage Team.{% elif project.stage == 'Under_Review_governance' %}Request is currently being scored by the committee.{% elif project.stage == 'Under_Review_Final_governance' %}Request is in the final governance review phase.{% elif project.stage == 'Governance_Closure' %}Governance review is complete for this request.{% else %}The current phase of governance review this request is in.{% endif %}">{{ project.get_stage_display }}</span>
+                        </div>
+                        <div class="cc-meta-section">
                             <div class="cc-meta-title">Status</div>
                             <span class="cc-meta-item">{{ project.get_status_display }}</span>
                         </div>
@@ -740,6 +744,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             loadProjectDetails(projectId);
         });
+    });
+
+    // Initialize Bootstrap tooltips for any info icons on the page
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 });
 
