@@ -167,3 +167,4 @@ Thumbs.db
 *.backup
 *.bak
 
+*.pyc
