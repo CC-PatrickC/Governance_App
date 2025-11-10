@@ -4,7 +4,7 @@ from .models import Project, ProjectFile
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['title', 'description', 'contact_person', 'department']
+        fields = ['title', 'description', 'technician', 'department']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
         }
@@ -14,9 +14,9 @@ class ProjectForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Make contact_person required
-        self.fields['contact_person'].required = True
-        self.fields['contact_person'].widget.attrs['required'] = 'required'
+        # Make technician required
+        self.fields['technician'].required = True
+        self.fields['technician'].widget.attrs['required'] = 'required'
 
     def clean_files(self):
         files = self.files.getlist('files')

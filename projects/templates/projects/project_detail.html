@@ -116,12 +116,8 @@
                 <div class="col-md-6">
                     <p><strong>Department:</strong> {{ project.department|default:"-" }}</p>
                     <p><strong>Notes:</strong> {{ project.notes|default:"No notes" }}</p>
-                    <p><strong>Contact Person:</strong> 
-                        {% if project.contact_person.first_name and project.contact_person.last_name %}
-                            {{ project.contact_person.get_full_name }}
-                        {% else %}
-                            {{ project.contact_person|default:"Not specified" }}
-                        {% endif %}
+                    <p><strong>Technician:</strong> 
+                        {{ project.technician|default:"Not specified" }}
                     </p>
                 </div>
             </div>

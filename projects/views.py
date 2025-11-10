@@ -8,7 +8,8 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange, Conversation
+from django.conf import settings
+from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange
 from .forms import ProjectForm
 import json
 from django.utils import timezone
@@ -81,7 +82,7 @@ def track_project_changes(project, form_data, user):
         'priority': 'Priority',
         'stage': 'Stage',
         'department': 'Department',
-        'contact_person': 'Contact Person',
+        'technician': 'Technician',
         'contact_email': 'Contact Email',
     }
     
@@ -150,7 +151,7 @@ def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
 
 def is_cabinet_user(user):
-    return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+    return user.is_superuser or user.groups.filter(name='Cabinet Group').exists()
 
 def is_patrick(user):
     """Check if the user is Patrick (for test dashboard access)"""
@@ -203,7 +204,11 @@ def custom_login_view(request):
         else:
             messages.error(request, 'Invalid username or password.')
     
-    return render(request, 'registration/login.html')
+    context = {
+        'enable_cas': getattr(settings, 'ENABLE_CAS', False),
+        'enable_azure_ad': getattr(settings, 'ENABLE_AZURE_AD', False),
+    }
+    return render(request, 'registration/login.html', context)
 
 @login_required
 def project_list(request):
@@ -279,6 +284,22 @@ def project_list(request):
     }
     
     return render(request, 'projects/project_list.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+def archived_requests(request):
+    """Hidden page that lists archived requests for staff members."""
+    projects = Project.objects.filter(status='archived').select_related('submitted_by').order_by('-submission_date')
+
+    return render(
+        request,
+        'projects/archived_list.html',
+        {
+            'projects': projects,
+            'page_title': 'Archived Requests',
+        },
+    )
 
 @login_required
 @user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
@@ -468,8 +489,8 @@ def project_update_ajax(request, pk):
         project.triaged_by = request.user
         project.triage_date = timezone.now()
         
-        # Update contact information and SDP fields
-        project.contact_person = request.POST.get('contact_person', '')
+        # Update assignment information
+        project.technician = request.POST.get('technician', '')
         project.contact_email = request.POST.get('contact_email', '')
         project.sdp_ticket_number = request.POST.get('sdp_ticket_number', '')
         project.sdp_link = request.POST.get('sdp_link', '')
@@ -669,7 +690,7 @@ def project_update(request, pk):
             project.priority = request.POST.get('priority')
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
-            project.contact_person = request.POST.get('contact_person', '')
+            project.technician = request.POST.get('technician', '')
             
             # Update stage if provided
             new_stage = request.POST.get('stage')
@@ -745,10 +766,15 @@ def project_update_form_ajax(request, pk):
     """AJAX endpoint to get just the edit form content"""
     try:
         logger.info(f"Loading edit form for project {pk}")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"User: {request.user.username}")
+        logger.info(f"Request headers: {dict(request.headers)}")
         
         # Check if user has permission to edit projects
         # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
         project = get_object_or_404(Project, pk=pk)
+        logger.info(f"Found project: {project.title}")
+        
         can_edit = (is_triage_user(request.user) or 
                     is_triage_lead_user(request.user) or 
                     project.submitted_by == request.user)
@@ -756,6 +782,8 @@ def project_update_form_ajax(request, pk):
         if not can_edit:
             logger.warning(f"User {request.user} lacks permission to edit project {pk}")
             return JsonResponse({'error': 'You do not have permission to edit this request.'}, status=403)
+        
+        logger.info(f"User has permission to edit project {pk}")
         
         project = Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by', 'files').get(pk=pk)
         logger.info(f"Project {pk} loaded successfully, has {project.files.count()} files")
@@ -772,6 +800,11 @@ def project_update_form_ajax(request, pk):
             is_active=True,
             groups__in=triage_group
         ).distinct().order_by('first_name', 'last_name', 'username')
+
+        # Get all users for the contact person dropdown
+        from django.contrib.auth.models import User
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        logger.info(f"Found {users.count()} active users for contact dropdown")
         
         context = {
             'project': project,
@@ -786,6 +819,7 @@ def project_update_form_ajax(request, pk):
     except Exception as e:
         logger.error(f"Error loading edit form for project {pk}: {str(e)}")
         logger.error(f"Error type: {type(e)}")
+        logger.error(f"Error traceback:", exc_info=True)
         return JsonResponse({'error': f'Error loading form: {str(e)}'}, status=500)
 
 @login_required
@@ -809,6 +843,22 @@ def debug_project_files(request, pk):
         'project_title': project.title,
         'file_count': len(file_info),
         'files': file_info
+    })
+
+@login_required
+def test_ajax_endpoint(request):
+    """Test endpoint to check if AJAX requests work in Azure"""
+    logger.info("Test AJAX endpoint called")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"User: {request.user.username}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    
+    return JsonResponse({
+        'status': 'success',
+        'message': 'AJAX endpoint is working',
+        'user': request.user.username,
+        'method': request.method,
+        'timestamp': timezone.now().isoformat()
     })
 
 @login_required
@@ -1368,20 +1418,34 @@ def project_scoring_details_modal(request, pk):
 
         
         # Prepare project data for JSON response with safe date handling
+        submitted_by_name = None
+        submitted_by_email = None
+        if project.submitted_by:
+            submitted_by_name = project.submitted_by.get_full_name() or project.submitted_by.username
+            submitted_by_email = project.submitted_by.email
+
+        files_data = [
+            {
+                'url': file.file.url,
+                'name': file.file.name.split('project_files/')[-1]
+            }
+            for file in project.files.all()
+        ]
+
         project_data = {
             'id': project.id,
             'title': project.title,
             'department': project.department,
-            'submitted_by': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
-            'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
-            'submitted_by_email': project.submitted_by.email if project.submitted_by else 'N/A',
-            'contact_person': project.contact_person,
-            'sdp_ticket_number': project.sdp_ticket_number,
-            'sdp_link': project.sdp_link,
+            'technician': project.technician,
+            'contact_email': project.contact_email,
+            'contact_phone': project.contact_phone,
+            'formatted_id': project.formatted_id,
             'project_type': project.project_type,
             'project_type_display': project.get_project_type_display(),
             'status': project.status,
             'status_display': project.get_status_display(),
+            'stage_display': project.get_stage_display(),
+            'priority_display': project.get_priority_display(),
             'submission_date': project.submission_date.isoformat() if project.submission_date else None,
             'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else None,
             'start_date': project.start_date.isoformat() if project.start_date else None,
@@ -1393,8 +1457,10 @@ def project_scoring_details_modal(request, pk):
             'description': project.description,
             'priority': project.priority,
             'stage': project.stage,
-            'triage_notes': triage_notes_data,
+            'submitted_by_name': submitted_by_name,
+            'submitted_by_email': submitted_by_email,
             'files': files_data,
+            'stage_changes': stage_changes_data,
         }
         
         # Prepare user score data if it exists
@@ -1412,60 +1478,61 @@ def project_scoring_details_modal(request, pk):
                 'student_centered': user_score.student_centered,
             }
         
-        # Get scores for Lead users to view
-        condensed_scores_data = None
-        group_name_map = {
-            'ai_governance': 'AI Governance Group',
-            'erp_governance': 'ERP Governance Group',
-            'it_governance': 'IT Governance Group',
-            'process_improvement': 'Process Improvement Group'
+        # Get committee scores for the relevant governance group
+        committee_groups_map = {
+            'ai_governance': {
+                'groups': ['AI Governance Group', 'AI Governance Group Lead'],
+                'label': 'AI Governance Committee',
+            },
+            'erp_governance': {
+                'groups': ['ERP Governance Group', 'ERP Governance Group Lead'],
+                'label': 'ERP Governance Committee',
+            },
+            'it_governance': {
+                'groups': ['IT Governance Group', 'IT Governance Group Lead'],
+                'label': 'IT Governance Committee',
+            },
+            'process_improvement': {
+                'groups': ['Process Improvement Group', 'Process Improvement Group Lead'],
+                'label': 'Process Improvement Committee',
+            },
         }
-        
-        # Determine which group scores to show based on Lead user type and project type
-        group_to_check = None
-        if is_ai_governance_lead_user(request.user) and project.project_type == 'ai_governance':
-            group_to_check = 'AI Governance Group'
-        elif is_erp_governance_lead_user(request.user) and project.project_type == 'erp_governance':
-            group_to_check = 'ERP Governance Group'
-        elif is_it_governance_lead_user(request.user) and project.project_type == 'it_governance':
-            group_to_check = 'IT Governance Group'
-        elif is_process_improvement_lead_user(request.user) and project.project_type == 'process_improvement':
-            group_to_check = 'Process Improvement Group'
-        
-        if group_to_check:
-            # Get the governance group members
-            governance_group = Group.objects.filter(name=group_to_check).first()
-            if governance_group:
-                governance_users = governance_group.user_set.all()
-                
-                # Get all scores from governance group members for this project
-                group_scores = project.scores.filter(scored_by__in=governance_users).select_related('scored_by')
-                
-                condensed_scores_data = []
-                for score in group_scores:
-                    condensed_scores_data.append({
-                        'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
-                        'final_score': score.final_score,
-                        'strategic_alignment': score.strategic_alignment,
-                        'cost_benefit': score.cost_benefit,
-                        'user_impact': score.user_impact,
-                        'ease_of_implementation': score.ease_of_implementation,
-                        'vendor_reputation_support': score.vendor_reputation_support,
-                        'security_compliance': score.security_compliance,
-                        'student_centered': score.student_centered,
-                        'scoring_notes': score.scoring_notes,
-                        'created_at': score.created_at.isoformat() if score.created_at else None,
-                    })
+
+        committee_config = committee_groups_map.get(project.project_type)
+        committee_label = committee_config['label'] if committee_config else 'Committee'
+
+        if committee_config:
+            committee_users = User.objects.filter(groups__name__in=committee_config['groups']).distinct()
+            committee_scores_qs = project.scores.filter(scored_by__in=committee_users).select_related('scored_by').order_by('-created_at')
+        else:
+            committee_scores_qs = project.scores.select_related('scored_by').order_by('-created_at')
+
+        committee_scores_data = []
+        for score in committee_scores_qs:
+            committee_scores_data.append({
+                'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                'final_score': score.final_score,
+                'strategic_alignment': score.strategic_alignment,
+                'cost_benefit': score.cost_benefit,
+                'user_impact': score.user_impact,
+                'ease_of_implementation': score.ease_of_implementation,
+                'vendor_reputation_support': score.vendor_reputation_support,
+                'security_compliance': score.security_compliance,
+                'student_centered': score.student_centered,
+                'scoring_notes': score.scoring_notes,
+                'created_at': score.created_at.isoformat() if score.created_at else None,
+            })
         
         response_data = {
             'success': True,
             'project': project_data,
             'user_score': user_score_data,
-            'condensed_scores': condensed_scores_data,
+            'committee_scores': committee_scores_data,
+            'committee_label': committee_label,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
-        print(f"DEBUG: Contact person: {project.contact_person}")
+        print(f"DEBUG: Technician: {project.technician}")
         print(f"DEBUG: Contact email: {project.contact_email}")
         return JsonResponse(response_data)
         
@@ -1500,7 +1567,7 @@ def project_final_scoring_details_modal(request, pk):
         return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)
+@user_passes_test(is_cabinet_user)
 def cabinet_dashboard(request):
     # Get all projects for statistics
     projects = Project.objects.all()
@@ -1827,7 +1894,7 @@ def project_intake_form(request):
             # Get form data
             title = request.POST.get('title')
             description = request.POST.get('description')
-            contact_person = request.POST.get('contact_person')
+            technician = request.POST.get('technician')
             contact_email = request.POST.get('contact_email')
             contact_phone = request.POST.get('contact_phone')
             same_as_requestor = request.POST.get('same_as_requestor') == 'on'
@@ -1836,7 +1903,7 @@ def project_intake_form(request):
             if same_as_requestor:
                 # Use the user's full name if available, otherwise username
                 user_full_name = f"{request.user.first_name} {request.user.last_name}".strip()
-                contact_person = user_full_name if user_full_name else request.user.username
+                technician = user_full_name if user_full_name else request.user.username
                 contact_email = request.user.email
             
             # Validate required fields
@@ -1844,8 +1911,8 @@ def project_intake_form(request):
                 raise ValueError("Title is required")
             if not description:
                 raise ValueError("Description is required")
-            if not contact_person:
-                raise ValueError("Contact person is required")
+            if not technician:
+                raise ValueError("Technician is required")
             if not contact_email:
                 raise ValueError("Contact email is required")
             
@@ -1853,7 +1920,7 @@ def project_intake_form(request):
             project = Project.objects.create(
                 title=title,
                 description=description,
-                contact_person=contact_person,
+                technician=technician,
                 contact_email=contact_email,
                 contact_phone=contact_phone,
                 submitted_by=request.user,
@@ -1955,10 +2022,27 @@ def my_governance_superuser(request):
 
 @login_required
 def my_governance(request):
-    """My Governance page - shows user's submitted requests"""
-    if request.user.is_authenticated:
+    """My Governance page - shows user's submitted requests and contact requests"""
+    # Handle anonymous users
+    if not request.user.is_authenticated:
+        user_projects = Project.objects.none()
+        technician_projects = Project.objects.none()
+        triage_projects = None
+        governance_projects = None
+        final_governance_projects = None
+    else:
         # Get all projects submitted by the current user
         user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
+        
+        # Get all projects where the user is the assigned technician
+        # Check by full name first, then by username if no match
+        user_full_name = request.user.get_full_name()
+        user_username = request.user.username
+        
+        technician_projects = Project.objects.filter(
+            Q(technician=user_full_name) | 
+            Q(technician=user_username)
+        ).exclude(submitted_by=request.user).order_by('-submission_date')
     
         # Get triage projects for users in Triage Group or Triage Group Lead, or superusers
         triage_projects = None
@@ -2048,6 +2132,7 @@ def my_governance(request):
     
     context = {
         'user_projects': user_projects,
+        'technician_projects': technician_projects,
         'triage_projects': triage_projects,
         'governance_projects': governance_projects,
         'final_governance_projects': final_governance_projects,
@@ -2083,30 +2168,60 @@ def archive(request):
 
 @login_required
 def project_details_readonly(request, pk):
-    """API endpoint to get project details for superuser read-only view"""
+    """API endpoint to get project details for staff/superuser read-only view"""
     project = get_object_or_404(Project, pk=pk)
     
-    # Only allow superusers to access this endpoint
-    if not request.user.is_superuser:
+    # Restrict to staff members or superusers
+    if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'error': 'Access denied'}, status=403)
     
-    # Prepare project data for read-only display
+    submitted_by = project.submitted_by
+    submitted_by_name = (
+        submitted_by.get_full_name()
+        if submitted_by and (submitted_by.first_name or submitted_by.last_name)
+        else submitted_by.username
+        if submitted_by
+        else 'Unknown'
+    )
+    submitted_by_email = submitted_by.email if submitted_by and submitted_by.email else None
+    
+    files_data = [
+        {
+            'id': project_file.id,
+            'name': project_file.file.name.split('/')[-1],
+            'url': project_file.file.url,
+            'uploaded_at': project_file.uploaded_at.strftime('%B %d, %Y'),
+        }
+        for project_file in project.files.all()
+    ]
+    
     project_data = {
         'id': project.id,
         'title': project.title,
         'description': project.description,
         'formatted_id': project.formatted_id,
+        'project_type': project.project_type,
         'project_type_display': project.get_project_type_display(),
+        'priority': project.priority,
         'priority_display': project.get_priority_display(),
         'department': project.department,
-        'contact_person': project.contact_person,
+        'stage': project.stage,
         'stage_display': project.get_stage_display(),
+        'status': project.status,
         'status_display': project.get_status_display(),
-        'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by else project.submitted_by.username if project.submitted_by else 'Unknown',
+        'technician': project.technician,
+        'contact_email': project.contact_email,
+        'contact_phone': project.contact_phone,
+        'submitted_by_name': submitted_by_name,
+        'submitted_by_email': submitted_by_email,
         'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else 'N/A',
         'final_score': project.final_score,
         'final_priority': project.final_priority,
+        'start_date_formatted': project.start_date.strftime('%B %d, %Y') if project.start_date else None,
+        'end_date_formatted': project.end_date.strftime('%B %d, %Y') if project.end_date else None,
+        'budget': str(project.budget) if project.budget else None,
         'triage_notes': project.triage_notes,
+        'files': files_data,
     }
     
     return JsonResponse({'project': project_data})

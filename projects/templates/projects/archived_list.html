@@ -1,0 +1,425 @@
+{% extends "base_cc.html" %}
+{% load static %}
+
+{% block title %}Archived Requests{% endblock %}
+
+{% block content %}
+<style>
+    .cc-projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
+    }
+
+    .cc-project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .cc-project-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .cc-project-header {
+        background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%);
+        color: white;
+        padding: 16px 20px;
+    }
+
+    .cc-project-id {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: black;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-project-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: white;
+    }
+
+    .cc-project-body {
+        padding: 20px;
+    }
+
+    .cc-project-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .cc-project-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .cc-meta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .cc-meta-title {
+        font-size: 0.5rem;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cc-meta-item {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .cc-department-section {
+        margin-top: 12px;
+    }
+
+    .cc-department-title {
+        font-size: 0.5rem;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">{{ page_title }}</h1>
+            <p class="text-muted mb-0">Requests marked as archived. This page is visible only to staff.</p>
+        </div>
+    </div>
+
+    {% if projects %}
+    <div class="cc-projects-grid">
+        {% for project in projects %}
+        <div class="cc-project-card" data-project-id="{{ project.id }}" role="button" tabindex="0" style="cursor: pointer;">
+            <div class="cc-project-header">
+                <div class="cc-project-title">{{ project.title }}</div>
+                <div class="cc-project-id">{{ project.formatted_id }}</div>
+            </div>
+            <div class="cc-project-body">
+                <div class="cc-project-description">
+                    {{ project.description|truncatechars:140 }}
+                </div>
+                <div class="cc-project-meta">
+                    <div class="cc-meta-section">
+                        <div class="cc-meta-title">Request Type</div>
+                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
+                    </div>
+                    <div class="cc-meta-section">
+                        <div class="cc-meta-title">Priority</div>
+                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
+                    </div>
+                    <div class="cc-meta-section">
+                        <div class="cc-meta-title">Stage</div>
+                        <span class="cc-meta-item"
+                              data-bs-toggle="tooltip"
+                              title="{% if project.stage == 'Pending_Review' %}Request has been received. It will be processed soon.{% elif project.stage == 'Under_Review_Triage' %}Request is currently being reviewed by the Triage Team.{% elif project.stage == 'Under_Review_governance' %}Request is currently being scored by the committee.{% elif project.stage == 'Under_Review_Final_governance' %}Request is in the final governance review phase.{% elif project.stage == 'Governance_Closure' %}Governance review is complete for this request.{% elif project.stage == 'Deleted' %}Request has been removed from active workflow.{% else %}The current phase of governance review this request is in.{% endif %}">
+                            {{ project.get_stage_display }}
+                        </span>
+                    </div>
+                </div>
+
+                {% if project.department %}
+                <div class="cc-department-section">
+                    <div class="cc-department-title">Department</div>
+                    <span class="cc-meta-item">{{ project.department }}</span>
+                </div>
+                {% endif %}
+
+                <div class="cc-project-meta-requested" style="font-size:0.85em; color:#333; margin-top:8px; font-style:italic;">
+                    Archived from: 
+                    {% if project.submitted_by %}
+                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                    on {{ project.submission_date|date:'M d, Y' }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="cc-empty-state text-center py-5">
+        <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+        <h4>No archived requests</h4>
+        <p class="text-muted">When requests are archived they will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Archived project modal -->
+<div class="modal fade" id="archivedProjectModal" tabindex="-1" aria-labelledby="archivedProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <div class="text-uppercase text-muted small fw-semibold" id="archivedModalId">Loading…</div>
+                    <h5 class="mb-1" id="archivedModalTitle">Archived Request</h5>
+                    <p class="text-muted mb-0" id="archivedModalDescription">Loading request information…</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div id="archivedModalLoading" class="py-5 text-center">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                </div>
+                <div id="archivedModalError" class="alert alert-danger d-none" role="alert"></div>
+                <div id="archivedModalContent" class="d-none">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light-subtle h-100">
+                                <div class="text-uppercase text-muted small fw-semibold mb-2">Request Summary</div>
+                                <p class="mb-2"><strong>Request Type:</strong> <span id="archivedRequestType">—</span></p>
+                                <p class="mb-2"><strong>Stage:</strong> <span id="archivedRequestStage">—</span></p>
+                                <p class="mb-2"><strong>Status:</strong> <span id="archivedRequestStatus">—</span></p>
+                                <p class="mb-2"><strong>Priority:</strong> <span id="archivedRequestPriority">—</span></p>
+                                <p class="mb-2"><strong>Department:</strong> <span id="archivedRequestDepartment">—</span></p>
+                                <p class="mb-0"><strong>Submitted:</strong> <span id="archivedRequestSubmitted">—</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-uppercase text-muted small fw-semibold mb-2">Key Contacts</div>
+                                <p class="mb-2"><strong>Submitted By:</strong> <span id="archivedSubmittedBy">—</span></p>
+                                <p class="mb-2"><strong>Submitted Email:</strong> <span id="archivedSubmittedEmail">—</span></p>
+                                <p class="mb-2"><strong>Technician:</strong> <span id="archivedTechnician">—</span></p>
+                                <p class="mb-2"><strong>Technician Email:</strong> <span id="archivedTechnicianEmail">—</span></p>
+                                <p class="mb-0"><strong>Technician Phone:</strong> <span id="archivedTechnicianPhone">—</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mt-1">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-uppercase text-muted small fw-semibold mb-2">Timeline</div>
+                                <p class="mb-2"><strong>Start Date:</strong> <span id="archivedStartDate">—</span></p>
+                                <p class="mb-0"><strong>End Date:</strong> <span id="archivedEndDate">—</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-uppercase text-muted small fw-semibold mb-2">Scores &amp; Rankings</div>
+                                <p class="mb-2"><strong>Final Score:</strong> <span id="archivedFinalScore">—</span></p>
+                                <p class="mb-0"><strong>Final Priority:</strong> <span id="archivedFinalPriority">—</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="text-uppercase text-muted small fw-semibold mb-2">Description</div>
+                        <p class="mb-0" id="archivedDescriptionLong">—</p>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="text-uppercase text-muted small fw-semibold mb-2">Triage Notes</div>
+                        <div class="border rounded p-3 bg-light" id="archivedTriageNotes">No triage notes recorded.</div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="text-uppercase text-muted small fw-semibold">Attachments</div>
+                        </div>
+                        <div id="archivedAttachmentsEmpty" class="alert alert-info d-none mb-0">
+                            <i class="fas fa-info-circle me-2"></i>No attachments uploaded for this request.
+                        </div>
+                        <ul class="list-group list-group-flush" id="archivedAttachmentsList"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    const modalElement = document.getElementById('archivedProjectModal');
+    const modalInstance = new bootstrap.Modal(modalElement);
+
+    const loadingState = document.getElementById('archivedModalLoading');
+    const contentState = document.getElementById('archivedModalContent');
+    const errorState = document.getElementById('archivedModalError');
+
+    const fieldMap = {
+        id: document.getElementById('archivedModalId'),
+        title: document.getElementById('archivedModalTitle'),
+        subtitle: document.getElementById('archivedModalDescription'),
+        longDescription: document.getElementById('archivedDescriptionLong'),
+        requestType: document.getElementById('archivedRequestType'),
+        stage: document.getElementById('archivedRequestStage'),
+        status: document.getElementById('archivedRequestStatus'),
+        priority: document.getElementById('archivedRequestPriority'),
+        department: document.getElementById('archivedRequestDepartment'),
+        submitted: document.getElementById('archivedRequestSubmitted'),
+        submittedBy: document.getElementById('archivedSubmittedBy'),
+        submittedEmail: document.getElementById('archivedSubmittedEmail'),
+        technician: document.getElementById('archivedTechnician'),
+        technicianEmail: document.getElementById('archivedTechnicianEmail'),
+        technicianPhone: document.getElementById('archivedTechnicianPhone'),
+        startDate: document.getElementById('archivedStartDate'),
+        endDate: document.getElementById('archivedEndDate'),
+        finalScore: document.getElementById('archivedFinalScore'),
+        finalPriority: document.getElementById('archivedFinalPriority'),
+        triageNotes: document.getElementById('archivedTriageNotes'),
+    };
+
+    const attachmentsList = document.getElementById('archivedAttachmentsList');
+    const attachmentsEmptyState = document.getElementById('archivedAttachmentsEmpty');
+
+    function setLoadingState() {
+        loadingState.classList.remove('d-none');
+        contentState.classList.add('d-none');
+        errorState.classList.add('d-none');
+        errorState.textContent = '';
+        attachmentsList.innerHTML = '';
+    }
+
+    function showContent() {
+        loadingState.classList.add('d-none');
+        contentState.classList.remove('d-none');
+        errorState.classList.add('d-none');
+    }
+
+    function showError(message) {
+        loadingState.classList.add('d-none');
+        contentState.classList.add('d-none');
+        errorState.classList.remove('d-none');
+        errorState.textContent = message || 'Unable to load request details.';
+    }
+
+    function formatValue(value, fallback = '—') {
+        if (value === null || value === undefined || value === '') {
+            return fallback;
+        }
+        return value;
+    }
+
+    function populateModal(project) {
+        fieldMap.id.textContent = project.formatted_id || `#${project.id.toString().padStart(3, '0')}`;
+        fieldMap.title.textContent = project.title || 'Archived Request';
+        fieldMap.subtitle.textContent = project.submitted_by_name ? `Submitted by ${project.submitted_by_name}` : 'Archived request details';
+        fieldMap.longDescription.textContent = formatValue(project.description, 'No description provided for this request.');
+        fieldMap.requestType.textContent = formatValue(project.project_type_display);
+        fieldMap.stage.textContent = formatValue(project.stage_display);
+        fieldMap.status.textContent = formatValue(project.status_display);
+        fieldMap.priority.textContent = formatValue(project.priority_display || project.priority);
+        fieldMap.department.textContent = formatValue(project.department);
+        fieldMap.submitted.textContent = formatValue(project.submission_date_formatted);
+        fieldMap.submittedBy.textContent = formatValue(project.submitted_by_name);
+        fieldMap.submittedEmail.innerHTML = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : '—';
+        fieldMap.technician.textContent = formatValue(project.technician);
+        fieldMap.technicianEmail.innerHTML = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : '—';
+        fieldMap.technicianPhone.textContent = formatValue(project.contact_phone);
+        fieldMap.startDate.textContent = formatValue(project.start_date_formatted);
+        fieldMap.endDate.textContent = formatValue(project.end_date_formatted);
+        fieldMap.finalScore.textContent = project.final_score !== null && project.final_score !== undefined ? Number(project.final_score).toFixed(2) : '—';
+        fieldMap.finalPriority.textContent = formatValue(project.final_priority);
+        fieldMap.triageNotes.textContent = formatValue(project.triage_notes, 'No triage notes recorded.');
+
+        attachmentsList.innerHTML = '';
+        if (project.files && project.files.length > 0) {
+            attachmentsEmptyState.classList.add('d-none');
+            project.files.forEach((file) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.innerHTML = `
+                    <div>
+                        <i class="fas fa-paperclip me-2 text-muted"></i>
+                        <a href="${file.url}" target="_blank" rel="noopener">${file.name}</a>
+                    </div>
+                    <span class="badge bg-light text-muted">${file.uploaded_at}</span>
+                `;
+                attachmentsList.appendChild(listItem);
+            });
+        } else {
+            attachmentsEmptyState.classList.remove('d-none');
+        }
+    }
+
+    function openArchivedProjectModal(projectId) {
+        setLoadingState();
+        modalInstance.show();
+
+        fetch(`/${projectId}/project-details-readonly/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load project details.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data || !data.project) {
+                    throw new Error('Invalid response received.');
+                }
+                populateModal(data.project);
+                showContent();
+            })
+            .catch(error => {
+                console.error(error);
+                showError('We were unable to load the archived request details. Please try again later.');
+            });
+    }
+
+    document.querySelectorAll('.cc-project-card[data-project-id]').forEach(card => {
+        card.addEventListener('click', () => {
+            const projectId = card.getAttribute('data-project-id');
+            if (projectId) {
+                openArchivedProjectModal(projectId);
+            }
+        });
+
+        card.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                const projectId = card.getAttribute('data-project-id');
+                if (projectId) {
+                    openArchivedProjectModal(projectId);
+                }
+            }
+        });
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        setLoadingState();
+    });
+});
+</script>
+{% endblock %}
+

@@ -64,7 +64,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <h6 class="section-header mb-3"><strong>Contact Information</strong></h6>
+                            <h6 class="section-header mb-3"><strong>Key Contacts</strong></h6>
                             <p><strong>Submitted By:</strong> 
                                 {% if project.submitted_by.first_name and project.submitted_by.last_name %}
                                     {{ project.submitted_by.get_full_name }}
@@ -72,7 +72,10 @@
                                     {{ project.submitted_by.username }}
                                 {% endif %}
                             </p>
-                            <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                            <p><strong>Submitted Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                            <p><strong>Technician:</strong> {{ project.technician|default:"Not specified" }}</p>
+                            <p><strong>Technician Email:</strong> <a href="mailto:{{ project.contact_email }}">{{ project.contact_email|default:"Not specified" }}</a></p>
+                            <p><strong>Technician Phone:</strong> {{ project.contact_phone|default:"Not specified" }}</p>
                             <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                         </div>
                         <div class="col-md-4">

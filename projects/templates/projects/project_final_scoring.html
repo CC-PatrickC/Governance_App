@@ -237,17 +237,20 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Contact Information</h5>
+                    <h5 class="mb-0">Key Contacts</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Contact Person:</strong> 
+                    <p><strong>Submitted By:</strong> 
                         {% if project.submitted_by.first_name and project.submitted_by.last_name %}
                             {{ project.submitted_by.get_full_name }}
                         {% else %}
                             {{ project.submitted_by.username }}
                         {% endif %}
                     </p>
-                    <p><strong>Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                    <p><strong>Submitted Email:</strong> <a href="mailto:{{ project.submitted_by.email }}">{{ project.submitted_by.email }}</a></p>
+                    <p><strong>Technician:</strong> {{ project.technician|default:"Not specified" }}</p>
+                    <p><strong>Technician Email:</strong> <a href="mailto:{{ project.contact_email }}">{{ project.contact_email|default:"Not specified" }}</a></p>
+                    <p><strong>Technician Phone:</strong> {{ project.contact_phone|default:"Not specified" }}</p>
                     <p><strong>Department:</strong> {{ project.department|default:"Not specified" }}</p>
                     <p><strong>Submission Date:</strong> {{ project.submission_date|date:"F j, Y" }}</p>
                 </div>

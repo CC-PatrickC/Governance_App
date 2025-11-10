@@ -216,6 +216,46 @@
             
         </div>
 
+        
+
+        <!-- Technician Information -->
+        <div class="form-section">
+            <h3>Technician Information</h3>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor">
+                    <label class="form-check-label" for="same_as_requestor">
+                        Technician is same as requestor
+                    </label>
+                </div>
+                <div class="help-text">Check this if you will be the assigned technician for this request</div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="technician" class="form-label required-field">Technician</label>
+                    <input type="text" class="form-control" id="technician" name="technician" required
+                           placeholder="Enter the assigned technician's name">
+                    <div class="help-text">Who will be assigned to work on this request?</div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="contact_email" class="form-label required-field">Technician Email</label>
+                    <input type="email" class="form-control" id="contact_email" name="contact_email" required
+                           placeholder="Enter technician email address">
+                    <div class="help-text">We'll use this email for updates and questions</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="contact_phone" class="form-label">Technician Phone</label>
+                <input type="tel" class="form-control" id="contact_phone" name="contact_phone"
+                       placeholder="Enter technician phone number (optional)">
+                <div class="help-text">Optional: Provide a phone number for urgent matters</div>
+            </div>
+        </div>
+
         <!-- Supporting Documents -->
         <div class="form-section">
             <h3>Supporting Documents</h3>
@@ -359,9 +399,38 @@ function removeFile(index) {
     updateFileList();
 }
 
+// Contact person same as requestor functionality
+const sameAsRequestorCheckbox = document.getElementById('same_as_requestor');
+const technicianField = document.getElementById('technician');
+const contactEmailField = document.getElementById('contact_email');
+
+sameAsRequestorCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+        // Get current user information (we'll need to pass this from the backend)
+        const requestorName = '{{ user.first_name }} {{ user.last_name }}'.trim() || '{{ user.username }}';
+        const requestorEmail = '{{ user.email }}';
+        
+        // Auto-fill the fields
+        technicianField.value = requestorName;
+        contactEmailField.value = requestorEmail;
+        
+        // Disable the fields and grey them out
+        technicianField.disabled = true;
+        contactEmailField.disabled = true;
+    } else {
+        // Clear the fields
+        technicianField.value = '';
+        contactEmailField.value = '';
+        
+        // Re-enable the fields
+        technicianField.disabled = false;
+        contactEmailField.disabled = false;
+    }
+});
+
 // Form validation
 document.getElementById('intakeForm').addEventListener('submit', function(e) {
-    const requiredFields = ['title', 'description'];
+         const requiredFields = ['title', 'description', 'technician', 'contact_email'];
     let isValid = true;
     
     requiredFields.forEach(fieldId => {

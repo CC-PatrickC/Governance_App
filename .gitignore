@@ -167,8 +167,9 @@ Thumbs.db
 *.backup
 *.bak
 
+*.pyc
+*.pyc
+*.pyc
 /project_intake/__pycache__
-/project_intake/__pycache__
-/projects/__pycache__
 *.pyc
 *.sqlite3

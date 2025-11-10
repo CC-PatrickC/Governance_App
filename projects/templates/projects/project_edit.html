@@ -77,17 +77,17 @@
                 </div>
 
                 <div class="mb-3" style="position: relative;">
-                    <label for="contact_person" class="form-label">Contact Person</label>
+                    <label for="technician" class="form-label">Technician</label>
                     <input type="text" 
                            class="form-control" 
-                           id="contact_person" 
-                           name="contact_person" 
-                           value="{{ project.contact_person|default:'' }}"
+                           id="technician" 
+                           name="technician" 
+                           value="{{ project.technician|default:'' }}"
                            placeholder="Start typing to search users..."
                            autocomplete="off"
                            required>
-                    <div id="contact_person_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
-                    <small class="form-text text-muted">Type to search and select the primary contact person for this request.</small>
+                    <div id="technician_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                    <small class="form-text text-muted">Type to search and assign the technician responsible for this request.</small>
                 </div>
 
                 <div class="form-group">
@@ -294,8 +294,8 @@
 console.log('JavaScript loaded for project edit page');
 
 document.addEventListener('DOMContentLoaded', function() {
-    const contactInput = document.getElementById('contact_person');
-    const suggestionsDiv = document.getElementById('contact_person_suggestions');
+    const technicianInput = document.getElementById('technician');
+    const suggestionsDiv = document.getElementById('technician_suggestions');
     let currentFocus = -1;
     let users = [];
     
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => console.error('Error loading users:', error));
     
-    contactInput.addEventListener('input', function() {
+    technicianInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         currentFocus = -1;
         
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             suggestion.addEventListener('click', function() {
-                contactInput.value = user.full_name;
+                technicianInput.value = user.full_name;
                 suggestionsDiv.style.display = 'none';
             });
             
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Handle keyboard navigation
-    contactInput.addEventListener('keydown', function(e) {
+    technicianInput.addEventListener('keydown', function(e) {
         const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
         
         if (e.key === 'ArrowDown') {
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Hide suggestions when clicking outside
     document.addEventListener('click', function(e) {
-        if (!contactInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+        if (!technicianInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
             suggestionsDiv.style.display = 'none';
         }
     });

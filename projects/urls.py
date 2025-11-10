@@ -1,11 +1,26 @@
 from django.urls import path
-from django.shortcuts import redirect
+from django.http import HttpResponseRedirect
+from django.conf import settings
+
 from . import views
 
 app_name = 'projects'
 
+def redirect_home(request):
+    """Redirect visitors to the appropriate landing page based on auth and CAS status."""
+    if request.user.is_authenticated:
+        return HttpResponseRedirect('/requests/')
+
+    if getattr(settings, "ENABLE_CAS", False):
+        return HttpResponseRedirect('/cas-login/')
+
+    if getattr(settings, "ENABLE_AZURE_AD", False):
+        return HttpResponseRedirect('/accounts/microsoft/login/')
+
+    return HttpResponseRedirect('/login/')
+
 urlpatterns = [
-    path('', views.custom_login_view, name='home'),
+    path('', redirect_home, name='home'),
     path('requests/', views.project_list, name='project_list'),
     path('archive/', views.archive, name='archive'),
     path('login/', views.custom_login_view, name='login'),
@@ -39,6 +54,8 @@ urlpatterns = [
     path('<int:pk>/project-details-modal/', views.project_details_modal, name='project_details_modal'),
     path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
     path('<int:pk>/debug-files/', views.debug_project_files, name='debug_project_files'),
+    path('test-ajax/', views.test_ajax_endpoint, name='test_ajax_endpoint'),
+    path('archived/', views.archived_requests, name='archived_requests'),
     path('api/users/', views.api_users, name='api_users'),
     path('<int:pk>/conversations/', views.get_project_conversations, name='get_project_conversations'),
     path('<int:pk>/conversations/add/', views.add_project_conversation, name='add_project_conversation'),

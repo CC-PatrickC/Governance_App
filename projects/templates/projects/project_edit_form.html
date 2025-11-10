@@ -139,6 +139,7 @@
             </option>
             {% endfor %}
         </select>
+        <small class="form-text text-muted">The status will automatically update to match the selected stage.</small>
     </div>
 
     <div class="mb-3">
@@ -146,33 +147,17 @@
         <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="sdp_ticket_number" class="form-label">SDP Ticket #</label>
-            <input type="text" class="form-control" id="sdp_ticket_number" name="sdp_ticket_number" value="{{ project.sdp_ticket_number|default:'' }}" placeholder="Enter SDP ticket number">
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="sdp_link" class="form-label">SDP Link</label>
-            <input type="url" class="form-control" id="sdp_link" name="sdp_link" value="{{ project.sdp_link|default:'' }}" placeholder="https://...">
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <label for="contact_person" class="form-label">Technician</label>
-        <select class="form-select" id="contact_person" name="contact_person">
-            <option value="">Select a technician...</option>
-            {% for user in triage_users %}
-                <option value="{% if user.first_name and user.last_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" 
-                        {% if project.contact_person == user.get_full_name or project.contact_person == user.username %}selected{% endif %}>
-                    {% if user.first_name and user.last_name %}
-                        {{ user.get_full_name }}
-                    {% else %}
-                        {{ user.username }}
-                    {% endif %}
-                </option>
-            {% endfor %}
-        </select>
-        <small class="form-text text-muted">Select the technician assigned to this request.</small>
+    <div class="mb-3" style="position: relative;">
+        <label for="technician" class="form-label">Technician</label>
+        <input type="text" 
+               class="form-control" 
+               id="technician" 
+               name="technician" 
+               value="{{ project.technician|default:'' }}"
+               placeholder="Start typing to search users..."
+               autocomplete="off">
+        <div id="technician_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+        <small class="form-text text-muted">Type to search and assign the technician responsible for this request.</small>
     </div>
 
     <div class="mb-3">
