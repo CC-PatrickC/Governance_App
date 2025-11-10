@@ -49,6 +49,7 @@ urlpatterns = [
     path('<int:project_pk>/attachment/<int:file_pk>/delete/', views.delete_attachment, name='delete_attachment'),
     path('<int:pk>/debug-files/', views.debug_project_files, name='debug_project_files'),
     path('test-ajax/', views.test_ajax_endpoint, name='test_ajax_endpoint'),
+    path('archived/', views.archived_requests, name='archived_requests'),
     path('api/users/', views.api_users, name='api_users'),
     path('<int:pk>/', views.project_detail, name='project_detail'),
 ] 
