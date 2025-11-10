@@ -557,7 +557,13 @@
                         </div>
                         <div class="cc-meta-section">
                             <div class="cc-meta-title">Status</div>
-                            <span class="cc-meta-item">{{ project.get_status_display }}</span>
+                            <span class="cc-meta-item status-badge" 
+                                  data-bs-toggle="tooltip" 
+                                  data-bs-placement="top"
+                                  title="{% if project.status == 'pending' %}Request is awaiting initial review by the triage team{% elif project.status == 'approved' %}Request has been recommended for implementation{% elif project.status == 'rejected' %}Request has been reviewed and not recommended for implementation{% elif project.status == 'under_review_triage' %}Request is being reviewed and evaluated by the triage team{% elif project.status == 'under_review_governance' %}Request is being scored by the governance committee{% elif project.status == 'under_review_final_governance' %}Request is undergoing final prioritization and ranking{% elif project.status == 'completed' %}Request has been fully processed and completed{% elif project.status == 'archived' %}Request has been archived and is no longer active{% elif project.status == 'on_hold' %}Request is temporarily on hold pending further information{% elif project.status == 'cancelled' %}Request has been cancelled and will not proceed{% endif %}" 
+                                  style="cursor: help;">
+                                {{ project.get_status_display }}
+                            </span>
                         </div>
                     </div>
                     
@@ -757,7 +763,7 @@ function loadProjectDetails(projectId) {
         </div>
     `;
     
-    const url = `/${projectId}/scoring-details-modal/`;
+    const url = `/${projectId}/project-details-modal/`;
     console.log('Fetching from URL:', url);
     
     // Get CSRF token
@@ -776,15 +782,17 @@ function loadProjectDetails(projectId) {
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);
             if (!response.ok) {
-                return response.json().then(errorData => {
-                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-                });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             return response.json();
         })
         .then(data => {
             console.log('Received data:', data);
-            displayProjectDetails(data);
+            if (data.success) {
+                displayProjectDetails(data);
+            } else {
+                throw new Error(data.error || 'Failed to load project details');
+            }
         })
         .catch(error => {
             console.error('Error:', error);
@@ -815,7 +823,7 @@ function displayProjectDetails(data) {
                         <div class="detail-content">
                             <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                             <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                            <p><strong>Status:</strong> ${project.status}</p>
+                            <p><strong>Status:</strong> ${project.status_display}</p>
                             <p><strong>Priority:</strong> ${project.priority}</p>
                         </div>
                     </div>
@@ -993,4 +1001,39 @@ if (searchForm) {
         }
     }
 </style>
+
+<script>
+// Initialize Bootstrap tooltips for status badges
+console.log('=== PROJECT LIST PAGE SCRIPT LOADED ===');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing tooltips');
+    
+    // Wait a moment for Bootstrap to load
+    setTimeout(function() {
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap is not loaded!');
+            return;
+        }
+        
+        console.log('Bootstrap is available');
+        
+        // Find all tooltip elements
+        var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        console.log('Found', tooltipTriggerList.length, 'elements with tooltip attribute');
+        
+        // Initialize tooltips
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            try {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+                console.log('Initialized tooltip for:', tooltipTriggerEl.textContent.trim());
+            } catch (error) {
+                console.error('Error initializing tooltip:', error);
+            }
+        });
+        
+        console.log('Tooltip initialization complete');
+    }, 100);
+});
+</script>
 {% endblock %} 

@@ -216,46 +216,6 @@
             
         </div>
 
-        
-
-        <!-- Contact Information -->
-        <div class="form-section">
-            <h3>Contact Information</h3>
-            
-            <div class="mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor">
-                    <label class="form-check-label" for="same_as_requestor">
-                        Contact person is same as requestor
-                    </label>
-                </div>
-                <div class="help-text">Check this if you are the primary contact for this request</div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="contact_person" class="form-label required-field">Contact Person</label>
-                    <input type="text" class="form-control" id="contact_person" name="contact_person" required
-                           placeholder="Enter the primary contact person's name">
-                    <div class="help-text">Who should we contact for questions about this request?</div>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="contact_email" class="form-label required-field">Contact Email</label>
-                    <input type="email" class="form-control" id="contact_email" name="contact_email" required
-                           placeholder="Enter contact email address">
-                    <div class="help-text">We'll use this email for updates and questions</div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="contact_phone" class="form-label">Contact Phone</label>
-                <input type="tel" class="form-control" id="contact_phone" name="contact_phone"
-                       placeholder="Enter contact phone number (optional)">
-                <div class="help-text">Optional: Provide a phone number for urgent matters</div>
-            </div>
-        </div>
-
         <!-- Supporting Documents -->
         <div class="form-section">
             <h3>Supporting Documents</h3>
@@ -399,38 +359,9 @@ function removeFile(index) {
     updateFileList();
 }
 
-// Contact person same as requestor functionality
-const sameAsRequestorCheckbox = document.getElementById('same_as_requestor');
-const contactPersonField = document.getElementById('contact_person');
-const contactEmailField = document.getElementById('contact_email');
-
-sameAsRequestorCheckbox.addEventListener('change', function() {
-    if (this.checked) {
-        // Get current user information (we'll need to pass this from the backend)
-        const requestorName = '{{ user.first_name }} {{ user.last_name }}'.trim() || '{{ user.username }}';
-        const requestorEmail = '{{ user.email }}';
-        
-        // Auto-fill the fields
-        contactPersonField.value = requestorName;
-        contactEmailField.value = requestorEmail;
-        
-        // Disable the fields and grey them out
-        contactPersonField.disabled = true;
-        contactEmailField.disabled = true;
-    } else {
-        // Clear the fields
-        contactPersonField.value = '';
-        contactEmailField.value = '';
-        
-        // Re-enable the fields
-        contactPersonField.disabled = false;
-        contactEmailField.disabled = false;
-    }
-});
-
 // Form validation
 document.getElementById('intakeForm').addEventListener('submit', function(e) {
-         const requiredFields = ['title', 'description', 'contact_person', 'contact_email'];
+    const requiredFields = ['title', 'description'];
     let isValid = true;
     
     requiredFields.forEach(fieldId => {

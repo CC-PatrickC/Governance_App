@@ -851,12 +851,10 @@ function submitEditForm(form, projectId) {
                         `;
                         formContainer.insertBefore(successAlert, formContainer.firstChild);
                         
-                        // Auto-dismiss the alert after 3 seconds
+                        // Reload page after 2 seconds to update card displays
                         setTimeout(() => {
-                            if (successAlert && successAlert.parentNode) {
-                                successAlert.remove();
-                            }
-                        }, 3000);
+                            window.location.reload();
+                        }, 2000);
                         
                     } else {
                         formContainer.innerHTML = '<div class="alert alert-danger">Error loading edit form</div>';

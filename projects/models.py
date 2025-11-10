@@ -5,8 +5,8 @@ from django.utils import timezone
 class Project(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
+        ('approved', 'Recommended'),
+        ('rejected', 'Not Recommended'),
         ('under_review_triage', 'Under Review - Triage'),
         ('under_review_governance', 'Under Review - Governance'),
         ('under_review_final_governance', 'Under Review - Final Governance'),
@@ -21,7 +21,8 @@ class Project(models.Model):
         ('Under_Review_Triage', 'Under Review - Triage'),
         ('Under_Review_governance', 'Under Review - Governance'),
         ('Under_Review_Final_governance', 'Under Review - Final Governance'),
-        ('Governance_Closure', 'Governance Closed'),
+        ('Governance_Closure', 'Governance Closed - Recommended'),
+        ('Governance_Closure_Not_Recommended', 'Governance Closed - Not Recommended'),
         ('Deleted', 'Deleted'),
     ]
 
@@ -58,15 +59,26 @@ class Project(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     submission_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
-    stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
+    stage = models.CharField(max_length=40, choices=STAGE_CHOICES, default='Pending_Review', help_text="Current stage of the project")
     budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
+    sdp_ticket_number = models.CharField(max_length=50, null=True, blank=True, help_text="SDP Ticket Number")
+    sdp_link = models.URLField(max_length=500, null=True, blank=True, help_text="SDP Link URL")
     contact_person = models.CharField(max_length=100, null=True, blank=True)
     contact_email = models.EmailField(null=True, blank=True)
     contact_phone = models.CharField(max_length=20, null=True, blank=True)
     triage_notes = models.TextField(blank=True, null=True)
+    triaged_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='triaged_projects',
+        help_text="Technician assigned during triage"
+    )
+    triage_date = models.DateTimeField(null=True, blank=True, help_text="Date when the request was triaged")
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Normal')
     scoring_notes = models.TextField(blank=True, null=True, help_text="Notes related to project scoring or evaluation")
     final_priority = models.IntegerField(null=True, blank=True, help_text="Project ranking (lower number = higher priority)")
@@ -246,3 +258,16 @@ class TriageChange(models.Model):
         old_display = self.old_value if self.old_value else "None"
         new_display = self.new_value if self.new_value else "None"
         return f"{old_display} → {new_display}"
+
+class Conversation(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='conversations')
+    message = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_internal = models.BooleanField(default=True, help_text="Internal notes vs external communications")
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Conversation on {self.project.title} by {self.created_by.username} at {self.created_at}"

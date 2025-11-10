@@ -14,9 +14,9 @@
     <style>
         /* Modern Clean Design System */
         :root {
-            --primary-color: #1a365d;
+            --primary-color: #D09B2C;
             --secondary-color: #2d3748;
-            --accent-color: #3182ce;
+            --accent-color: #D09B2C;
             --success-color: #38a169;
             --warning-color: #d69e2e;
             --danger-color: #e53e3e;
@@ -101,7 +101,7 @@
             left: 100%;
             top: 50%;
             transform: translateY(-50%);
-            background: #1a365d;
+            background: #D09B2C;
             color: white;
             padding: 0.5rem 0.75rem;
             border-radius: 8px;
@@ -122,7 +122,7 @@
             top: 50%;
             transform: translateY(-50%);
             border: 5px solid transparent;
-            border-right-color: #1a365d;
+            border-right-color: #D09B2C;
             z-index: 9999;
             margin-left: -0.25rem;
             pointer-events: none;
@@ -185,7 +185,7 @@
 
         .nav-link.active {
             color: var(--accent-color);
-            background-color: #ebf8ff;
+            background-color: #fef5e7;
             text-decoration: none;
             border-left-color: var(--accent-color);
             font-weight: 600;
@@ -474,8 +474,8 @@
         }
 
         .btn-primary:hover {
-            background: #2c5282;
-            border-color: #2c5282;
+            background: #B8860B;
+            border-color: #B8860B;
             color: white;
         }
 
@@ -616,7 +616,7 @@
         }
 
         .alert-info {
-            background: #ebf8ff;
+            background: #fef5e7;
             color: #2a4365;
             border-left: 4px solid var(--accent-color);
         }
@@ -830,6 +830,30 @@
                                 <span>Requests</span>
                             </a>
                         </li>
+                        {% if user.groups.exists or user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a href="{% url 'projects:archive' %}" class="nav-link {% if request.resolver_match.url_name == 'archive' %}active{% endif %}" data-tooltip="Archive">
+                                <i class="fas fa-archive nav-icon"></i>
+                                <span>Archive</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- SuperUser Test Section -->
+                {% if user.is_superuser %}
+                <hr class="nav-divider">
+                <div class="nav-section">
+                    <div class="nav-section-title" style="color: #D09B2C; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; padding: 0 1.5rem;">Test Features</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="{% url 'projects:my_governance_superuser' %}" class="nav-link {% if request.resolver_match.url_name == 'my_governance_superuser' %}active{% endif %}" data-tooltip="MyGovernance Test (SuperUser)">
+                                <i class="fas fa-flask nav-icon"></i>
+                                <span>MyGovernance-test</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 {% endif %}
@@ -904,8 +928,10 @@
                                     {% endif %}
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
+                                {% if user.is_superuser %}
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                 <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 <li>
                                     <button type="button" class="dropdown-item text-danger" onclick="logout()">
                                         <i class="fas fa-sign-out-alt me-2"></i>Logout
@@ -1025,7 +1051,7 @@
                 left: ${sidebarWidth + 10}px;
                 top: ${rect.top + rect.height / 2}px;
                 transform: translateY(-50%);
-                background: #1a365d;
+                background: #D09B2C;
                 color: white;
                 padding: 0.5rem 0.75rem;
                 border-radius: 8px;

@@ -1,0 +1,59 @@
+{% extends 'base_cc.html' %}
+
+{% block title %}Archive{% endblock %}
+
+{% block extra_css %}
+<style>
+    .archive-content-area {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-top: 1rem;
+    }
+
+    .archive-section-header {
+        border-bottom: 2px solid #D09B2C;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .archive-section-header h2 {
+        color: #2c3e50;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .archive-page-header {
+        margin-bottom: 2rem;
+    }
+
+    .archive-page-header h1 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="archive-page-header">
+                <h1>Archive</h1>
+            </div>
+            
+            <div class="archive-content-area">
+                <div class="archive-section-header">
+                    <h2>Archive</h2>
+                    <p class="text-muted">Content coming soon</p>
+                </div>
+                
+                <!-- Content will be added here -->
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
