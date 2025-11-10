@@ -830,11 +830,11 @@
                                 <span>Requests</span>
                             </a>
                         </li>
-                        {% if user.groups.exists or user.is_staff or user.is_superuser %}
+                        {% if request.user.is_staff or request.user.is_superuser %}
                         <li class="nav-item">
-                            <a href="{% url 'projects:archive' %}" class="nav-link {% if request.resolver_match.url_name == 'archive' %}active{% endif %}" data-tooltip="Archive">
+                            <a href="{% url 'projects:archived_requests' %}" class="nav-link {% if request.resolver_match.url_name == 'archived_requests' %}active{% endif %}" data-tooltip="Archived">
                                 <i class="fas fa-archive nav-icon"></i>
-                                <span>Archive</span>
+                                <span>Archived</span>
                             </a>
                         </li>
                         {% endif %}

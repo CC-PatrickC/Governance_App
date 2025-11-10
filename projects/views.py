@@ -280,6 +280,22 @@ def project_list(request):
     
     return render(request, 'projects/project_list.html', context)
 
+
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+def archived_requests(request):
+    """Hidden page that lists archived requests for staff members."""
+    projects = Project.objects.filter(status='archived').select_related('submitted_by').order_by('-submission_date')
+
+    return render(
+        request,
+        'projects/archived_list.html',
+        {
+            'projects': projects,
+            'page_title': 'Archived Requests',
+        },
+    )
+
 @login_required
 @user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
 def project_triage(request):
@@ -2147,30 +2163,60 @@ def archive(request):
 
 @login_required
 def project_details_readonly(request, pk):
-    """API endpoint to get project details for superuser read-only view"""
+    """API endpoint to get project details for staff/superuser read-only view"""
     project = get_object_or_404(Project, pk=pk)
     
-    # Only allow superusers to access this endpoint
-    if not request.user.is_superuser:
+    # Restrict to staff members or superusers
+    if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'error': 'Access denied'}, status=403)
     
-    # Prepare project data for read-only display
+    submitted_by = project.submitted_by
+    submitted_by_name = (
+        submitted_by.get_full_name()
+        if submitted_by and (submitted_by.first_name or submitted_by.last_name)
+        else submitted_by.username
+        if submitted_by
+        else 'Unknown'
+    )
+    submitted_by_email = submitted_by.email if submitted_by and submitted_by.email else None
+    
+    files_data = [
+        {
+            'id': project_file.id,
+            'name': project_file.file.name.split('/')[-1],
+            'url': project_file.file.url,
+            'uploaded_at': project_file.uploaded_at.strftime('%B %d, %Y'),
+        }
+        for project_file in project.files.all()
+    ]
+    
     project_data = {
         'id': project.id,
         'title': project.title,
         'description': project.description,
         'formatted_id': project.formatted_id,
+        'project_type': project.project_type,
         'project_type_display': project.get_project_type_display(),
+        'priority': project.priority,
         'priority_display': project.get_priority_display(),
         'department': project.department,
-        'contact_person': project.contact_person,
+        'stage': project.stage,
         'stage_display': project.get_stage_display(),
+        'status': project.status,
         'status_display': project.get_status_display(),
-        'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by else project.submitted_by.username if project.submitted_by else 'Unknown',
+        'technician': project.technician,
+        'contact_email': project.contact_email,
+        'contact_phone': project.contact_phone,
+        'submitted_by_name': submitted_by_name,
+        'submitted_by_email': submitted_by_email,
         'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else 'N/A',
         'final_score': project.final_score,
         'final_priority': project.final_priority,
+        'start_date_formatted': project.start_date.strftime('%B %d, %Y') if project.start_date else None,
+        'end_date_formatted': project.end_date.strftime('%B %d, %Y') if project.end_date else None,
+        'budget': str(project.budget) if project.budget else None,
         'triage_notes': project.triage_notes,
+        'files': files_data,
     }
     
     return JsonResponse({'project': project_data})
