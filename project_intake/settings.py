@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")  # loads your local .env
 
+ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'cas',
     'projects',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -69,15 +72,18 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'cas.middleware.CASMiddleware',
 ]
+
+if ENABLE_CAS:
+    INSTALLED_APPS.append('cas')
+    MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
+    MIDDLEWARE.append('cas.middleware.CASMiddleware')
 
 PROXY_DOMAIN = 'governance.coloradocollege.app'
 
@@ -92,26 +98,30 @@ AUTHENTICATION_BACKENDS = (
 >>>>>>> 893da6e (Emergency fix: Comment out CAS and allauth components causing deployment failures)
 )
 
-CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
-CAS_LOGOUT_COMPLETELY = True
-CAS_PROVIDE_URL_TO_LOGOUT = True
-# Force CAS to use custom domain instead of Azure default domain
-CAS_SERVICE_URL = "https://governance.coloradocollege.app"
-CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
-CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
+if ENABLE_CAS:
+    AUTHENTICATION_BACKENDS += ('cas.backends.CASBackend',)
 
-# CAS User Attribute Mapping - captures email and other info from CAS response
-# Based on Colorado College CAS admin specifications
-# Mapping to Django User model fields only
-CAS_RENAME_ATTRIBUTES = {
-    'mail': 'email',           # Email address
-    'givenName': 'first_name', # First Name  
-    'sn': 'last_name',        # Last Name
-}
+if ENABLE_CAS:
+    CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
+    CAS_LOGOUT_COMPLETELY = True
+    CAS_PROVIDE_URL_TO_LOGOUT = True
+    # Force CAS to use custom domain instead of Azure default domain
+    CAS_SERVICE_URL = "https://governance.coloradocollege.app"
+    CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
+    CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
 
-# Auto-create user accounts with attributes from CAS
-CAS_CREATE_USER = True
-CAS_UPDATE_USER_ATTRIBUTES = True
+    # CAS User Attribute Mapping - captures email and other info from CAS response
+    # Based on Colorado College CAS admin specifications
+    # Mapping to Django User model fields only
+    CAS_RENAME_ATTRIBUTES = {
+        'mail': 'email',           # Email address
+        'givenName': 'first_name', # First Name  
+        'sn': 'last_name',        # Last Name
+    }
+
+    # Auto-create user accounts with attributes from CAS
+    CAS_CREATE_USER = True
+    CAS_UPDATE_USER_ATTRIBUTES = True
 
 ROOT_URLCONF = 'project_intake.urls'
 
@@ -137,14 +147,21 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
+#        'USER': os.getenv('POSTGRES_USER', 'csmart'),
+#        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+#        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
+#        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#    }
+#}
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
-        'USER': os.getenv('POSTGRES_USER', 'csmart'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
