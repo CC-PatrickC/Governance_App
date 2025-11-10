@@ -14,6 +14,9 @@ def redirect_home(request):
     if getattr(settings, "ENABLE_CAS", False):
         return HttpResponseRedirect('/cas-login/')
 
+    if getattr(settings, "ENABLE_AZURE_AD", False):
+        return HttpResponseRedirect('/accounts/microsoft/login/')
+
     return HttpResponseRedirect('/login/')
 
 urlpatterns = [
