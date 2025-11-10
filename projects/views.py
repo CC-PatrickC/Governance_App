@@ -151,7 +151,7 @@ def is_it_governance_scoring_user(user):
     return user.is_staff or user.groups.filter(name='IT Governance Scoring').exists()
 
 def is_cabinet_user(user):
-    return user.is_staff or user.groups.filter(name='Cabinet Group').exists()
+    return user.is_superuser or user.groups.filter(name='Cabinet Group').exists()
 
 def is_patrick(user):
     """Check if the user is Patrick (for test dashboard access)"""

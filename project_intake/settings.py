@@ -22,6 +22,10 @@ ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "y
 ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
 AZURE_AD_GROUP_MAPPING = {}
 
+ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
+ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
+AZURE_AD_GROUP_MAPPING = {}
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -41,6 +45,9 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 # Add both Azure default domain and custom domain
 DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
+# Add both Azure default domain and custom domain
+DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
 
 # Helpful for Azure (avoids CSRF issues on the cloud hostname)
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ("localhost", "127.0.0.1")]
@@ -57,6 +64,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'cas',
     # 'cas',
     'projects',
     'crispy_forms',
@@ -89,7 +97,14 @@ if ENABLE_CAS:
     INSTALLED_APPS.append('cas')
     MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
     MIDDLEWARE.append('cas.middleware.CASMiddleware')
+]
 
+if ENABLE_CAS:
+    INSTALLED_APPS.append('cas')
+    MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
+    MIDDLEWARE.append('cas.middleware.CASMiddleware')
+
+PROXY_DOMAIN = 'governance.coloradocollege.app'
 PROXY_DOMAIN = 'governance.coloradocollege.app'
 
 AUTHENTICATION_BACKENDS = (
@@ -163,8 +178,23 @@ WSGI_APPLICATION = 'project_intake.wsgi.application'
 #    }
 #}
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
+#        'USER': os.getenv('POSTGRES_USER', 'csmart'),
+#        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+#        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
+#        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#    }
+#}
+
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
@@ -235,12 +265,53 @@ SITE_ID = 1
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+
+SOCIALACCOUNT_STORE_TOKENS = True
+
+SOCIALACCOUNT_PROVIDERS = {}
+
+if ENABLE_AZURE_AD:
+    AZURE_AD_TENANT_ID = os.getenv("DJANGO_AZURE_TENANT_ID", "common")
+    AZURE_AD_CLIENT_ID = os.getenv("DJANGO_AZURE_CLIENT_ID", "")
+    AZURE_AD_CLIENT_SECRET = os.getenv("DJANGO_AZURE_CLIENT_SECRET", "")
+    AZURE_AD_GROUP_MAPPING_RAW = os.getenv("DJANGO_AZURE_GROUP_MAPPING", "")
+
+    AZURE_AD_SCOPES = [
+        'openid',
+        'email',
+        'profile',
+        'offline_access',
+        'User.Read',
+        'GroupMember.Read.All',
+    ]
+
+    AZURE_AD_GROUP_MAPPING = {}
+    if AZURE_AD_GROUP_MAPPING_RAW:
+        for item in AZURE_AD_GROUP_MAPPING_RAW.split(','):
+            key, _, value = item.partition(':')
+            if key and value:
+                AZURE_AD_GROUP_MAPPING[key.strip()] = value.strip()
+
+    SOCIALACCOUNT_PROVIDERS['microsoft'] = {
+        'TENANT': AZURE_AD_TENANT_ID,
+        'SCOPE': AZURE_AD_SCOPES,
+        'AUTH_PARAMS': {'prompt': 'select_account'},
+        'METHOD': 'oauth2',
+        'VERIFIED_EMAIL': True,
+        'APP': {
+            'client_id': AZURE_AD_CLIENT_ID,
+            'secret': AZURE_AD_CLIENT_SECRET,
+        },
+    }
 
 SOCIALACCOUNT_STORE_TOKENS = True
 
