@@ -1,21 +1,23 @@
 from django.urls import path
-from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
+from django.conf import settings
+
 from . import views
 
 app_name = 'projects'
 
-def redirect_to_cas(request):
-    """Redirect home page visitors to CAS login, or to app if already authenticated"""
+def redirect_home(request):
+    """Redirect visitors to the appropriate landing page based on auth and CAS status."""
     if request.user.is_authenticated:
-        # User is already logged in, send them to the main app
         return HttpResponseRedirect('/requests/')
-    else:
-        # User not logged in, send them to CAS
+
+    if getattr(settings, "ENABLE_CAS", False):
         return HttpResponseRedirect('/cas-login/')
 
+    return HttpResponseRedirect('/login/')
+
 urlpatterns = [
-    path('', redirect_to_cas, name='home'),
+    path('', redirect_home, name='home'),
     path('requests/', views.project_list, name='project_list'),
     path('login/', views.custom_login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
