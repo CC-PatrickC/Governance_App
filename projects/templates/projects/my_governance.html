@@ -1932,123 +1932,282 @@ function submitTriageEditForm(form, projectId) {
     });
 }
 
-// Function to open governance scoring modal
+// Function to open governance scoring modal with triage and scoring tabs
 function openGovernanceScoringModal(projectId) {
-    {% if is_triage_user and not is_superuser or is_triage_lead_user and not is_superuser %}
-    // Triage users (but not superusers) get the edit form instead of scoring modal
-    openTriageEditModal(projectId);
-    return;
-    {% endif %}
-    
+    const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
+    const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
+    const defaultTab = userCanScore ? 'scoring' : 'triage';
+
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
     const saveBtn = document.getElementById('saveChangesBtn');
-    
-    // Update modal title
-    modalTitle.textContent = 'Project Scoring - Governance';
-    
-    // Hide save button for scoring modal
-    saveBtn.style.display = 'none';
-    
-    // Show loading state
-    modalBody.innerHTML = `
-        <div class="text-center">
+    const deleteBtn = document.getElementById('deleteRequestBtn');
+
+    modalTitle.textContent = 'Under Review - Governance';
+
+    const loadingTemplate = (message) => `
+        <div class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Loading project details and scoring form...</p>
+            <p class="mt-2">${message}</p>
         </div>
     `;
-    
-    // Show modal
+
+    if (saveBtn) {
+        saveBtn.style.display = 'none';
+        saveBtn.onclick = null;
+    }
+    if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+        deleteBtn.onclick = null;
+    }
+
+    modalBody.innerHTML = loadingTemplate('Preparing review data...');
     modal.show();
-    
-    // Load project details and scoring form
-    fetch(`/${projectId}/scoring-details-modal/`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+
+    modalBody.innerHTML = `
+        <ul class="nav nav-tabs" id="governanceModalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link ${defaultTab === 'triage' ? 'active' : ''}" id="triage-tab" data-bs-toggle="tab" data-bs-target="#triageTabContent" type="button" role="tab" aria-controls="triageTabContent" aria-selected="${defaultTab === 'triage'}">Triage</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link ${defaultTab === 'scoring' ? 'active' : ''}" id="scoring-tab" data-bs-toggle="tab" data-bs-target="#scoringTabContent" type="button" role="tab" aria-controls="scoringTabContent" aria-selected="${defaultTab === 'scoring'}">Scoring</button>
+            </li>
+        </ul>
+        <div class="tab-content pt-3" id="governanceModalTabContent">
+            <div class="tab-pane fade ${defaultTab === 'triage' ? 'show active' : ''}" id="triageTabContent" role="tabpanel" aria-labelledby="triage-tab">
+                ${userCanEditTriage ? loadingTemplate('Loading triage form...') : '<div class="alert alert-info mb-0">You do not have permission to edit this request.</div>'}
+            </div>
+            <div class="tab-pane fade ${defaultTab === 'scoring' ? 'show active' : ''}" id="scoringTabContent" role="tabpanel" aria-labelledby="scoring-tab">
+                ${userCanScore ? loadingTemplate('Loading project details and scoring form...') : '<div class="alert alert-info mb-0">You do not have access to scoring for this request.</div>'}
+            </div>
+        </div>
+    `;
+
+    const triageContent = document.getElementById('triageTabContent');
+    const scoringContent = document.getElementById('scoringTabContent');
+
+    const updateActionButtons = (activeTab) => {
+        if (!saveBtn) {
+            return;
+        }
+        if (activeTab === 'triage' && userCanEditTriage && triageContent.querySelector('form')) {
+            saveBtn.style.display = 'inline-block';
+            if (deleteBtn) {
+                deleteBtn.style.display = 'inline-block';
             }
-            return response.json();
-        })
-        .then(data => {
-            const project = data.project;
-            const userScore = data.user_score;
-            const condensedScores = data.condensed_scores;
-            
-            // Create the modal content with project details and scoring form
-            modalBody.innerHTML = `
-                <div class="mb-3">
-                    <h5 class="mb-2">${project.title}</h5>
-                    <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
-                </div>
-                
-                <!-- Request Information Section -->
-                <div class="request-info-section mb-3">
-                    <h6 class="section-header small">Request Information</h6>
-                    <div class="info-content compact">
-                        <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
-                        <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
-                        ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
+        } else {
+            saveBtn.style.display = 'none';
+            if (deleteBtn) {
+                deleteBtn.style.display = 'none';
+            }
+        }
+    };
+
+    const getActiveTab = () => {
+        const activeButton = document.querySelector('#governanceModalTabs .nav-link.active');
+        if (!activeButton) {
+            return defaultTab;
+        }
+        return activeButton.getAttribute('data-bs-target') === '#triageTabContent' ? 'triage' : 'scoring';
+    };
+
+    document.querySelectorAll('#governanceModalTabs button[data-bs-toggle="tab"]').forEach(tabButton => {
+        tabButton.addEventListener('shown.bs.tab', (event) => {
+            const target = event.target.getAttribute('data-bs-target');
+            const activeTab = target === '#triageTabContent' ? 'triage' : 'scoring';
+            updateActionButtons(activeTab);
+        });
+    });
+
+    // Load triage form if permitted
+    if (userCanEditTriage) {
+        fetch(`/${projectId}/edit-form/`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        const error = new Error(text || 'Error loading triage form.');
+                        error.status = response.status;
+                        throw error;
+                    });
+                }
+                return response.text();
+            })
+            .then(html => {
+                triageContent.innerHTML = html;
+                const form = triageContent.querySelector('form');
+
+                if (form) {
+                    form.removeAttribute('action');
+                    form.method = 'POST';
+                    form.onsubmit = function (e) {
+                        e.preventDefault();
+                        submitTriageEditForm(form, projectId);
+                    };
+
+                    if (saveBtn) {
+                        saveBtn.onclick = () => submitTriageEditForm(form, projectId);
+                    }
+                    if (deleteBtn) {
+                        deleteBtn.onclick = () => openDeleteRequestModal(projectId);
+                    }
+
+                    initializeContactPersonAutocomplete();
+
+                    window.deleteAttachment = function(projectIdArg, fileId, buttonElement) {
+                        if (!confirm('Are you sure you want to delete this attachment?')) {
+                            return;
+                        }
+
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+                        const originalContent = buttonElement.innerHTML;
+                        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        buttonElement.disabled = true;
+
+                        fetch(`/${projectIdArg}/attachment/${fileId}/delete/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': csrfToken
+                            }
+                        })
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if (data.success) {
+                                const attachmentRow = buttonElement.closest('.list-group-item');
+                                if (attachmentRow) {
+                                    attachmentRow.remove();
+                                }
+
+                                const alertWrapper = document.createElement('div');
+                                alertWrapper.className = 'alert alert-success alert-dismissible fade show mb-3';
+                                alertWrapper.innerHTML = `
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Success!</strong> ${data.message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                `;
+                                triageContent.prepend(alertWrapper);
+                                setTimeout(() => {
+                                    if (alertWrapper && alertWrapper.parentNode) {
+                                        alertWrapper.remove();
+                                    }
+                                }, 3000);
+                            } else {
+                                alert('Error: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error deleting attachment:', error);
+                            alert('Error deleting attachment. Please try again.');
+                        })
+                        .finally(() => {
+                            buttonElement.innerHTML = originalContent;
+                            buttonElement.disabled = false;
+                        });
+                    };
+                } else {
+                    triageContent.innerHTML = '<div class="alert alert-danger">Error loading edit form.</div>';
+                }
+
+                updateActionButtons(getActiveTab());
+            })
+            .catch(error => {
+                console.error('Error loading edit form:', error);
+                triageContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error loading edit form</h6>
+                        <p>${error.status === 403 ? 'You do not have permission to edit this request.' : 'An unexpected error occurred while loading the triage form.'}</p>
                     </div>
-                </div>
-                
-                <!-- Contact Information Section -->
-                <div class="contact-info-section mb-3">
-                    <h6 class="section-header small">Contact Information</h6>
-                    <div class="info-content compact">
-                        <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                        <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                `;
+                updateActionButtons(getActiveTab());
+            });
+    }
+
+    // Load scoring content if permitted
+    if (userCanScore) {
+        fetch(`/${projectId}/scoring-details-modal/`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        const error = new Error(text || 'Error loading scoring details.');
+                        error.status = response.status;
+                        throw error;
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                const project = data.project;
+                const userScore = data.user_score;
+                const condensedScores = data.condensed_scores;
+
+                scoringContent.innerHTML = `
+                    <div class="mb-3">
+                        <h5 class="mb-2">${project.title}</h5>
+                        <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
                     </div>
-                </div>
-                
-                <!-- Description Section -->
-                <div class="description-section mb-3">
-                    <h6 class="section-header small">Description</h6>
-                    <div class="info-content compact">
-                        <p class="mb-2">${project.description || 'No description available.'}</p>
+                    
+                    <div class="request-info-section mb-3">
+                        <h6 class="section-header small">Request Information</h6>
+                        <div class="info-content compact">
+                            <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
+                            <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
+                            ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Attachments Section -->
-                <div class="attachments-section mb-3">
-                    <h6 class="section-header small">Attachments</h6>
-                    <div class="info-content compact">
-                        ${project.project_file ? `
-                            <div class="attachment-item">
-                                <i class="fas fa-file-pdf text-danger"></i>
-                                <a href="${project.project_file}" target="_blank" class="attachment-link">
-                                    ${project.project_file.split('/').pop()}
-                                </a>
-                            </div>
-                        ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                    
+                    <div class="contact-info-section mb-3">
+                        <h6 class="section-header small">Contact Information</h6>
+                        <div class="info-content compact">
+                            <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
+                            <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
+                            <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Stage Updates Section -->
-                <div class="stage-updates-section mb-3">
-                    <h6 class="section-header small">Stage Updates</h6>
-                    <div class="info-content compact" id="stageUpdatesContent">
-                        <p class="text-muted mb-0">Loading stage updates...</p>
+                    
+                    <div class="description-section mb-3">
+                        <h6 class="section-header small">Description</h6>
+                        <div class="info-content compact">
+                            <p class="mb-2">${project.description || 'No description available.'}</p>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Scoring Form Section -->
-                <div class="scoring-form-section">
-                    <h6 class="section-header small">Score This Project</h6>
-                    <form id="scoringForm">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Criteria</th>
-                                        <th>Weight</th>
-                                        <th>Your Score (1-5)</th>
-                                        <th>Weighted Score</th>
-                                    </tr>
-                                </thead>
+                    
+                    <div class="attachments-section mb-3">
+                        <h6 class="section-header small">Attachments</h6>
+                        <div class="info-content compact">
+                            ${project.project_file ? `
+                                <div class="attachment-item">
+                                    <i class="fas fa-file-pdf text-danger"></i>
+                                    <a href="${project.project_file}" target="_blank" class="attachment-link">
+                                        ${project.project_file.split('/').pop()}
+                                    </a>
+                                </div>
+                            ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                        </div>
+                    </div>
+                    
+                    <div class="stage-updates-section mb-3">
+                        <h6 class="section-header small">Stage Updates</h6>
+                        <div class="info-content compact" id="stageUpdatesContent">
+                            <p class="text-muted mb-0">Loading stage updates...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="scoring-form-section">
+                        <h6 class="section-header small">Score This Project</h6>
+                        <form id="scoringForm">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Criteria</th>
+                                            <th>Weight</th>
+                                            <th>Your Score (1-5)</th>
+                                            <th>Weighted Score</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         <tr>
                                             <td>
@@ -2210,96 +2369,99 @@ function openGovernanceScoringModal(projectId) {
                             </div>
                         </form>
                     </div>
-                </div>
-                
-                ${condensedScores && condensedScores.length > 0 ? `
-                <!-- Condensed Scores Section for AI Governance Group Lead -->
-                <div class="condensed-scores-section mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
-                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
-                            <label class="form-check-label small" for="hideScorerNames">
-                                Hide scorer names
-                            </label>
+                    
+                    ${condensedScores && condensedScores.length > 0 ? `
+                    <div class="condensed-scores-section mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
+                            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
+                                <label class="form-check-label small" for="hideScorerNames">
+                                    Hide scorer names
+                                </label>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered" id="scoresTable">
-                            <thead>
-                                <tr>
-                                    <th class="scorer-name-column">Scored By</th>
-                                    <th>Strategic</th>
-                                    <th>Cost</th>
-                                    <th>Impact</th>
-                                    <th>Ease</th>
-                                    <th>Vendor</th>
-                                    <th>Security</th>
-                                    <th>Student</th>
-                                    <th>Final</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${condensedScores.map(score => `
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered" id="scoresTable">
+                                <thead>
                                     <tr>
-                                        <td class="small scorer-name-cell">${score.scored_by}</td>
-                                        <td class="text-center">${score.strategic_alignment || '-'}</td>
-                                        <td class="text-center">${score.cost_benefit || '-'}</td>
-                                        <td class="text-center">${score.user_impact || '-'}</td>
-                                        <td class="text-center">${score.ease_of_implementation || '-'}</td>
-                                        <td class="text-center">${score.vendor_reputation_support || '-'}</td>
-                                        <td class="text-center">${score.security_compliance || '-'}</td>
-                                        <td class="text-center">${score.student_centered || '-'}</td>
-                                        <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
+                                        <th class="scorer-name-column">Scored By</th>
+                                        <th>Strategic</th>
+                                        <th>Cost</th>
+                                        <th>Impact</th>
+                                        <th>Ease</th>
+                                        <th>Vendor</th>
+                                        <th>Security</th>
+                                        <th>Student</th>
+                                        <th>Final</th>
                                     </tr>
-                                    <tr class="notes-row">
-                                        <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
-                                            <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
-                                                score.scoring_notes.trim() : 
-                                                'Member did not provide any scoring notes.'}
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    ${condensedScores.map(score => `
+                                        <tr>
+                                            <td class="small scorer-name-cell">${score.scored_by}</td>
+                                            <td class="text-center">${score.strategic_alignment || '-'}</td>
+                                            <td class="text-center">${score.cost_benefit || '-'}</td>
+                                            <td class="text-center">${score.user_impact || '-'}</td>
+                                            <td class="text-center">${score.ease_of_implementation || '-'}</td>
+                                            <td class="text-center">${score.vendor_reputation_support || '-'}</td>
+                                            <td class="text-center">${score.security_compliance || '-'}</td>
+                                            <td class="text-center">${score.student_centered || '-'}</td>
+                                            <td class="text-center fw-bold">${score.final_score ? score.final_score.toFixed(2) : '-'}</td>
+                                        </tr>
+                                        <tr class="notes-row">
+                                            <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
+                                                <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
+                                                    score.scoring_notes.trim() : 
+                                                    'Member did not provide any scoring notes.'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-                ` : ''}
-            `;
-            
-            // Add event listener for the scoring form (only for non-lead users)
-            {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
-            document.getElementById('scoringForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveGovernanceScore(projectId);
+                    ` : ''}
+                `;
+
+                populateStageUpdates(project.stage_changes);
+
+                {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
+                document.getElementById('scoringForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveGovernanceScore(projectId);
+                });
+                {% endif %}
+
+                setTimeout(function() {
+                    toggleScorerNames();
+                }, 100);
+
+                setTimeout(() => {
+                    const tooltipTriggerList = [].slice.call(scoringContent.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    tooltipTriggerList.map(function (tooltipTriggerEl) {
+                        return new bootstrap.Tooltip(tooltipTriggerEl);
+                    });
+
+                    scoringContent.querySelectorAll('.score-input').forEach(input => {
+                        calculateWeightedScore(input);
+                    });
+                }, 100);
+            })
+            .catch(error => {
+                console.error('Error loading project details:', error);
+                scoringContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error loading scoring details</h6>
+                        <p>${error.status === 403 ? 'You do not have permission to score this request.' : 'An unexpected error occurred while loading scoring information.'}</p>
+                    </div>
+                `;
             });
-            {% endif %}
-            
-            // Initialize scorer names visibility (checkbox is checked by default)
-            setTimeout(function() {
-                toggleScorerNames();
-            }, 100);
-            
-            // Initialize tooltips and calculate initial scores
-            setTimeout(() => {
-                // Initialize Bootstrap tooltips
-                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                    return new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-                
-                // Calculate initial weighted scores
-                document.querySelectorAll('.score-input').forEach(input => {
-                    calculateWeightedScore(input);
-                });
-            }, 100);
-        })
-        .catch(error => {
-            console.error('Error loading project details:', error);
-            modalBody.innerHTML = '<div class="alert alert-danger">Error loading project details and scoring form.</div>';
-        });
+    }
+
+    updateActionButtons(getActiveTab());
 }
 
 // Function to calculate weighted scores for governance scoring
