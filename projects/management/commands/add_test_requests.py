@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 priority=random.choice(priorities),
                 status=random.choice(statuses),
                 submission_date=random_date,
-                contact_person=f'Test Contact {i+1}',
+                technician=f'Test Technician {i+1}',
                 contact_email=f'test.contact{i+1}@ccgov.org',
                 contact_phone=f'555-{str(random.randint(100, 999))}-{str(random.randint(1000, 9999))}',
                 budget=Decimal(str(random.randint(1000, 500000))),

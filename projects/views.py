@@ -81,7 +81,7 @@ def track_project_changes(project, form_data, user):
         'priority': 'Priority',
         'stage': 'Stage',
         'department': 'Department',
-        'contact_person': 'Contact Person',
+        'technician': 'Technician',
         'contact_email': 'Contact Email',
     }
     
@@ -468,8 +468,8 @@ def project_update_ajax(request, pk):
         project.triaged_by = request.user
         project.triage_date = timezone.now()
         
-        # Update contact information and SDP fields
-        project.contact_person = request.POST.get('contact_person', '')
+        # Update assignment information
+        project.technician = request.POST.get('technician', '')
         project.contact_email = request.POST.get('contact_email', '')
         project.sdp_ticket_number = request.POST.get('sdp_ticket_number', '')
         project.sdp_link = request.POST.get('sdp_link', '')
@@ -669,7 +669,7 @@ def project_update(request, pk):
             project.priority = request.POST.get('priority')
             project.department = request.POST.get('department', '')
             project.notes = request.POST.get('notes', '')
-            project.contact_person = request.POST.get('contact_person', '')
+            project.technician = request.POST.get('technician', '')
             
             # Update stage if provided
             new_stage = request.POST.get('stage')
@@ -1397,20 +1397,34 @@ def project_scoring_details_modal(request, pk):
 
         
         # Prepare project data for JSON response with safe date handling
+        submitted_by_name = None
+        submitted_by_email = None
+        if project.submitted_by:
+            submitted_by_name = project.submitted_by.get_full_name() or project.submitted_by.username
+            submitted_by_email = project.submitted_by.email
+
+        files_data = [
+            {
+                'url': file.file.url,
+                'name': file.file.name.split('project_files/')[-1]
+            }
+            for file in project.files.all()
+        ]
+
         project_data = {
             'id': project.id,
             'title': project.title,
             'department': project.department,
-            'submitted_by': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
-            'submitted_by_name': project.submitted_by.get_full_name() if project.submitted_by and (project.submitted_by.first_name or project.submitted_by.last_name) else (project.submitted_by.username if project.submitted_by else 'N/A'),
-            'submitted_by_email': project.submitted_by.email if project.submitted_by else 'N/A',
-            'contact_person': project.contact_person,
-            'sdp_ticket_number': project.sdp_ticket_number,
-            'sdp_link': project.sdp_link,
+            'technician': project.technician,
+            'contact_email': project.contact_email,
+            'contact_phone': project.contact_phone,
+            'formatted_id': project.formatted_id,
             'project_type': project.project_type,
             'project_type_display': project.get_project_type_display(),
             'status': project.status,
             'status_display': project.get_status_display(),
+            'stage_display': project.get_stage_display(),
+            'priority_display': project.get_priority_display(),
             'submission_date': project.submission_date.isoformat() if project.submission_date else None,
             'submission_date_formatted': project.submission_date.strftime('%B %d, %Y') if project.submission_date else None,
             'start_date': project.start_date.isoformat() if project.start_date else None,
@@ -1422,8 +1436,10 @@ def project_scoring_details_modal(request, pk):
             'description': project.description,
             'priority': project.priority,
             'stage': project.stage,
-            'triage_notes': triage_notes_data,
+            'submitted_by_name': submitted_by_name,
+            'submitted_by_email': submitted_by_email,
             'files': files_data,
+            'stage_changes': stage_changes_data,
         }
         
         # Prepare user score data if it exists
@@ -1494,7 +1510,7 @@ def project_scoring_details_modal(request, pk):
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
-        print(f"DEBUG: Contact person: {project.contact_person}")
+        print(f"DEBUG: Technician: {project.technician}")
         print(f"DEBUG: Contact email: {project.contact_email}")
         return JsonResponse(response_data)
         
@@ -1856,7 +1872,7 @@ def project_intake_form(request):
             # Get form data
             title = request.POST.get('title')
             description = request.POST.get('description')
-            contact_person = request.POST.get('contact_person')
+            technician = request.POST.get('technician')
             contact_email = request.POST.get('contact_email')
             contact_phone = request.POST.get('contact_phone')
             same_as_requestor = request.POST.get('same_as_requestor') == 'on'
@@ -1865,7 +1881,7 @@ def project_intake_form(request):
             if same_as_requestor:
                 # Use the user's full name if available, otherwise username
                 user_full_name = f"{request.user.first_name} {request.user.last_name}".strip()
-                contact_person = user_full_name if user_full_name else request.user.username
+                technician = user_full_name if user_full_name else request.user.username
                 contact_email = request.user.email
             
             # Validate required fields
@@ -1873,8 +1889,8 @@ def project_intake_form(request):
                 raise ValueError("Title is required")
             if not description:
                 raise ValueError("Description is required")
-            if not contact_person:
-                raise ValueError("Contact person is required")
+            if not technician:
+                raise ValueError("Technician is required")
             if not contact_email:
                 raise ValueError("Contact email is required")
             
@@ -1882,7 +1898,7 @@ def project_intake_form(request):
             project = Project.objects.create(
                 title=title,
                 description=description,
-                contact_person=contact_person,
+                technician=technician,
                 contact_email=contact_email,
                 contact_phone=contact_phone,
                 submitted_by=request.user,
@@ -1984,10 +2000,27 @@ def my_governance_superuser(request):
 
 @login_required
 def my_governance(request):
-    """My Governance page - shows user's submitted requests"""
-    if request.user.is_authenticated:
+    """My Governance page - shows user's submitted requests and contact requests"""
+    # Handle anonymous users
+    if not request.user.is_authenticated:
+        user_projects = Project.objects.none()
+        technician_projects = Project.objects.none()
+        triage_projects = None
+        governance_projects = None
+        final_governance_projects = None
+    else:
         # Get all projects submitted by the current user
         user_projects = Project.objects.filter(submitted_by=request.user).order_by('-submission_date')
+        
+        # Get all projects where the user is the assigned technician
+        # Check by full name first, then by username if no match
+        user_full_name = request.user.get_full_name()
+        user_username = request.user.username
+        
+        technician_projects = Project.objects.filter(
+            Q(technician=user_full_name) | 
+            Q(technician=user_username)
+        ).exclude(submitted_by=request.user).order_by('-submission_date')
     
         # Get triage projects for users in Triage Group or Triage Group Lead, or superusers
         triage_projects = None
@@ -2077,6 +2110,7 @@ def my_governance(request):
     
     context = {
         'user_projects': user_projects,
+        'technician_projects': technician_projects,
         'triage_projects': triage_projects,
         'governance_projects': governance_projects,
         'final_governance_projects': final_governance_projects,

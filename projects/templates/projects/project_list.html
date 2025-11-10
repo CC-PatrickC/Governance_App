@@ -537,7 +537,7 @@
         {% if projects %}
         <div class="cc-projects-grid">
             {% for project in projects %}
-            <div class="cc-project-card" data-project-id="{{ project.id }}" data-project-title="{{ project.title|safe }}" data-project-description="{{ project.description|safe }}" data-project-type="{{ project.get_project_type_display|safe }}" data-project-priority="{{ project.priority|safe }}" data-project-status="{{ project.get_status_display|safe }}" data-project-stage="{{ project.get_stage_display|safe }}" data-project-department="{{ project.department|default:""|safe }}" data-project-notes="{{ project.notes|default:""|safe }}" data-project-contact-person="{% if project.contact_person %}{% if project.contact_person.first_name and project.contact_person.last_name %}{{ project.contact_person.get_full_name|safe }}{% else %}{{ project.contact_person|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-formatted-id="{{ project.formatted_id|safe }}" data-project-submitted-by="{% if project.submitted_by %}{% if project.submitted_by.first_name and project.submitted_by.last_name %}{{ project.submitted_by.get_full_name|safe }}{% else %}{{ project.submitted_by.username|safe }}{% endif %}{% else %}Unknown{% endif %}" data-project-submission-date="{{ project.submission_date|date:'F j, Y'|safe }}" data-project-triage-notes="{{ project.triage_notes|default:""|safe }}" data-project-triaged-by="{% if project.triaged_by %}{% if project.triaged_by.first_name and project.triaged_by.last_name %}{{ project.triaged_by.get_full_name|safe }}{% else %}{{ project.triaged_by.username|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-triage-date="{{ project.triage_date|date:'F j, Y'|default:'Not specified'|safe }}" style="cursor: pointer;">
+            <div class="cc-project-card" data-project-id="{{ project.id }}" data-project-title="{{ project.title|safe }}" data-project-description="{{ project.description|safe }}" data-project-type="{{ project.get_project_type_display|safe }}" data-project-priority="{{ project.priority|safe }}" data-project-status="{{ project.get_status_display|safe }}" data-project-stage="{{ project.get_stage_display|safe }}" data-project-department="{{ project.department|default:""|safe }}" data-project-notes="{{ project.notes|default:""|safe }}" data-project-technician="{{ project.technician|default:'Not specified'|safe }}" data-project-formatted-id="{{ project.formatted_id|safe }}" data-project-submitted-by="{% if project.submitted_by %}{% if project.submitted_by.first_name and project.submitted_by.last_name %}{{ project.submitted_by.get_full_name|safe }}{% else %}{{ project.submitted_by.username|safe }}{% endif %}{% else %}Unknown{% endif %}" data-project-submission-date="{{ project.submission_date|date:'F j, Y'|safe }}" data-project-triage-notes="{{ project.triage_notes|default:""|safe }}" data-project-triaged-by="{% if project.triaged_by %}{% if project.triaged_by.first_name and project.triaged_by.last_name %}{{ project.triaged_by.get_full_name|safe }}{% else %}{{ project.triaged_by.username|safe }}{% endif %}{% else %}Not specified{% endif %}" data-project-triage-date="{{ project.triage_date|date:'F j, Y'|default:'Not specified'|safe }}" style="cursor: pointer;">
                 <div class="cc-project-header">
                     <div class="cc-project-title">{{ project.title }}</div>
                     <div class="cc-project-id">{{ project.formatted_id }}</div>
@@ -830,10 +830,11 @@ function displayProjectDetails(data) {
                 </div>
                 <div class="col-md-4">
                     <div class="detail-card">
-                        <div class="detail-title">Contact Information</div>
+                        <div class="detail-title">Technician Information</div>
                         <div class="detail-content">
-                            <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                            <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                            <p><strong>Technician:</strong> ${project.technician || 'N/A'}</p>
+                            <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
+                            <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
                             <p><strong>Budget:</strong> ${project.budget_formatted || 'N/A'}</p>
                         </div>
                     </div>
