@@ -1457,56 +1457,57 @@ def project_scoring_details_modal(request, pk):
                 'student_centered': user_score.student_centered,
             }
         
-        # Get scores for Lead users to view
-        condensed_scores_data = None
-        group_name_map = {
-            'ai_governance': 'AI Governance Group',
-            'erp_governance': 'ERP Governance Group',
-            'it_governance': 'IT Governance Group',
-            'process_improvement': 'Process Improvement Group'
+        # Get committee scores for the relevant governance group
+        committee_groups_map = {
+            'ai_governance': {
+                'groups': ['AI Governance Group', 'AI Governance Group Lead'],
+                'label': 'AI Governance Committee',
+            },
+            'erp_governance': {
+                'groups': ['ERP Governance Group', 'ERP Governance Group Lead'],
+                'label': 'ERP Governance Committee',
+            },
+            'it_governance': {
+                'groups': ['IT Governance Group', 'IT Governance Group Lead'],
+                'label': 'IT Governance Committee',
+            },
+            'process_improvement': {
+                'groups': ['Process Improvement Group', 'Process Improvement Group Lead'],
+                'label': 'Process Improvement Committee',
+            },
         }
-        
-        # Determine which group scores to show based on Lead user type and project type
-        group_to_check = None
-        if is_ai_governance_lead_user(request.user) and project.project_type == 'ai_governance':
-            group_to_check = 'AI Governance Group'
-        elif is_erp_governance_lead_user(request.user) and project.project_type == 'erp_governance':
-            group_to_check = 'ERP Governance Group'
-        elif is_it_governance_lead_user(request.user) and project.project_type == 'it_governance':
-            group_to_check = 'IT Governance Group'
-        elif is_process_improvement_lead_user(request.user) and project.project_type == 'process_improvement':
-            group_to_check = 'Process Improvement Group'
-        
-        if group_to_check:
-            # Get the governance group members
-            governance_group = Group.objects.filter(name=group_to_check).first()
-            if governance_group:
-                governance_users = governance_group.user_set.all()
-                
-                # Get all scores from governance group members for this project
-                group_scores = project.scores.filter(scored_by__in=governance_users).select_related('scored_by')
-                
-                condensed_scores_data = []
-                for score in group_scores:
-                    condensed_scores_data.append({
-                        'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
-                        'final_score': score.final_score,
-                        'strategic_alignment': score.strategic_alignment,
-                        'cost_benefit': score.cost_benefit,
-                        'user_impact': score.user_impact,
-                        'ease_of_implementation': score.ease_of_implementation,
-                        'vendor_reputation_support': score.vendor_reputation_support,
-                        'security_compliance': score.security_compliance,
-                        'student_centered': score.student_centered,
-                        'scoring_notes': score.scoring_notes,
-                        'created_at': score.created_at.isoformat() if score.created_at else None,
-                    })
+
+        committee_config = committee_groups_map.get(project.project_type)
+        committee_label = committee_config['label'] if committee_config else 'Committee'
+
+        if committee_config:
+            committee_users = User.objects.filter(groups__name__in=committee_config['groups']).distinct()
+            committee_scores_qs = project.scores.filter(scored_by__in=committee_users).select_related('scored_by').order_by('-created_at')
+        else:
+            committee_scores_qs = project.scores.select_related('scored_by').order_by('-created_at')
+
+        committee_scores_data = []
+        for score in committee_scores_qs:
+            committee_scores_data.append({
+                'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                'final_score': score.final_score,
+                'strategic_alignment': score.strategic_alignment,
+                'cost_benefit': score.cost_benefit,
+                'user_impact': score.user_impact,
+                'ease_of_implementation': score.ease_of_implementation,
+                'vendor_reputation_support': score.vendor_reputation_support,
+                'security_compliance': score.security_compliance,
+                'student_centered': score.student_centered,
+                'scoring_notes': score.scoring_notes,
+                'created_at': score.created_at.isoformat() if score.created_at else None,
+            })
         
         response_data = {
             'success': True,
             'project': project_data,
             'user_score': user_score_data,
-            'condensed_scores': condensed_scores_data,
+            'committee_scores': committee_scores_data,
+            'committee_label': committee_label,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
