@@ -157,16 +157,16 @@
     </div>
 
     <div class="mb-3" style="position: relative;">
-        <label for="contact_person" class="form-label">Contact Person</label>
+        <label for="technician" class="form-label">Technician</label>
         <input type="text" 
                class="form-control" 
-               id="contact_person" 
-               name="contact_person" 
-               value="{{ project.contact_person|default:'' }}"
+               id="technician" 
+               name="technician" 
+               value="{{ project.technician|default:'' }}"
                placeholder="Start typing to search users..."
                autocomplete="off">
-        <div id="contact_person_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
-        <small class="form-text text-muted">Type to search and select the primary contact person for this request.</small>
+        <div id="technician_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+        <small class="form-text text-muted">Type to search and assign the technician responsible for this request.</small>
     </div>
 
     <div class="mb-3">

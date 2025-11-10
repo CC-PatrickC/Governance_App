@@ -63,7 +63,7 @@ class Project(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
-    contact_person = models.CharField(max_length=100, null=True, blank=True)
+    technician = models.CharField(max_length=100, null=True, blank=True)
     contact_email = models.EmailField(null=True, blank=True)
     contact_phone = models.CharField(max_length=20, null=True, blank=True)
     triage_notes = models.TextField(blank=True, null=True)

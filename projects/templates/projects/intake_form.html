@@ -218,40 +218,40 @@
 
         
 
-        <!-- Contact Information -->
+        <!-- Technician Information -->
         <div class="form-section">
-            <h3>Contact Information</h3>
+            <h3>Technician Information</h3>
             
             <div class="mb-3">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor">
                     <label class="form-check-label" for="same_as_requestor">
-                        Contact person is same as requestor
+                        Technician is same as requestor
                     </label>
                 </div>
-                <div class="help-text">Check this if you are the primary contact for this request</div>
+                <div class="help-text">Check this if you will be the assigned technician for this request</div>
             </div>
             
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="contact_person" class="form-label required-field">Contact Person</label>
-                    <input type="text" class="form-control" id="contact_person" name="contact_person" required
-                           placeholder="Enter the primary contact person's name">
-                    <div class="help-text">Who should we contact for questions about this request?</div>
+                    <label for="technician" class="form-label required-field">Technician</label>
+                    <input type="text" class="form-control" id="technician" name="technician" required
+                           placeholder="Enter the assigned technician's name">
+                    <div class="help-text">Who will be assigned to work on this request?</div>
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label for="contact_email" class="form-label required-field">Contact Email</label>
+                    <label for="contact_email" class="form-label required-field">Technician Email</label>
                     <input type="email" class="form-control" id="contact_email" name="contact_email" required
-                           placeholder="Enter contact email address">
+                           placeholder="Enter technician email address">
                     <div class="help-text">We'll use this email for updates and questions</div>
                 </div>
             </div>
 
             <div class="mb-3">
-                <label for="contact_phone" class="form-label">Contact Phone</label>
+                <label for="contact_phone" class="form-label">Technician Phone</label>
                 <input type="tel" class="form-control" id="contact_phone" name="contact_phone"
-                       placeholder="Enter contact phone number (optional)">
+                       placeholder="Enter technician phone number (optional)">
                 <div class="help-text">Optional: Provide a phone number for urgent matters</div>
             </div>
         </div>
@@ -401,7 +401,7 @@ function removeFile(index) {
 
 // Contact person same as requestor functionality
 const sameAsRequestorCheckbox = document.getElementById('same_as_requestor');
-const contactPersonField = document.getElementById('contact_person');
+const technicianField = document.getElementById('technician');
 const contactEmailField = document.getElementById('contact_email');
 
 sameAsRequestorCheckbox.addEventListener('change', function() {
@@ -411,26 +411,26 @@ sameAsRequestorCheckbox.addEventListener('change', function() {
         const requestorEmail = '{{ user.email }}';
         
         // Auto-fill the fields
-        contactPersonField.value = requestorName;
+        technicianField.value = requestorName;
         contactEmailField.value = requestorEmail;
         
         // Disable the fields and grey them out
-        contactPersonField.disabled = true;
+        technicianField.disabled = true;
         contactEmailField.disabled = true;
     } else {
         // Clear the fields
-        contactPersonField.value = '';
+        technicianField.value = '';
         contactEmailField.value = '';
         
         // Re-enable the fields
-        contactPersonField.disabled = false;
+        technicianField.disabled = false;
         contactEmailField.disabled = false;
     }
 });
 
 // Form validation
 document.getElementById('intakeForm').addEventListener('submit', function(e) {
-         const requiredFields = ['title', 'description', 'contact_person', 'contact_email'];
+         const requiredFields = ['title', 'description', 'technician', 'contact_email'];
     let isValid = true;
     
     requiredFields.forEach(fieldId => {

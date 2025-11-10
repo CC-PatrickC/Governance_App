@@ -1364,16 +1364,16 @@
                 {% endif %}
             </div>
             
-            <!-- My Contact Requests Section -->
+            <!-- My Assigned Requests Section -->
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
-                    <h2>My Contact Requests</h2>
-                    <p class="text-muted">Requests where you are listed as the contact person</p>
+                    <h2>My Assigned Requests</h2>
+                    <p class="text-muted">Requests where you are listed as the technician</p>
                 </div>
                 
-                {% if contact_projects %}
+                {% if technician_projects %}
                     <div class="cc-projects-grid">
-                        {% for project in contact_projects %}
+                        {% for project in technician_projects %}
                         <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
                             <div class="cc-project-header">
                                 <div class="cc-project-title">{{ project.title }}</div>
@@ -1425,8 +1425,8 @@
                 {% else %}
                     <div class="cc-empty-state">
                         <i class="fas fa-user-tie"></i>
-                        <h4>No Contact Requests</h4>
-                        <p>You are not listed as a contact person for any requests.</p>
+                        <h4>No Assigned Requests</h4>
+                        <p>You are not currently assigned as a technician for any requests.</p>
                     </div>
                 {% endif %}
             </div>
@@ -1547,11 +1547,11 @@ function showProjectDetails(projectId) {
                          <div class="row mt-3">
                              <div class="col-12">
                                  <div class="detail-card">
-                                     <div class="detail-title">Contact Information</div>
+                                    <div class="detail-title">Technician Information</div>
                                      <div class="detail-content">
-                                         <p><strong>Contact Person:</strong> ${project.contact_person ? project.contact_person : 'N/A'}</p>
-                                         <p><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                                         <p><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                        <p><strong>Technician:</strong> ${project.technician ? project.technician : 'N/A'}</p>
+                                        <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
+                                        <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
                                          <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
                                      </div>
                                  </div>
@@ -1677,8 +1677,8 @@ function openTriageEditModal(projectId) {
                 deleteBtn.style.display = 'inline-block';
                 
                 
-                // Initialize contact person autocomplete
-                initializeContactPersonAutocomplete();
+                // Initialize technician autocomplete
+                initializeTechnicianAutocomplete();
                 
                 
                 // Add form submit handler
@@ -1875,8 +1875,8 @@ function submitTriageEditForm(form, projectId) {
                             // Replace the form content
                             formElement.innerHTML = newForm.innerHTML;
                             
-                            // Re-initialize contact person autocomplete
-                            initializeContactPersonAutocomplete();
+                            // Re-initialize technician autocomplete
+                            initializeTechnicianAutocomplete();
                             
                             // Clear the file input
                             const fileInput = formElement.querySelector('input[type="file"]');
@@ -2054,7 +2054,7 @@ function openGovernanceScoringModal(projectId) {
                         deleteBtn.onclick = () => openDeleteRequestModal(projectId);
                     }
 
-                    initializeContactPersonAutocomplete();
+                initializeTechnicianAutocomplete();
 
                     window.deleteAttachment = function(projectIdArg, fileId, buttonElement) {
                         if (!confirm('Are you sure you want to delete this attachment?')) {
@@ -2143,55 +2143,102 @@ function openGovernanceScoringModal(projectId) {
                 const userScore = data.user_score;
                 const condensedScores = data.condensed_scores;
 
-                scoringContent.innerHTML = `
-                    <div class="mb-3">
-                        <h5 class="mb-2">${project.title}</h5>
-                        <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
-                    </div>
-                    
-                    <div class="request-info-section mb-3">
-                        <h6 class="section-header small">Request Information</h6>
-                        <div class="info-content compact">
-                            <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
-                            <p class="mb-2"><strong>Priority:</strong> ${project.priority || 'N/A'}</p>
-                            ${project.department ? `<p class="mb-2"><strong>Department:</strong> ${project.department}</p>` : ''}
+                const submittedEmailHtml = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : 'N/A';
+                const contactEmailHtml = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : 'N/A';
+
+                const timelineColumns = [];
+                if (project.start_date_formatted) {
+                    timelineColumns.push(`
+                    <div class="col-md-4 col-12">
+                        <div class="border rounded h-100 p-3 bg-light-subtle">
+                            <div class="text-uppercase text-muted small fw-semibold mb-2">Start Date</div>
+                            <div class="fw-medium">${project.start_date_formatted}</div>
                         </div>
                     </div>
-                    
-                    <div class="contact-info-section mb-3">
-                        <h6 class="section-header small">Contact Information</h6>
-                        <div class="info-content compact">
-                            <p class="mb-2"><strong>Contact Person:</strong> ${project.contact_person || 'N/A'}</p>
-                            <p class="mb-2"><strong>Contact Email:</strong> ${project.contact_email || 'N/A'}</p>
-                            <p class="mb-2"><strong>Contact Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                    `);
+                }
+
+                if (project.end_date_formatted) {
+                    timelineColumns.push(`
+                    <div class="col-md-4 col-12">
+                        <div class="border rounded h-100 p-3 bg-light-subtle">
+                            <div class="text-uppercase text-muted small fw-semibold mb-2">Target Completion</div>
+                            <div class="fw-medium">${project.end_date_formatted}</div>
                         </div>
                     </div>
-                    
-                    <div class="description-section mb-3">
-                        <h6 class="section-header small">Description</h6>
-                        <div class="info-content compact">
-                            <p class="mb-2">${project.description || 'No description available.'}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="attachments-section mb-3">
-                        <h6 class="section-header small">Attachments</h6>
-                        <div class="info-content compact">
-                            ${project.project_file ? `
-                                <div class="attachment-item">
-                                    <i class="fas fa-file-pdf text-danger"></i>
-                                    <a href="${project.project_file}" target="_blank" class="attachment-link">
-                                        ${project.project_file.split('/').pop()}
+                    `);
+                }
+
+                const timelineHtml = timelineColumns.length
+                    ? `<div class="row g-3 mt-1">
+                            ${timelineColumns.join('')}
+                       </div>`
+                    : '';
+
+                const descriptionSubtitle = project.description ? project.description : 'No description available.';
+
+                const attachmentsHtml = project.files && project.files.length
+                    ? `
+                        <div class="mt-4">
+                            <h6 class="text-uppercase text-muted fw-semibold small">Attachments</h6>
+                            <div class="list-group">
+                                ${project.files.map(file => `
+                                    <a href="${file.url}" class="list-group-item list-group-item-action d-flex align-items-center gap-2" target="_blank">
+                                        <i class="fas fa-paperclip text-muted"></i>
+                                        <span>${file.name}</span>
                                     </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `
+                    : '';
+
+                scoringContent.innerHTML = `
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
+                            <div>
+                                <div class="text-uppercase text-muted small fw-semibold">${project.formatted_id || ('#' + project.id.toString().padStart(3, '0'))}</div>
+                                <h5 class="mb-1">${project.title}</h5>
+                                <div class="text-muted fst-italic">${descriptionSubtitle}</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="border rounded h-100 p-3 bg-light-subtle">
+                                        <div class="text-uppercase text-muted small fw-semibold mb-2">Request Summary</div>
+                                        <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
+                                        <p class="mb-2"><strong>Stage:</strong> ${project.stage_display || 'N/A'}</p>
+                                        <p class="mb-2"><strong>Priority:</strong> ${project.priority_display || project.priority || 'N/A'}</p>
+                                        <p class="mb-2"><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                                        <p class="mb-0"><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                    </div>
                                 </div>
-                            ` : '<p class="text-muted mb-0">No attachments available.</p>'}
+                                <div class="col-md-6">
+                                    <div class="border rounded h-100 p-3">
+                                        <div class="text-uppercase text-muted small fw-semibold mb-2">Key Contacts</div>
+                                        <p class="mb-2"><strong>Submitted By:</strong> ${project.submitted_by_name || 'Unknown'}</p>
+                                        <p class="mb-2"><strong>Submitted Email:</strong> ${submittedEmailHtml}</p>
+                                        <p class="mb-2"><strong>Technician:</strong> ${project.technician || 'N/A'}</p>
+                                        <p class="mb-2"><strong>Technician Email:</strong> ${contactEmailHtml}</p>
+                                        <p class="mb-0"><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            ${timelineHtml}
+                            <div class="mt-4">
+                                <h6 class="fw-semibold">Description</h6>
+                                <p class="mb-0">${project.description || 'No description available.'}</p>
+                            </div>
+                            ${attachmentsHtml}
                         </div>
                     </div>
-                    
-                    <div class="stage-updates-section mb-3">
-                        <h6 class="section-header small">Stage Updates</h6>
-                        <div class="info-content compact" id="stageUpdatesContent">
-                            <p class="text-muted mb-0">Loading stage updates...</p>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h6 class="section-header small mb-3">Stage Updates</h6>
+                            <div class="info-content compact" id="stageUpdatesContent">
+                                <p class="text-muted mb-0">Loading stage updates...</p>
+                            </div>
                         </div>
                     </div>
                     
@@ -3214,18 +3261,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Global autocomplete function
-function initializeContactPersonAutocomplete() {
-    console.log('Initializing contact person autocomplete');
+function initializeTechnicianAutocomplete() {
+    console.log('Initializing technician autocomplete');
     
-    const contactInput = document.getElementById('contact_person');
-    const suggestionsDiv = document.getElementById('contact_person_suggestions');
+    const technicianInput = document.getElementById('technician');
+    const suggestionsDiv = document.getElementById('technician_suggestions');
     
-    if (!contactInput || !suggestionsDiv) {
-        console.log('Contact input or suggestions div not found');
+    if (!technicianInput || !suggestionsDiv) {
+        console.log('Technician input or suggestions div not found');
         return;
     }
     
-    console.log('Contact input and suggestions div found');
+    console.log('Technician input and suggestions div found');
     
     let currentFocus = -1;
     let users = [];
@@ -3245,10 +3292,10 @@ function initializeContactPersonAutocomplete() {
         .catch(error => console.error('Error loading users:', error));
     
     // Remove any existing event listeners
-    const newContactInput = contactInput.cloneNode(true);
-    contactInput.parentNode.replaceChild(newContactInput, contactInput);
+    const newTechnicianInput = technicianInput.cloneNode(true);
+    technicianInput.parentNode.replaceChild(newTechnicianInput, technicianInput);
     
-    newContactInput.addEventListener('input', function() {
+    newTechnicianInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         currentFocus = -1;
         
@@ -3284,7 +3331,7 @@ function initializeContactPersonAutocomplete() {
             `;
             
             suggestion.addEventListener('click', function() {
-                newContactInput.value = user.full_name;
+                newTechnicianInput.value = user.full_name;
                 suggestionsDiv.style.display = 'none';
             });
             
@@ -3295,7 +3342,7 @@ function initializeContactPersonAutocomplete() {
     });
     
     // Handle keyboard navigation
-    newContactInput.addEventListener('keydown', function(e) {
+    newTechnicianInput.addEventListener('keydown', function(e) {
         const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
         
         if (e.key === 'ArrowDown') {
