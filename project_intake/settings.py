@@ -64,15 +64,17 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',  # Enable this when CAS is ready
+    # 'cas.middleware.ProxyMiddleware',  # Temporarily disabled - causing server error
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'cas.middleware.CASMiddleware',  # Enable this when CAS is ready
+    # 'cas.middleware.CASMiddleware',  # Temporarily disabled - causing server error
 ]
+
+PROXY_DOMAIN = 'governance.coloradocollege.app'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -80,6 +82,27 @@ AUTHENTICATION_BACKENDS = (
     'cas.backends.CASBackend',  # Enable this when CAS is ready
 
 )
+
+CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
+CAS_LOGOUT_COMPLETELY = True
+CAS_PROVIDE_URL_TO_LOGOUT = True
+CAS_GATEWAY = False  # Changed to False for better login flow
+CAS_VERSION = '3'  # Use CAS 3.0 for attribute support
+CAS_ADMIN_PREFIX = "/admin"
+CAS_CREATE_USER = True  # Automatically create users from CAS
+CAS_LOGIN_MSG = None
+CAS_LOGGED_MSG = None
+
+# CAS Attribute Mapping (Updated with actual CAS attributes)
+CAS_RENAME_ATTRIBUTES = {
+    'msDS-cloudExtensionAttribute1': 'username',  # ID or INID
+    'mail': 'email', 
+    'givenName': 'first_name',
+    'sn': 'last_name',
+    'fullName': 'full_name',
+    'title': 'title',
+    'department': 'department',
+}
 
 ROOT_URLCONF = 'project_intake.urls'
 
