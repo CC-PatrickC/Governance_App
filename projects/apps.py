@@ -7,6 +7,8 @@ class ProjectsConfig(AppConfig):
     name = 'projects'
     
     def ready(self):
-        # Import CAS-related signals only when CAS is enabled
         if getattr(settings, "ENABLE_CAS", False):
             from . import cas_signals  # noqa: F401
+
+        if getattr(settings, "ENABLE_AZURE_AD", False):
+            from . import azure_signals  # noqa: F401

@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import AuthenticationForm
+from django.conf import settings
 from .models import Project, ProjectFile, ProjectScore, TriageNote, TriageChange
 from .forms import ProjectForm
 import json
@@ -196,7 +197,11 @@ def custom_login_view(request):
         else:
             messages.error(request, 'Invalid username or password.')
     
-    return render(request, 'registration/login.html')
+    context = {
+        'enable_cas': getattr(settings, 'ENABLE_CAS', False),
+        'enable_azure_ad': getattr(settings, 'ENABLE_AZURE_AD', False),
+    }
+    return render(request, 'registration/login.html', context)
 
 @login_required
 def project_list(request):

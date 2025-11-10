@@ -19,6 +19,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")  # loads your local .env
 
 ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
+ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
+AZURE_AD_GROUP_MAPPING = {}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -64,6 +66,9 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
 ]
+
+if ENABLE_AZURE_AD:
+    INSTALLED_APPS.append('allauth.socialaccount.providers.microsoft')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -231,3 +236,41 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+
+SOCIALACCOUNT_STORE_TOKENS = True
+
+SOCIALACCOUNT_PROVIDERS = {}
+
+if ENABLE_AZURE_AD:
+    AZURE_AD_TENANT_ID = os.getenv("DJANGO_AZURE_TENANT_ID", "common")
+    AZURE_AD_CLIENT_ID = os.getenv("DJANGO_AZURE_CLIENT_ID", "")
+    AZURE_AD_CLIENT_SECRET = os.getenv("DJANGO_AZURE_CLIENT_SECRET", "")
+    AZURE_AD_GROUP_MAPPING_RAW = os.getenv("DJANGO_AZURE_GROUP_MAPPING", "")
+
+    AZURE_AD_SCOPES = [
+        'openid',
+        'email',
+        'profile',
+        'offline_access',
+        'User.Read',
+        'GroupMember.Read.All',
+    ]
+
+    AZURE_AD_GROUP_MAPPING = {}
+    if AZURE_AD_GROUP_MAPPING_RAW:
+        for item in AZURE_AD_GROUP_MAPPING_RAW.split(','):
+            key, _, value = item.partition(':')
+            if key and value:
+                AZURE_AD_GROUP_MAPPING[key.strip()] = value.strip()
+
+    SOCIALACCOUNT_PROVIDERS['microsoft'] = {
+        'TENANT': AZURE_AD_TENANT_ID,
+        'SCOPE': AZURE_AD_SCOPES,
+        'AUTH_PARAMS': {'prompt': 'select_account'},
+        'METHOD': 'oauth2',
+        'VERIFIED_EMAIL': True,
+        'APP': {
+            'client_id': AZURE_AD_CLIENT_ID,
+            'secret': AZURE_AD_CLIENT_SECRET,
+        },
+    }

@@ -1,4 +1,5 @@
 {% load static %}
+{% load socialaccount %}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
@@ -197,6 +198,24 @@
             </div>
             
             <div class="login-form">
+                {% if enable_cas or enable_azure_ad %}
+                    <div class="mb-4">
+                        <div class="text-center mb-3" style="font-weight: 600;">Single Sign-On</div>
+                        {% if enable_cas %}
+                            <a href="{% url 'cas_login' %}" class="btn btn-dark w-100 mb-2" style="background:#1a365d; border-color:#1a365d;">
+                                <i class="fas fa-university me-2"></i>Sign in with CAS
+                            </a>
+                        {% endif %}
+                        {% if enable_azure_ad %}
+                            <a href="{% provider_login_url 'microsoft' process='login' %}" class="btn btn-outline-primary w-100" style="border-width:2px;">
+                                <i class="fab fa-microsoft me-2"></i>Sign in with Microsoft
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="text-center text-muted mb-3">
+                        — or —
+                    </div>
+                {% endif %}
                 <form method="post">
                     {% csrf_token %}
                     <div class="form-group">
