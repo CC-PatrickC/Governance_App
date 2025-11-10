@@ -1034,7 +1034,7 @@
                                     {% endif %}
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="{% if project.stage == 'Pending_Review' %}Request has been received. It will be processed soon.{% elif project.stage == 'Under_Review_Triage' %}Request is currently being reviewed by the Triage Team.{% elif project.stage == 'Under_Review_governance' %}Request is currently being scored by the committee.{% elif project.stage == 'Under_Review_Final_governance' %}Request is in the final governance review phase.{% elif project.stage == 'Governance_Closure' %}Governance review is complete for this request.{% else %}The current phase of governance review this request is in.{% endif %}">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1117,7 +1117,7 @@
                                     {% endif %}
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1198,7 +1198,7 @@
                                     {% endif %}
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1474,7 +1474,7 @@
                                     {% endif %}
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -1544,7 +1544,7 @@
                                     {% endif %}
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item">{{ project.get_stage_display }}</span>
+                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
                                 
@@ -2409,7 +2409,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="strategic_alignment" id="strategic_alignment" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.strategic_alignment || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2426,7 +2427,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="cost_benefit" id="cost_benefit" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.cost_benefit || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="cost_benefit_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2443,7 +2445,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="user_impact" id="user_impact" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.user_impact || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2460,7 +2463,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="ease_of_implementation" id="ease_of_implementation" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.ease_of_implementation || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="ease_of_implementation_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2477,7 +2481,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="vendor_reputation_support" id="vendor_reputation_support" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2494,7 +2499,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="security_compliance" id="security_compliance" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.security_compliance || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2511,7 +2517,8 @@ function openGovernanceScoringModal(projectId) {
                                                 <input type="number" name="student_centered" id="student_centered" 
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.student_centered || '' : ''}"
-                                                       onchange="calculateWeightedScore(this)">
+                                                       onchange="calculateWeightedScore(this)"
+                                                       >
                                             </td>
                                             <td>
                                                 <span id="student_centered_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2530,7 +2537,8 @@ function openGovernanceScoringModal(projectId) {
                             <div class="form-group mb-3">
                                 <label for="scoring_notes">Scoring Notes</label>
                                 <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
-                                        rows="4" placeholder="Add your detailed scoring notes here...">${userScore ? userScore.scoring_notes || '' : ''}</textarea>
+                                        rows="4" placeholder="Add your detailed scoring notes here..."
+                                        >${userScore ? userScore.scoring_notes || '' : ''}</textarea>
                             </div>
 
                             <input type="hidden" name="final_score" id="final_score" value="${userScore ? userScore.final_score || 0 : 0}">
@@ -2547,14 +2555,12 @@ function openGovernanceScoringModal(projectId) {
                     <div class="condensed-scores-section mt-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
-                            {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
                                 <label class="form-check-label small" for="hideScorerNames">
                                     Hide scorer names
                                 </label>
                             </div>
-                            {% endif %}
                         </div>
                         <div class="table-responsive">
                             <table class="table table-sm table-bordered" id="scoresTable">
@@ -2601,12 +2607,10 @@ function openGovernanceScoringModal(projectId) {
 
                 populateStageUpdates(project.stage_changes);
 
-                {% if not is_ai_governance_lead_user and not is_erp_governance_lead_user and not is_it_governance_lead_user and not is_process_improvement_lead_user %}
                 document.getElementById('scoringForm').addEventListener('submit', function(e) {
                     e.preventDefault();
                     saveGovernanceScore(projectId);
                 });
-                {% endif %}
 
                 setTimeout(function() {
                     toggleScorerNames();
@@ -3384,6 +3388,12 @@ function openFinalScoringModal(projectId) {
 document.addEventListener('DOMContentLoaded', function() {
     listenForPriorityUpdates();
     attachPriorityInputListeners();
+
+    // Initialize Bootstrap tooltips for static page elements
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
 // Global autocomplete function
