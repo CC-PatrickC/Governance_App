@@ -2031,6 +2031,11 @@ function submitTriageEditForm(form, projectId) {
                 .catch(error => {
                     console.error('Error reloading form:', error);
                 });
+            
+            // Auto-refresh the MyGovernance page so request lists reflect changes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } else {
             // Remove loading overlay
             const overlay = document.getElementById('loading-overlay');
