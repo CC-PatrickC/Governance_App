@@ -18,15 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-import django_cas_ng.views as cas_views
+import cas.views
 
 urlpatterns = [
     # CAS login URLs
-    path('cas-login/', cas_views.LoginView.as_view(), name='cas_login'),
-    path('cas-logout/', cas_views.LogoutView.as_view(), name='cas_logout'),
+    path('cas-login/', cas.views.login, name='cas_login'),
+    path('cas-logout/', cas.views.logout, name='cas_logout'),
     # CAS admin overrides - must come BEFORE admin URLs
-    path('admin/login/', cas_views.LoginView.as_view(), name='admin_login'),
-    path('admin/logout/', cas_views.LogoutView.as_view(), name='admin_logout'),
+    path('admin/login/', cas.views.login, name='admin_login'),
+    path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('', include('projects.urls')),
