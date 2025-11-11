@@ -1654,9 +1654,14 @@
 </div>
 
 <script>
-// Test function definition first to debug
+// Debug: Simple test function
 function openTriageEditModal(projectId) {
-    alert('Modal function is working! Project ID: ' + projectId);
+    alert('Triage modal clicked! Project: ' + projectId);
+    return;
+}
+
+// Original function (for debugging)
+function openTriageEditModalFull(projectId) {
     console.log('Opening triage edit modal for project:', projectId);
     
     // Check if Bootstrap is loaded
