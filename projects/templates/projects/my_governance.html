@@ -1760,6 +1760,23 @@ function showProjectDetails(projectId) {
 
 // Function to open triage edit modal (same size as current MyGovernance modal)
 function openTriageEditModal(projectId) {
+    console.log('Opening triage edit modal for project:', projectId);
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+        alert('Bootstrap is not loaded. Modal cannot be opened.');
+        return;
+    }
+    
+    // Check if modal element exists
+    const modalElement = document.getElementById('projectDetailsModal');
+    if (!modalElement) {
+        console.error('Modal element not found!');
+        alert('Modal element not found in DOM.');
+        return;
+    }
+    
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
@@ -1790,15 +1807,7 @@ function openTriageEditModal(projectId) {
     fetch(`/${projectId}/edit-form/`)
         .then(response => {
             console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
             if (!response.ok) {
-                // Try to get error details from response
-                return response.text().then(text => {
-                    console.error('Error response body:', text);
-                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Response: ${text}`);
-                });
                 // Try to get error details from response
                 return response.text().then(text => {
                     console.error('Error response body:', text);
@@ -1808,7 +1817,6 @@ function openTriageEditModal(projectId) {
             return response.text();
         })
         .then(html => {
-            console.log('Successfully received HTML response');
             console.log('Successfully received HTML response');
             // Replace modal content with the edit form HTML
             modalBody.innerHTML = html;
@@ -1825,12 +1833,8 @@ function openTriageEditModal(projectId) {
                 saveBtn.style.display = 'inline-block';
                 deleteBtn.style.display = 'inline-block';
                 
-                
                 // Initialize technician autocomplete
                 initializeTechnicianAutocomplete();
-                // Initialize technician autocomplete
-                initializeTechnicianAutocomplete();
-                
                 
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
@@ -2067,10 +2071,7 @@ function submitTriageEditForm(form, projectId) {
                 });
             
             // Auto-refresh the MyGovernance page so request lists reflect changes
-            // Auto-refresh the MyGovernance page so request lists reflect changes
             setTimeout(() => {
-                window.location.reload();
-            }, 1500);
                 window.location.reload();
             }, 1500);
         } else {
