@@ -577,7 +577,7 @@ def project_update_ajax(request, pk):
                 'status': project.status if project.status else '',
                 'status_display': project.get_status_display() if project.status else '',
                 'department': project.department if project.department else '',
-                'contact_person': project.contact_person if project.contact_person else '',
+                'contact_person': project.technician if project.technician else '',  # Updated from contact_person to technician
                 'contact_email': project.contact_email if project.contact_email else '',
                 'sdp_ticket_number': project.sdp_ticket_number if project.sdp_ticket_number else '',
                 'sdp_link': project.sdp_link if project.sdp_link else '',
@@ -2250,7 +2250,7 @@ def project_details_modal(request, pk):
             'status': project.status or '',
             'status_display': project.get_status_display() if project.status else '',
             'department': project.department or '',
-            'contact_person': project.contact_person or '',
+            'contact_person': project.technician or '',  # Updated from contact_person to technician
             'contact_email': project.contact_email or '',
             'contact_phone': project.contact_phone or '',
             'budget': str(project.budget) if project.budget else '',
