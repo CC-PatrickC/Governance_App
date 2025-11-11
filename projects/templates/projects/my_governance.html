@@ -1334,8 +1334,9 @@
                 {% endif %}
             </div>
             
-            <!-- Final Governance Section (Visible to all users) -->
-            {% if final_governance_projects %}
+            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
+            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+                {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
@@ -1524,9 +1525,7 @@
                 </div>
                 
                 {% if technician_projects %}
-                {% if technician_projects %}
                     <div class="cc-projects-grid">
-                        {% for project in technician_projects %}
                         {% for project in technician_projects %}
                         <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
                             <div class="cc-project-header">
