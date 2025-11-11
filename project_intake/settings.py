@@ -18,14 +18,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")  # loads your local .env
 
-ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
-ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
-AZURE_AD_GROUP_MAPPING = {}
-
-ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
-ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
-AZURE_AD_GROUP_MAPPING = {}
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -42,9 +34,6 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 #     DEBUG = False
 
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-# Add both Azure default domain and custom domain
-DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
 # Add both Azure default domain and custom domain
 DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
