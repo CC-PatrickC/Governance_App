@@ -1673,21 +1673,6 @@ function openTriageEditModal(projectId) {
         return;
     }
     
-    // Check if Bootstrap is loaded
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded!');
-        alert('Bootstrap is not loaded. Modal cannot be opened.');
-        return;
-    }
-    
-    // Check if modal element exists
-    const modalElement = document.getElementById('projectDetailsModal');
-    if (!modalElement) {
-        console.error('Modal element not found!');
-        alert('Modal element not found in DOM.');
-        return;
-    }
-    
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
