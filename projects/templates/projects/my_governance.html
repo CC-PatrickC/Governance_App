@@ -1654,15 +1654,6 @@
 </div>
 
 <script>
-// Debug: Test if script is loading
-console.log('My Governance script is loading...');
-
-// Test function to check if this works
-window.testFunction = function() {
-    console.log('Test function works!');
-    alert('Test function works!');
-};
-
 // Function to open triage edit modal
 function openTriageEditModal(projectId) {
     console.log('Opening triage edit modal for project:', projectId);
@@ -1935,7 +1926,6 @@ function showProjectDetails(projectId) {
 
 // Make sure the function is available globally
 window.openTriageEditModal = openTriageEditModal;
-console.log('openTriageEditModal function defined and assigned to window:', typeof window.openTriageEditModal);
 
 // Duplicate function removed - using the one at the top of the script
 
