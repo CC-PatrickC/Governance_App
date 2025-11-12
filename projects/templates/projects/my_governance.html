@@ -2108,7 +2108,7 @@ function submitTriageEditForm(form, projectId) {
             <h5><i class="fas fa-exclamation-circle me-2"></i>Error Updating Request</h5>
             <p>An error occurred while saving the request.</p>
             <p class="small"><strong>Error details:</strong> ${error.message || 'Unknown error'}</p>
-            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(${projectId})">
+            <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="openTriageEditModal(` + projectId + `)">
                 <i class="fas fa-redo"></i> Try Again
             </button>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
