@@ -2109,12 +2109,7 @@ function submitTriageEditForm(form, projectId) {
 }
 
 // Function to open governance scoring modal with triage and scoring tabs
-// Function to open governance scoring modal with triage and scoring tabs
 function openGovernanceScoringModal(projectId) {
-    const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
-    const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
-    const defaultTab = userCanScore ? 'scoring' : 'triage';
-
     const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
     const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
     const defaultTab = userCanScore ? 'scoring' : 'triage';
