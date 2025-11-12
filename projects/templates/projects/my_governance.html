@@ -1654,15 +1654,24 @@
 </div>
 
 <script>
-// Debug: Simple test function
+// Function to open triage edit modal
 function openTriageEditModal(projectId) {
-    alert('Triage modal clicked! Project: ' + projectId);
-    return;
-}
-
-// Original function (for debugging)
-function openTriageEditModalFull(projectId) {
     console.log('Opening triage edit modal for project:', projectId);
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+        alert('Bootstrap is not loaded. Modal cannot be opened.');
+        return;
+    }
+    
+    // Check if modal element exists
+    const modalElement = document.getElementById('projectDetailsModal');
+    if (!modalElement) {
+        console.error('Modal element not found!');
+        alert('Modal element not found in DOM.');
+        return;
+    }
     
     // Check if Bootstrap is loaded
     if (typeof bootstrap === 'undefined') {
