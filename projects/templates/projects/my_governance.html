@@ -2347,8 +2347,8 @@ function openGovernanceScoringModal(projectId) {
                 const committeeScores = data.committee_scores || [];
                 const committeeLabel = data.committee_label || 'Committee';
 
-                const submittedEmailHtml = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : 'N/A';
-                const contactEmailHtml = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : 'N/A';
+                const submittedEmailHtml = project.submitted_by_email ? "<a href=\"mailto:" + project.submitted_by_email + "\">" + project.submitted_by_email + "</a>" : 'N/A';
+                const contactEmailHtml = project.contact_email ? "<a href=\"mailto:" + project.contact_email + "\">" + project.contact_email + "</a>" : 'N/A';
 
                 const timelineColumns = [];
                 if (project.start_date_formatted) {
@@ -2582,8 +2582,8 @@ function openGovernanceScoringModal(projectId) {
                 const committeeScores = data.committee_scores || [];
                 const committeeLabel = data.committee_label || 'Committee';
 
-                const submittedEmailHtml = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : 'N/A';
-                const contactEmailHtml = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : 'N/A';
+                const submittedEmailHtml = project.submitted_by_email ? "<a href=\"mailto:" + project.submitted_by_email + "\">" + project.submitted_by_email + "</a>" : 'N/A';
+                const contactEmailHtml = project.contact_email ? "<a href=\"mailto:" + project.contact_email + "\">" + project.contact_email + "</a>" : 'N/A';
 
                 const timelineColumns = [];
                 if (project.start_date_formatted) {
