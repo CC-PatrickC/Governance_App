@@ -3922,22 +3922,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global autocomplete function
 function initializeTechnicianAutocomplete() {
     console.log('Initializing technician autocomplete');
-function initializeTechnicianAutocomplete() {
-    console.log('Initializing technician autocomplete');
     
     const technicianInput = document.getElementById('technician');
     const suggestionsDiv = document.getElementById('technician_suggestions');
-    const technicianInput = document.getElementById('technician');
-    const suggestionsDiv = document.getElementById('technician_suggestions');
     
-    if (!technicianInput || !suggestionsDiv) {
-        console.log('Technician input or suggestions div not found');
     if (!technicianInput || !suggestionsDiv) {
         console.log('Technician input or suggestions div not found');
         return;
     }
     
-    console.log('Technician input and suggestions div found');
     console.log('Technician input and suggestions div found');
     
     let currentFocus = -1;
@@ -3960,10 +3953,7 @@ function initializeTechnicianAutocomplete() {
     // Remove any existing event listeners
     const newTechnicianInput = technicianInput.cloneNode(true);
     technicianInput.parentNode.replaceChild(newTechnicianInput, technicianInput);
-    const newTechnicianInput = technicianInput.cloneNode(true);
-    technicianInput.parentNode.replaceChild(newTechnicianInput, technicianInput);
     
-    newTechnicianInput.addEventListener('input', function() {
     newTechnicianInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         currentFocus = -1;
@@ -4001,7 +3991,6 @@ function initializeTechnicianAutocomplete() {
             
             suggestion.addEventListener('click', function() {
                 newTechnicianInput.value = user.full_name;
-                newTechnicianInput.value = user.full_name;
                 suggestionsDiv.style.display = 'none';
             });
             
@@ -4012,7 +4001,6 @@ function initializeTechnicianAutocomplete() {
     });
     
     // Handle keyboard navigation
-    newTechnicianInput.addEventListener('keydown', function(e) {
     newTechnicianInput.addEventListener('keydown', function(e) {
         const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
         
