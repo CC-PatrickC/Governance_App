@@ -1975,7 +1975,9 @@ function openGovernanceScoringModal(projectId) {
         .then(data => {
             const project = data.project;
             const userScore = data.user_score;
-            const condensedScores = data.condensed_scores;
+            const committeeScores = data.committee_scores;
+            const isGroupLead = data.is_group_lead;
+            const committeeLabel = data.committee_label;
             
             // Create the modal content with project details and scoring form
             modalBody.innerHTML = `
@@ -2212,19 +2214,19 @@ function openGovernanceScoringModal(projectId) {
                     </div>
                 </div>
                 
-                ${condensedScores && condensedScores.length > 0 ? `
-                <!-- Condensed Scores Section for AI Governance Group Lead -->
-                <div class="condensed-scores-section mt-4">
+                ${committeeScores && committeeScores.length > 0 ? `
+                <!-- Committee Scores Section -->
+                <div class="committee-scores-section mt-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="section-header small mb-0">AI Governance Group Scores</h6>
-                        {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}
+                        <h6 class="section-header small mb-0">${committeeLabel} Scores</h6>
+                        ${isGroupLead ? `
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
                             <label class="form-check-label small" for="hideScorerNames">
                                 Hide scorer names
                             </label>
                         </div>
-                        {% endif %}
+                        ` : ''}
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered" id="scoresTable">
@@ -2242,9 +2244,12 @@ function openGovernanceScoringModal(projectId) {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${condensedScores.map(score => `
+                                ${committeeScores.map(score => `
                                     <tr>
-                                        <td class="small scorer-name-cell">${score.scored_by}</td>
+                                        <td class="small scorer-name-cell">
+                                            <span class="scorer-name-real" style="${isGroupLead ? '' : 'display: none;'}">${score.scored_by}</span>
+                                            <span class="scorer-name-hidden" style="${isGroupLead ? 'display: none;' : ''}">${score.scored_by_hidden}</span>
+                                        </td>
                                         <td class="text-center">${score.strategic_alignment || '-'}</td>
                                         <td class="text-center">${score.cost_benefit || '-'}</td>
                                         <td class="text-center">${score.user_impact || '-'}</td>
@@ -2667,7 +2672,9 @@ function openSuperuserScoringModal(projectId, modalType) {
         .then(data => {
             const project = data.project;
             const userScore = data.user_score;
-            const condensedScores = data.condensed_scores;
+            const committeeScores = data.committee_scores;
+            const isGroupLead = data.is_group_lead;
+            const committeeLabel = data.committee_label;
             
             // Create the modal content with project details and scoring form
             modalBody.innerHTML = `
@@ -2762,9 +2769,19 @@ function openSuperuserScoringModal(projectId, modalType) {
                     </form>
                 </div>
                 
-                ${condensedScores && condensedScores.length > 0 ? `
+                ${committeeScores && committeeScores.length > 0 ? `
                 <div class="mb-4">
-                    <h6 class="mb-3">Previous Scores</h6>
+                    <h6 class="mb-3">${committeeLabel} Previous Scores</h6>
+                    ${isGroupLead ? `
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hideScorerNamesSuper" checked onchange="toggleScorerNamesSuper()">
+                            <label class="form-check-label small" for="hideScorerNamesSuper">
+                                Hide scorer names
+                            </label>
+                        </div>
+                    </div>
+                    ` : ''}
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
@@ -2780,9 +2797,12 @@ function openSuperuserScoringModal(projectId, modalType) {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${condensedScores.map(score => `
+                                ${committeeScores.map(score => `
                                     <tr>
-                                        <td>${score.scorer_name}</td>
+                                        <td>
+                                            <span class="scorer-name-real-super" style="${isGroupLead ? '' : 'display: none;'}">${score.scored_by}</span>
+                                            <span class="scorer-name-hidden-super" style="${isGroupLead ? 'display: none;' : ''}">${score.scored_by_hidden}</span>
+                                        </td>
                                         <td>${score.strategic_alignment || '-'}</td>
                                         <td>${score.cost_benefit || '-'}</td>
                                         <td>${score.user_impact || '-'}</td>
@@ -3274,20 +3294,37 @@ function deleteRequest(projectId) {
     });
 }
 
-// Function to toggle scorer names visibility
+// Function to toggle scorer names visibility (Group Lead feature)
 function toggleScorerNames() {
     const checkbox = document.getElementById('hideScorerNames');
-    const scorerColumns = document.querySelectorAll('.scorer-name-column');
-    const scorerCells = document.querySelectorAll('.scorer-name-cell');
+    const realNames = document.querySelectorAll('.scorer-name-real');
+    const hiddenNames = document.querySelectorAll('.scorer-name-hidden');
     
-    if (checkbox.checked) {
-        // Hide scorer names
-        scorerColumns.forEach(col => col.style.display = 'none');
-        scorerCells.forEach(cell => cell.style.display = 'none');
-    } else {
-        // Show scorer names
-        scorerColumns.forEach(col => col.style.display = '');
-        scorerCells.forEach(cell => cell.style.display = '');
+    if (checkbox && checkbox.checked) {
+        // Hide real names, show anonymous labels
+        realNames.forEach(name => name.style.display = 'none');
+        hiddenNames.forEach(name => name.style.display = '');
+    } else if (checkbox) {
+        // Show real names, hide anonymous labels  
+        realNames.forEach(name => name.style.display = '');
+        hiddenNames.forEach(name => name.style.display = 'none');
+    }
+}
+
+// Function to toggle scorer names visibility in superuser modal (Group Lead feature)
+function toggleScorerNamesSuper() {
+    const checkbox = document.getElementById('hideScorerNamesSuper');
+    const realNames = document.querySelectorAll('.scorer-name-real-super');
+    const hiddenNames = document.querySelectorAll('.scorer-name-hidden-super');
+    
+    if (checkbox && checkbox.checked) {
+        // Hide real names, show anonymous labels
+        realNames.forEach(name => name.style.display = 'none');
+        hiddenNames.forEach(name => name.style.display = '');
+    } else if (checkbox) {
+        // Show real names, hide anonymous labels  
+        realNames.forEach(name => name.style.display = '');
+        hiddenNames.forEach(name => name.style.display = 'none');
     }
 }
 </script>

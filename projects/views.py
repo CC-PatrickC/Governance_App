@@ -1519,10 +1519,29 @@ def project_scoring_details_modal(request, pk):
         else:
             committee_scores_qs = project.scores.select_related('scored_by').order_by('-created_at')
 
+        # Check if current user is a Group Lead for this project type
+        is_group_lead = False
+        group_lead_groups = [
+            'AI Governance Group Lead',
+            'ERP Governance Group Lead', 
+            'IT Governance Group Lead',
+            'Process Improvement Group Lead'
+        ]
+        
+        if committee_config:
+            # Check if user is a lead for this specific committee
+            lead_groups = [group for group in committee_config['groups'] if 'Lead' in group]
+            is_group_lead = request.user.groups.filter(name__in=lead_groups).exists()
+        else:
+            # Fallback: check if user is any kind of group lead
+            is_group_lead = request.user.groups.filter(name__in=group_lead_groups).exists()
+
         committee_scores_data = []
         for score in committee_scores_qs:
+            scorer_name = score.scored_by.get_full_name() or score.scored_by.username
             committee_scores_data.append({
-                'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                'scored_by': scorer_name,
+                'scored_by_hidden': f"Committee Member {len(committee_scores_data) + 1}",  # Anonymous label
                 'final_score': score.final_score,
                 'strategic_alignment': score.strategic_alignment,
                 'cost_benefit': score.cost_benefit,
@@ -1541,6 +1560,7 @@ def project_scoring_details_modal(request, pk):
             'user_score': user_score_data,
             'committee_scores': committee_scores_data,
             'committee_label': committee_label,
+            'is_group_lead': is_group_lead,  # New field for frontend
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
