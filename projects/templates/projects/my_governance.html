@@ -3447,8 +3447,6 @@ function openSuperuserScoringModal(projectId, modalType) {
             const userScore = data.user_score;
             const committeeScores = data.committee_scores || [];
             const committeeLabel = data.committee_label || 'Committee';
-            const committeeScores = data.committee_scores || [];
-            const committeeLabel = data.committee_label || 'Committee';
             
             // Create the modal content with project details and scoring form
             modalBody.innerHTML = `
