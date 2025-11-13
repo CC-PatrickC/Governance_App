@@ -3582,7 +3582,6 @@ function openSuperuserScoringModal(projectId, modalType) {
                             </thead>
                             <tbody>
                                 ${committeeScores.map(score => `
-                                ${committeeScores.map(score => `
                                     <tr>
                                         <td class="small scorer-name-cell">${score.scored_by}</td>
                                         <td class="text-center">${score.strategic_alignment != null ? score.strategic_alignment : '-'}</td>
