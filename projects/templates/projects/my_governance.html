@@ -1865,7 +1865,7 @@ function showProjectDetails(projectId) {
                                          <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
                                          <p><strong>Request Type:</strong> ${project.project_type_display}</p>
                                          <p><strong>Priority:</strong> ${project.priority}</p>
-                                         ${project.sdp_ticket_number && project.sdp_link ? '<p><strong>SDP:</strong> <a href="' + project.sdp_link + '" target="_blank" rel="noopener noreferrer">' + project.sdp_ticket_number + '</a></p>' : ''}
+                                         ${project.sdp_ticket_number && project.sdp_link ? `<p><strong>SDP:</strong> <a href="${project.sdp_link}" target="_blank" rel="noopener noreferrer">${project.sdp_ticket_number}</a></p>` : ''}
                                      </div>
                                  </div>
                              </div>
