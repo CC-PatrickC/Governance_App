@@ -1,6 +1,7 @@
 from django.urls import path
-from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
+from django.shortcuts import resolve_url
+from django.conf import settings
 from . import views
 
 app_name = 'projects'
@@ -11,8 +12,11 @@ def redirect_to_cas(request):
         # User is already logged in, send them to the main app
         return HttpResponseRedirect('/requests/')
     else:
-        # User not logged in, send them to CAS
-        return HttpResponseRedirect('/cas-login/')
+        # User not logged in. Send to CAS if enabled, otherwise use standard login
+        if getattr(settings, 'ENABLE_CAS', False):
+            return HttpResponseRedirect('/cas-login/')
+        login_url = resolve_url(getattr(settings, 'LOGIN_URL', '/accounts/login/'))
+        return HttpResponseRedirect(login_url)
 
 urlpatterns = [
     path('', redirect_to_cas, name='home'),
@@ -30,7 +34,6 @@ urlpatterns = [
     path('new/', views.project_create, name='project_create'),
     path('intake/', views.project_intake_form, name='project_intake_form'),
     path('my-governance/', views.my_governance, name='my_governance'),
-    path('my-governance-superuser/', views.my_governance_superuser, name='my_governance_superuser'),
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/edit-form/', views.project_update_form_ajax, name='project_update_form_ajax'),
     path('<int:pk>/update/', views.project_update_ajax, name='project_update_ajax'),

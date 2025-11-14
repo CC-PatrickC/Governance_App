@@ -55,7 +55,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'cas.middleware.ProxyMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -65,8 +64,10 @@ MIDDLEWARE = [
 ]
 
 if ENABLE_CAS:
-    MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
-    MIDDLEWARE.append('cas.middleware.CASMiddleware')
+    if 'cas.middleware.ProxyMiddleware' not in MIDDLEWARE:
+        MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
+    if 'cas.middleware.CASMiddleware' not in MIDDLEWARE:
+        MIDDLEWARE.append('cas.middleware.CASMiddleware')
 
 ROOT_URLCONF = 'project_intake.urls'
 

@@ -72,7 +72,40 @@ def is_process_improvement_user(user):
 def is_process_improvement_lead_user(user):
     return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists()
 
-def track_project_changes(project, form_data, user):
+def is_governance_lead(user):
+    return (
+        is_ai_governance_lead_user(user)
+        or is_erp_governance_lead_user(user)
+        or is_it_governance_lead_user(user)
+        or is_process_improvement_lead_user(user)
+    )
+
+def is_governance_member(user):
+    return (
+        is_ai_governance_user(user)
+        or is_erp_governance_user(user)
+        or is_it_governance_user(user)
+        or is_process_improvement_user(user)
+    )
+
+def is_scoring_user(user):
+    return (
+        user.is_superuser
+        or user.is_staff
+        or is_governance_member(user)
+    )
+
+def can_view_scoring_form(user):
+    return is_scoring_user(user) or is_governance_lead(user)
+
+def can_manage_triage(user):
+    """Users allowed to view/edit triage cards."""
+    return (
+        user.is_superuser
+        or is_triage_user(user)
+        or is_triage_lead_user(user)
+        or is_governance_lead(user)
+    )
     """Track changes made to project fields during triage updates"""
     # Define fields to track with their human-readable labels
     tracked_fields = {
@@ -119,17 +152,6 @@ def track_project_changes(project, form_data, user):
             changes_made.append(f"{field_label}: {old_value} → {new_value}")
     
     return changes_made
-
-def is_scoring_user(user):
-    return (user.is_superuser or user.is_staff or 
-            user.groups.filter(name='AI Governance Group').exists() or 
-            user.groups.filter(name='AI Governance Group Lead').exists() or
-            user.groups.filter(name='ERP Governance Group').exists() or 
-            user.groups.filter(name='ERP Governance Group Lead').exists() or
-            user.groups.filter(name='IT Governance Group').exists() or 
-            user.groups.filter(name='IT Governance Group Lead').exists() or
-            user.groups.filter(name='Process Improvement Group').exists() or 
-            user.groups.filter(name='Process Improvement Group Lead').exists())
 
 def can_modify_final_priority(user):
     """Check if user can modify final priority ranks in Under Review - Final Governance section.
@@ -302,7 +324,7 @@ def archived_requests(request):
     )
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+@user_passes_test(can_manage_triage)
 def project_triage(request):
     search_query = request.GET.get('search', '')
     type_filter = request.GET.get('type', '')
@@ -390,8 +412,7 @@ def project_update_ajax(request, pk):
     
     # Check if user has permission to edit projects
     # Allow if user is triage user, triage lead user, OR if user is the submitter of the request
-    can_edit = (is_triage_user(request.user) or 
-                is_triage_lead_user(request.user) or 
+    can_edit = (can_manage_triage(request.user) or 
                 project.submitted_by == request.user)
     
     if not can_edit:
@@ -643,7 +664,7 @@ def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
     # If user is a triage team member, redirect them to the edit form (unless request is closed)
-    if (is_triage_user(request.user) or is_triage_lead_user(request.user)) and project.stage != 'Governance_Closure':
+    if can_manage_triage(request.user) and project.stage != 'Governance_Closure':
         return redirect('projects:project_update', pk=pk)
     
     return render(request, 'projects/project_detail.html', {'project': project})
@@ -653,7 +674,7 @@ def project_update(request, pk):
     project = get_object_or_404(Project.objects.prefetch_related('triage_note_history__created_by', 'triage_change_history__changed_by'), pk=pk)
     
     # Check if user has permission to edit projects
-    if not (is_triage_user(request.user) or is_triage_lead_user(request.user)):
+    if not can_manage_triage(request.user):
         messages.error(request, 'You do not have permission to edit this request.')
         return redirect('projects:project_detail', pk=pk)
     
@@ -775,8 +796,7 @@ def project_update_form_ajax(request, pk):
         project = get_object_or_404(Project, pk=pk)
         logger.info(f"Found project: {project.title}")
         
-        can_edit = (is_triage_user(request.user) or 
-                    is_triage_lead_user(request.user) or 
+        can_edit = (can_manage_triage(request.user) or 
                     project.submitted_by == request.user)
         
         if not can_edit:
@@ -905,8 +925,7 @@ def delete_attachment(request, project_pk, file_pk):
     # Check if user has permission to delete attachments
     # Allow if user is staff, triage user, triage lead user, OR if user is the submitter of the request
     can_delete = (request.user.is_staff or 
-                  is_triage_user(request.user) or 
-                  is_triage_lead_user(request.user) or 
+                  can_manage_triage(request.user) or 
                   project.submitted_by == request.user)
     
     if not can_delete:
@@ -1375,7 +1394,7 @@ def test_modal_view(request):
     return JsonResponse({'status': 'success', 'message': 'Test modal view working'})
 
 @login_required
-@user_passes_test(is_scoring_user)
+@user_passes_test(can_view_scoring_form)
 def project_scoring_details_modal(request, pk):
     try:
         print(f"DEBUG: project_scoring_details_modal called with pk={pk}")
@@ -1866,7 +1885,7 @@ def test_dashboard(request):
 
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+@user_passes_test(can_manage_triage)
 def project_update_status(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Project, pk=pk)
@@ -1961,78 +1980,6 @@ def project_intake_form(request):
     return render(request, 'projects/intake_form.html')
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
-def my_governance_superuser(request):
-    """MyGovernance page specifically for SuperUsers - test page"""
-    # Get all projects for SuperUser dashboard
-    all_projects = Project.objects.all().order_by('-submission_date')
-
-    filter_param = request.GET.get('filter', 'all').lower()
-    display_projects = all_projects
-    filter_label = 'All Requests'
-
-    if filter_param == 'my':
-        display_projects = all_projects.filter(submitted_by=request.user)
-        filter_label = 'My Requests'
-    elif filter_param == 'assigned':
-        display_projects = all_projects.filter(triaged_by=request.user)
-        filter_label = 'Assigned Requests'
-    elif filter_param == 'triage':
-        display_projects = all_projects.filter(stage__in=['Pending_Review', 'Under_Review_Triage'])
-        filter_label = 'Triage Requests'
-    elif filter_param == 'governance':
-        display_projects = all_projects.filter(stage='Under_Review_governance')
-        filter_label = 'Governance Requests'
-    elif filter_param == 'final_governance':
-        display_projects = all_projects.filter(stage='Under_Review_Final_governance')
-        filter_label = 'Final Governance Requests'
-
-    
-    # Get statistics
-    total_projects = all_projects.count()
-    pending_projects = all_projects.filter(stage='Pending_Review').count()
-    triage_projects = all_projects.filter(stage='Under_Review_Triage').count()
-    governance_projects = all_projects.filter(stage='Under_Review_governance').count()
-    final_governance_projects = all_projects.filter(stage='Under_Review_Final_governance').count()
-    closed_projects = all_projects.filter(stage='Governance_Closure').count()
-    
-    # Get recent projects
-    recent_projects = all_projects[:10]
-    
-    # Get projects by priority
-    priority_stats = {
-        'Top': all_projects.filter(priority='Top').count(),
-        'High': all_projects.filter(priority='High').count(),
-        'Normal': all_projects.filter(priority='Normal').count(),
-        'Low': all_projects.filter(priority='Low').count(),
-    }
-    
-    # Get projects by type
-    type_stats = {}
-    for type_code, type_name in Project.PROJECT_TYPE_CHOICES:
-        count = all_projects.filter(project_type=type_code).count()
-        if count > 0:
-            type_stats[type_name] = count
-    
-    context = {
-        'total_projects': total_projects,
-        'pending_projects': pending_projects,
-        'triage_projects': triage_projects,
-        'governance_projects': governance_projects,
-        'final_governance_projects': final_governance_projects,
-        'closed_projects': closed_projects,
-        'recent_projects': recent_projects,
-        'priority_stats': priority_stats,
-        'type_stats': type_stats,
-        'all_projects': all_projects,
-        'display_projects': display_projects,
-        'selected_filter': filter_param,
-        'selected_filter_label': filter_label,
-    }
-    
-    return render(request, 'projects/my_governance_superuser.html', context)
-
-@login_required
 def my_governance(request):
     """My Governance page - shows user's submitted requests and contact requests"""
     # Handle anonymous users
@@ -2058,7 +2005,7 @@ def my_governance(request):
     
         # Get triage projects for users in Triage Group or Triage Group Lead, or superusers
         triage_projects = None
-        if request.user.is_superuser or is_triage_user(request.user) or is_triage_lead_user(request.user):
+        if can_manage_triage(request.user):
             # Get projects in triage stages only (excluding deleted and user's own projects)
             triage_projects = Project.objects.filter(
                 stage__in=['Pending_Review', 'Under_Review_Triage']
@@ -2159,6 +2106,8 @@ def my_governance(request):
         'is_process_improvement_user': is_process_improvement_user(request.user),
         'is_process_improvement_lead_user': is_process_improvement_lead_user(request.user),
         'is_scoring_user': is_scoring_user(request.user),
+        'can_view_scoring_form': can_view_scoring_form(request.user),
+        'can_manage_triage': can_manage_triage(request.user),
         'is_superuser': request.user.is_superuser,
         'can_modify_final_priority': can_modify_final_priority(request.user),
         'user_committee_display': get_user_committee_display(request.user),
@@ -2304,7 +2253,7 @@ def api_users(request):
     return JsonResponse({'users': user_data})
 
 @login_required
-@user_passes_test(lambda u: is_triage_user(u) or is_triage_lead_user(u))
+@user_passes_test(can_manage_triage)
 @require_POST
 def project_delete_request(request, pk):
     """
