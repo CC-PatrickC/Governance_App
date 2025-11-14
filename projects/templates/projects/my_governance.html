@@ -999,8 +999,8 @@
                 </div>
             </div>
             
-            <!-- Triage Section (Visible for Triage Group, Triage Group Lead users, and superusers) -->
-            {% if is_superuser or is_triage_user or is_triage_lead_user %}
+            <!-- Triage Section (Visible for Triage Group, superusers, and governance leads) -->
+            {% if can_manage_triage %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Triage Requests ({{ triage_projects.count }})</h2>
@@ -1335,7 +1335,7 @@
             </div>
             
             <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
-            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+            {% if is_superuser or can_view_scoring_form or is_triage_user or is_triage_lead_user %}
                 {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
@@ -1443,143 +1443,6 @@
             </div>
             {% endif %}
             
-            <!-- MyRequests Section -->
-            <div class="cc-content-area" style="margin-top: 2rem;">
-                <div class="cc-section-header">
-                    <h2>MyRequests</h2>
-                    <p class="text-muted">Requests you have submitted</p>
-                </div>
-                
-                {% if user_projects %}
-                    <div class="cc-projects-grid">
-                        {% for project in user_projects %}
-                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
-                            <div class="cc-project-header">
-                                <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
-                            </div>
-                            <div class="cc-project-body">
-                                <div class="cc-project-description">
-                                    {{ project.description|truncatechars:120 }}
-                                </div>
-                                <div class="cc-project-meta">
-                                    {% if project.project_type %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Request Type</div>
-                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if project.priority %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Priority</div>
-                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
-                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
-                                    </div>
-                                </div>
-                                
-                                {% if project.department %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Department</div>
-                                    <span class="cc-meta-item">{{ project.department }}</span>
-                                </div>
-                                {% endif %}
-
-                                <div class="cc-project-meta-requested">
-                                    Requested by: 
-                                    {% if project.submitted_by %}
-                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <h4>No Requests Yet</h4>
-                        <p>You haven't submitted any requests yet.</p>
-                        <a href="{% url 'projects:project_intake_form' %}" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: white;">
-                            <i class="fas fa-plus-circle"></i> Submit Your First Request
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-            
-            <!-- My Assigned Requests Section -->
-            <div class="cc-content-area" style="margin-top: 2rem;">
-                <div class="cc-section-header">
-                    <h2>My Assigned Requests</h2>
-                    <p class="text-muted">Requests where you are listed as the technician</p>
-                </div>
-
-                {% if technician_projects %}
-                    <div class="cc-projects-grid">
-                        {% for project in technician_projects %}
-                        <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
-                            <div class="cc-project-header">
-                                <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
-                            </div>
-                            <div class="cc-project-body">
-                                <div class="cc-project-description">
-                                    {{ project.description|truncatechars:120 }}
-                                </div>
-                                <div class="cc-project-meta">
-                                    {% if project.project_type %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Request Type</div>
-                                        <span class="cc-meta-item">{{ project.get_project_type_display }}</span>
-                                    </div>
-                                    {% endif %}
-                                    {% if project.priority %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Priority</div>
-                                        <span class="cc-meta-item cc-priority-{{ project.priority|lower }}">{{ project.priority }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="cc-meta-section">
-                                        <div class="cc-meta-title">Stage</div>
-                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
-                                    </div>
-                                </div>
-
-                                {% if project.department %}
-                                <div class="cc-department-section">
-                                    <div class="cc-department-title">Department</div>
-                                    <span class="cc-meta-item">{{ project.department }}</span>
-                                </div>
-                                {% endif %}
-
-                                <div class="cc-project-meta-requested">
-                                    Requested by:
-                                    {% if project.submitted_by %}
-                                        {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                    on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="cc-empty-state">
-                        <i class="fas fa-user-tie"></i>
-                        <h4>No Assigned Requests</h4>
-                        <p>You are not currently assigned as a technician for any requests.</p>
-                    </div>
-                {% endif %}
-            </div>
         </div>
     </div>
 </div>
@@ -1913,7 +1776,7 @@ function openTriageEditModal(projectId) {
 }
 
 function showProjectDetails(projectId) {
-    {% if is_triage_user or is_triage_lead_user %}
+    {% if can_manage_triage %}
     // Triage users get the edit form instead of details
     openTriageEditModal(projectId);
     return;
@@ -2103,9 +1966,10 @@ function submitTriageEditForm(form, projectId) {
 
 // Function to open governance scoring modal with triage and scoring tabs
 function openGovernanceScoringModal(projectId) {
-    const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
+    const userCanEditTriage = {% if can_manage_triage %}true{% else %}false{% endif %};
     const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
-    const defaultTab = userCanScore ? 'scoring' : 'triage';
+    const userCanViewScoring = {% if can_view_scoring_form %}true{% else %}false{% endif %};
+    const defaultTab = userCanScore ? 'scoring' : (userCanViewScoring ? 'scoring' : 'triage');
 
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
@@ -2150,7 +2014,7 @@ function openGovernanceScoringModal(projectId) {
                 ${userCanEditTriage ? loadingTemplate('Loading triage form...') : '<div class="alert alert-info mb-0">You do not have permission to edit this request.</div>'}
             </div>
             <div class="tab-pane fade ${defaultTab === 'scoring' ? 'show active' : ''}" id="scoringTabContent" role="tabpanel" aria-labelledby="scoring-tab">
-                ${userCanScore ? loadingTemplate('Loading project details and scoring form...') : '<div class="alert alert-info mb-0">You do not have access to scoring for this request.</div>'}
+                ${userCanViewScoring ? loadingTemplate('Loading project details and scoring form...') : '<div class="alert alert-info mb-0">You do not have access to scoring for this request.</div>'}
             </div>
         </div>
     `;
@@ -2295,7 +2159,7 @@ function openGovernanceScoringModal(projectId) {
     }
 
     // Load scoring content if permitted
-    if (userCanScore) {
+    if (userCanViewScoring) {
         fetch(`/${projectId}/scoring-details-modal/`)
             .then(response => {
                 if (!response.ok) {
@@ -2639,10 +2503,32 @@ function openGovernanceScoringModal(projectId) {
 
                 populateStageUpdates(project.stage_changes);
 
-                document.getElementById('scoringForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveGovernanceScore(projectId);
-                });
+                const scoringFormElement = document.getElementById('scoringForm');
+                if (scoringFormElement) {
+                    if (userCanScore) {
+                        scoringFormElement.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            saveGovernanceScore(projectId);
+                        });
+                    } else {
+                        scoringFormElement.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                        });
+                        scoringFormElement.querySelectorAll('input, textarea, select').forEach(input => {
+                            input.setAttribute('disabled', 'disabled');
+                        });
+                        const scoringSubmitButton = scoringFormElement.querySelector('button[type="submit"]');
+                        if (scoringSubmitButton) {
+                            scoringSubmitButton.disabled = true;
+                            scoringSubmitButton.classList.add('btn-secondary');
+                            scoringSubmitButton.innerHTML = '<i class="fas fa-eye me-2"></i>View Only';
+                        }
+                        const saveStatus = document.getElementById('saveStatus');
+                        if (saveStatus) {
+                            saveStatus.innerHTML = '<span class="text-muted"><i class="fas fa-eye me-1"></i>View-only access</span>';
+                        }
+                    }
+                }
 
                 if (committeeScores.length > 0) {
                     setTimeout(function() {
@@ -2670,6 +2556,13 @@ function openGovernanceScoringModal(projectId) {
                     </div>
                 `;
             });
+    } else {
+        scoringContent.innerHTML = `
+            <div class="alert alert-info">
+                <h6>Scoring access restricted</h6>
+                <p>You do not have permission to view scoring details for this request.</p>
+            </div>
+        `;
     }
 
     updateActionButtons(getActiveTab());
@@ -3415,7 +3308,7 @@ function openSuperuserReadOnlyModal(projectId, modalType) {
 
 // Function to open final scoring modal
 function openFinalScoringModal(projectId) {
-    {% if is_triage_user or is_triage_lead_user %}
+    {% if can_manage_triage %}
     // Triage users get the edit form instead of final scoring modal
     openTriageEditModal(projectId);
     return;
