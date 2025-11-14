@@ -98,6 +98,15 @@ def is_scoring_user(user):
 def can_view_scoring_form(user):
     return is_scoring_user(user) or is_governance_lead(user)
 
+def can_view_committee_scores(user):
+    return (
+        user.is_superuser
+        or user.is_staff
+        or is_triage_lead_user(user)
+        or is_triage_user(user)
+        or is_governance_lead(user)
+    )
+
 def can_manage_triage(user):
     """Users allowed to view/edit triage cards."""
     return (
@@ -1509,6 +1518,9 @@ def project_scoring_details_modal(request, pk):
                 'student_centered': user_score.student_centered,
             }
         
+        # Determine if the user can view committee scores
+        user_can_view_committee_scores = can_view_committee_scores(request.user)
+
         # Get committee scores for the relevant governance group
         committee_groups_map = {
             'ai_governance': {
@@ -1532,27 +1544,28 @@ def project_scoring_details_modal(request, pk):
         committee_config = committee_groups_map.get(project.project_type)
         committee_label = committee_config['label'] if committee_config else 'Committee'
 
-        if committee_config:
-            committee_users = User.objects.filter(groups__name__in=committee_config['groups']).distinct()
-            committee_scores_qs = project.scores.filter(scored_by__in=committee_users).select_related('scored_by').order_by('-created_at')
-        else:
-            committee_scores_qs = project.scores.select_related('scored_by').order_by('-created_at')
-
         committee_scores_data = []
-        for score in committee_scores_qs:
-            committee_scores_data.append({
-                'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
-                'final_score': score.final_score,
-                'strategic_alignment': score.strategic_alignment,
-                'cost_benefit': score.cost_benefit,
-                'user_impact': score.user_impact,
-                'ease_of_implementation': score.ease_of_implementation,
-                'vendor_reputation_support': score.vendor_reputation_support,
-                'security_compliance': score.security_compliance,
-                'student_centered': score.student_centered,
-                'scoring_notes': score.scoring_notes,
-                'created_at': score.created_at.isoformat() if score.created_at else None,
-            })
+        if user_can_view_committee_scores:
+            if committee_config:
+                committee_users = User.objects.filter(groups__name__in=committee_config['groups']).distinct()
+                committee_scores_qs = project.scores.filter(scored_by__in=committee_users).select_related('scored_by').order_by('-created_at')
+            else:
+                committee_scores_qs = project.scores.select_related('scored_by').order_by('-created_at')
+
+            for score in committee_scores_qs:
+                committee_scores_data.append({
+                    'scored_by': score.scored_by.get_full_name() or score.scored_by.username,
+                    'final_score': score.final_score,
+                    'strategic_alignment': score.strategic_alignment,
+                    'cost_benefit': score.cost_benefit,
+                    'user_impact': score.user_impact,
+                    'ease_of_implementation': score.ease_of_implementation,
+                    'vendor_reputation_support': score.vendor_reputation_support,
+                    'security_compliance': score.security_compliance,
+                    'student_centered': score.student_centered,
+                    'scoring_notes': score.scoring_notes,
+                    'created_at': score.created_at.isoformat() if score.created_at else None,
+                })
         
         response_data = {
             'success': True,
@@ -1560,6 +1573,7 @@ def project_scoring_details_modal(request, pk):
             'user_score': user_score_data,
             'committee_scores': committee_scores_data,
             'committee_label': committee_label,
+            'can_view_committee_scores': user_can_view_committee_scores,
         }
         
         print(f"DEBUG: Returning JSON data for project {project.title}")
@@ -2111,6 +2125,7 @@ def my_governance(request):
         'is_superuser': request.user.is_superuser,
         'can_modify_final_priority': can_modify_final_priority(request.user),
         'user_committee_display': get_user_committee_display(request.user),
+        'can_view_committee_scores': can_view_committee_scores(request.user),
     }
     return render(request, 'projects/my_governance.html', context)
 
