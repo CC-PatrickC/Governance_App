@@ -134,8 +134,10 @@ local_settings.py
 db.sqlite3
 db.sqlite3.backup
 
-# Media files (user uploads)
-media/
+# Media files (user uploads) - but keep template files
+media/uploads/
+media/user_files/
+# Keep media/project_files/ in version control for template files
 
 # Static files (collected)
 staticfiles/
@@ -167,9 +169,11 @@ Thumbs.db
 *.backup
 *.bak
 
-*.pyc
-*.pyc
-*.pyc
-/project_intake/__pycache__
-*.pyc
-*.sqlite3
+# Additional Django files
+debug.log
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Azure deployment files (optional)
+# web.config
+# .deployment

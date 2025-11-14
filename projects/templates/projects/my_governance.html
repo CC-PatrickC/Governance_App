@@ -1333,8 +1333,9 @@
                 {% endif %}
             </div>
             
-            <!-- Final Governance Section (Visible to all users) -->
-            {% if final_governance_projects %}
+            <!-- Final Governance Section (Visible for scoring users, superusers, and triage users) -->
+            {% if is_superuser or is_scoring_user or is_triage_user or is_triage_lead_user %}
+                {% if final_governance_projects %}
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>Under Review - Final Governance ({{ final_governance_projects.count }})</h2>
@@ -1439,7 +1440,6 @@
                     </div>
                 {% endif %}
             </div>
-                {% endif %}
             {% endif %}
             
             <!-- MyRequests Section -->
@@ -1652,12 +1652,16 @@
 </div>
 
 <script>
-function showProjectDetails(projectId) {
-    {% if is_triage_user or is_triage_lead_user %}
-    // Triage users get the edit form instead of details
-    openTriageEditModal(projectId);
-    return;
-    {% endif %}
+// Function to open triage edit modal
+function openTriageEditModal(projectId) {
+    console.log('Opening triage edit modal for project:', projectId);
+    
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+        alert('Bootstrap is not loaded. Modal cannot be opened.');
+        return;
+    }
     
     // Load project details via AJAX for non-triage users
     fetch(`/${projectId}/scoring-details-modal/`)
@@ -1810,7 +1814,6 @@ function openTriageEditModal(projectId) {
                 // Initialize technician autocomplete
                 initializeTechnicianAutocomplete();
                 
-                
                 // Add form submit handler
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -1907,6 +1910,106 @@ function openTriageEditModal(projectId) {
             saveBtn.style.display = 'none';
         });
 }
+
+function showProjectDetails(projectId) {
+    {% if is_triage_user or is_triage_lead_user %}
+    // Triage users get the edit form instead of details
+    openTriageEditModal(projectId);
+    return;
+    {% endif %}
+    
+    // Load project details via AJAX for non-triage users
+    fetch(`/${projectId}/scoring-details-modal/`)
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const project = data.project;
+                const modalBody = document.querySelector('#projectDetailsModal .modal-body');
+                const saveBtn = document.getElementById('saveChangesBtn');
+                
+                // Hide save button for project details view
+                saveBtn.style.display = 'none';
+                
+                modalBody.innerHTML = `
+                    <div class="project-title mb-3 d-flex justify-content-between align-items-center">
+                        <span>${project.title}</span>
+                        <span class="text-muted" style="font-size: 0.9em;">#${project.id.toString().padStart(3, '0')}</span>
+                    </div>
+                    
+                                                              <div class="request-details-section">
+                         <div class="row">
+                             <div class="col-12">
+                                 <div class="detail-card">
+                                     <div class="detail-title">Request Information</div>
+                                                                          <div class="detail-content">
+                                         <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
+                                         <p><strong>Request Type:</strong> ${project.project_type_display}</p>
+                                         <p><strong>Priority:</strong> ${project.priority}</p>
+                                         ${project.sdp_ticket_number && project.sdp_link ? '<p><strong>SDP:</strong> <a href="' + project.sdp_link + '" target="_blank" rel="noopener noreferrer">' + project.sdp_ticket_number + '</a></p>' : ''}
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         <div class="row mt-3">
+                             <div class="col-12">
+                                 <div class="detail-card">
+                                    <div class="detail-title">Technician Information</div>
+                                     <div class="detail-content">
+                                        <p><strong>Technician:</strong> ${project.technician ? project.technician : 'N/A'}</p>
+                                        <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
+                                        <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
+                                        <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         
+                                                   <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Description</div>
+                                      <div class="detail-content">
+                                          <p>${project.description || 'No description available.'}</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div class="row mt-3">
+                              <div class="col-12">
+                                  <div class="detail-card">
+                                      <div class="detail-title">Stage Updates</div>
+                                      <div class="detail-content" id="stageUpdatesContent">
+                                          <p class="text-muted">Loading stage updates...</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                `;
+                
+                // Populate stage updates immediately after setting modal content
+                populateStageUpdates(project.stage_changes);
+                
+                const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
+                modal.show();
+            } else {
+                alert('Error loading project details');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading project details');
+        });
+}
+
+// Make sure the function is available globally
+window.openTriageEditModal = openTriageEditModal;
+
+// Duplicate function removed - using the one at the top of the script
 
 // Function to submit triage edit form
 function submitTriageEditForm(form, projectId) {
@@ -2294,8 +2397,8 @@ function openGovernanceScoringModal(projectId) {
                 const committeeScores = data.committee_scores || [];
                 const committeeLabel = data.committee_label || 'Committee';
 
-                const submittedEmailHtml = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : 'N/A';
-                const contactEmailHtml = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : 'N/A';
+                const submittedEmailHtml = project.submitted_by_email ? "<a href=\"mailto:" + project.submitted_by_email + "\">" + project.submitted_by_email + "</a>" : 'N/A';
+                const contactEmailHtml = project.contact_email ? "<a href=\"mailto:" + project.contact_email + "\">" + project.contact_email + "</a>" : 'N/A';
 
                 const timelineColumns = [];
                 if (project.start_date_formatted) {
@@ -3683,3 +3786,4 @@ function toggleScorerNames() {
 }
 </script>
 {% endblock %}
+<!-- Template updated: Fixed endif syntax error -->
