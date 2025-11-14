@@ -838,30 +838,6 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if is_cabinet_user %}
-                        <li class="nav-item">
-                            <a href="{% url 'projects:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard">
-                                <i class="fas fa-chart-bar nav-icon"></i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-                {% endif %}
-
-                <!-- SuperUser Test Section -->
-                {% if user.is_superuser %}
-                <hr class="nav-divider">
-                <div class="nav-section">
-                    <div class="nav-section-title" style="color: #D09B2C; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; padding: 0 1.5rem;">Test Features</div>
-                    <ul class="nav-menu">
-                        <li class="nav-item">
-                            <a href="{% url 'projects:my_governance_superuser' %}" class="nav-link {% if request.resolver_match.url_name == 'my_governance_superuser' %}active{% endif %}" data-tooltip="MyGovernance Test (SuperUser)">
-                                <i class="fas fa-flask nav-icon"></i>
-                                <span>MyGovernance-test</span>
-                            </a>
-                        </li>
                     </ul>
                 </div>
                 {% endif %}

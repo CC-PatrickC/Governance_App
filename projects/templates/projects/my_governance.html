@@ -1247,8 +1247,9 @@
                     </div>
                 {% endif %}
             </div>
-            
-            
+            {% endif %}
+        {% endif %}
+
             <!-- MyRequests Section -->
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
@@ -1652,9 +1653,9 @@
 </div>
 
 <script>
-// Function to open triage edit modal
-function openTriageEditModal(projectId) {
-    console.log('Opening triage edit modal for project:', projectId);
+// Function to open project details modal for read-only view
+function openProjectDetailsModal(projectId) {
+    console.log('Opening project details modal for project:', projectId);
     
     // Check if Bootstrap is loaded
     if (typeof bootstrap === 'undefined') {
@@ -1917,93 +1918,8 @@ function showProjectDetails(projectId) {
     openTriageEditModal(projectId);
     return;
     {% endif %}
-    
-    // Load project details via AJAX for non-triage users
-    fetch(`/${projectId}/scoring-details-modal/`)
-        .then(response => {
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const project = data.project;
-                const modalBody = document.querySelector('#projectDetailsModal .modal-body');
-                const saveBtn = document.getElementById('saveChangesBtn');
-                
-                // Hide save button for project details view
-                saveBtn.style.display = 'none';
-                
-                modalBody.innerHTML = `
-                    <div class="project-title mb-3 d-flex justify-content-between align-items-center">
-                        <span>${project.title}</span>
-                        <span class="text-muted" style="font-size: 0.9em;">#${project.id.toString().padStart(3, '0')}</span>
-                    </div>
-                    
-                                                              <div class="request-details-section">
-                         <div class="row">
-                             <div class="col-12">
-                                 <div class="detail-card">
-                                     <div class="detail-title">Request Information</div>
-                                                                          <div class="detail-content">
-                                         <p><strong>Department:</strong> ${project.department || 'N/A'}</p>
-                                         <p><strong>Request Type:</strong> ${project.project_type_display}</p>
-                                         <p><strong>Priority:</strong> ${project.priority}</p>
-                                         ${project.sdp_ticket_number && project.sdp_link ? '<p><strong>SDP:</strong> <a href="' + project.sdp_link + '" target="_blank" rel="noopener noreferrer">' + project.sdp_ticket_number + '</a></p>' : ''}
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
-                         
-                         <div class="row mt-3">
-                             <div class="col-12">
-                                 <div class="detail-card">
-                                    <div class="detail-title">Technician Information</div>
-                                     <div class="detail-content">
-                                        <p><strong>Technician:</strong> ${project.technician ? project.technician : 'N/A'}</p>
-                                        <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
-                                        <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
-                                        <p><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
-                         
-                                                   <div class="row mt-3">
-                              <div class="col-12">
-                                  <div class="detail-card">
-                                      <div class="detail-title">Description</div>
-                                      <div class="detail-content">
-                                          <p>${project.description || 'No description available.'}</p>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                          
-                          <div class="row mt-3">
-                              <div class="col-12">
-                                  <div class="detail-card">
-                                      <div class="detail-title">Stage Updates</div>
-                                      <div class="detail-content" id="stageUpdatesContent">
-                                          <p class="text-muted">Loading stage updates...</p>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                `;
-                
-                // Populate stage updates immediately after setting modal content
-                populateStageUpdates(project.stage_changes);
-                
-                const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
-                modal.show();
-            } else {
-                alert('Error loading project details');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading project details');
-        });
+
+    openProjectDetailsModal(projectId);
 }
 
 // Make sure the function is available globally
