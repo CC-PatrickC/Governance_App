@@ -1416,6 +1416,18 @@ def project_scoring_details_modal(request, pk):
                 'uploaded_at': file.uploaded_at.isoformat() if file.uploaded_at else None,
             })
 
+        # Get stage change history (only stage field)
+        stage_changes_data = []
+        stage_changes = project.triage_change_history.filter(field_name__iexact='stage').order_by('-changed_at')
+        for change in stage_changes:
+            stage_changes_data.append({
+                'old_value': change.old_value or 'N/A',
+                'new_value': change.new_value or 'N/A',
+                'changed_at': change.changed_at.isoformat() if change.changed_at else None,
+                'changed_at_formatted': change.changed_at.strftime('%B %d, %Y at %I:%M %p') if change.changed_at else None,
+                'changed_by': change.changed_by.get_full_name() or change.changed_by.username if change.changed_by else 'Unknown',
+            })
+
         
         # Prepare project data for JSON response with safe date handling
         submitted_by_name = None

@@ -16,47 +16,28 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")  # loads your local .env
+load_dotenv(BASE_DIR / ".env")
 
-ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
-ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
-AZURE_AD_GROUP_MAPPING = {}
-
-ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "False").lower() in ("1", "true", "yes")
-ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "False").lower() in ("1", "true", "yes")
-AZURE_AD_GROUP_MAPPING = {}
+ENABLE_CAS = os.getenv("DJANGO_ENABLE_CAS", "false").lower() in ("1", "true", "yes")
+ENABLE_AZURE_AD = os.getenv("DJANGO_ENABLE_AZURE_AD", "false").lower() in ("1", "true", "yes")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-&*hb2%)zdi-5-w&u0pl7*q5)g^z!7sad6(kry_rj#nkzgj9m^$'
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-please-change")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
+DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in ("1", "true", "yes")
 
-# Force DEBUG to False for production safety
-# if not DEBUG:
-#     DEBUG = False
-
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-# Add both Azure default domain and custom domain
+# Hosts & proxy configuration
 DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
-# Add both Azure default domain and custom domain
-DEFAULT_HOSTS = "localhost,127.0.0.1,govapp-fbhde3c8ffg9fbf9.westus2-01.azurewebsites.net,governance.coloradocollege.app"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",")]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", DEFAULT_HOSTS).split(",") if host.strip()]
 
-# Helpful for Azure (avoids CSRF issues on the cloud hostname)
-CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ("localhost", "127.0.0.1")]
-
-# Behind Azure’s proxy, this helps Django detect HTTPS correctly
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host not in ("localhost", "127.0.0.1")]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -64,84 +45,36 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'cas',
-    # 'cas',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
     'projects',
     'crispy_forms',
     'crispy_bootstrap5',
-    'cas',  # Emergency disable - ModuleNotFoundError: No module named 'cas'
-    'crispy_forms',
-    'crispy_bootstrap5',
-    'django.contrib.sites',
-    'allauth',  # Emergency disable - django-allauth removed from requirements.txt
-    'allauth.account',  # Emergency disable - django-allauth removed from requirements.txt
-    'allauth.socialaccount',  # Emergency disable - django-allauth removed from requirements.txt
 ]
 
 if ENABLE_AZURE_AD:
     INSTALLED_APPS.append('allauth.socialaccount.providers.microsoft')
 
+if ENABLE_CAS and 'cas' not in INSTALLED_APPS:
+    INSTALLED_APPS.append('cas')
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # add right after SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
 ]
 
 if ENABLE_CAS:
-    INSTALLED_APPS.append('cas')
     MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
     MIDDLEWARE.append('cas.middleware.CASMiddleware')
-]
-
-if ENABLE_CAS:
-    INSTALLED_APPS.append('cas')
-    MIDDLEWARE.insert(3, 'cas.middleware.ProxyMiddleware')
-    MIDDLEWARE.append('cas.middleware.CASMiddleware')
-
-PROXY_DOMAIN = 'governance.coloradocollege.app'
-PROXY_DOMAIN = 'governance.coloradocollege.app'
-
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-<<<<<<< HEAD
-    'allauth.account.auth_backends.AuthenticationBackend',
-    'cas.backends.CASBackend',  # Enable this when CAS is ready
-=======
-    # 'allauth.account.auth_backends.AuthenticationBackend',  # Emergency disable - django-allauth removed from requirements.txt
-    # 'cas.backends.CASBackend',  # Emergency disable - app crash
->>>>>>> 893da6e (Emergency fix: Comment out CAS and allauth components causing deployment failures)
-)
-
-if ENABLE_CAS:
-    AUTHENTICATION_BACKENDS += ('cas.backends.CASBackend',)
-
-if ENABLE_CAS:
-    CAS_SERVER_URL = "https://cas.coloradocollege.edu/cas/"  # Replace with your institution's CAS URL
-    CAS_LOGOUT_COMPLETELY = True
-    CAS_PROVIDE_URL_TO_LOGOUT = True
-    # Force CAS to use custom domain instead of Azure default domain
-    CAS_SERVICE_URL = "https://governance.coloradocollege.app"
-    CAS_ROOT_PROXIED_AS = "https://governance.coloradocollege.app"
-    CAS_REDIRECT_URL = "https://governance.coloradocollege.app/"
-
-    # CAS User Attribute Mapping - captures email and other info from CAS response
-    # Based on Colorado College CAS admin specifications
-    # Mapping to Django User model fields only
-    CAS_RENAME_ATTRIBUTES = {
-        'mail': 'email',           # Email address
-        'givenName': 'first_name', # First Name  
-        'sn': 'last_name',        # Last Name
-    }
-
-    # Auto-create user accounts with attributes from CAS
-    CAS_CREATE_USER = True
-    CAS_UPDATE_USER_ATTRIBUTES = True
 
 ROOT_URLCONF = 'project_intake.urls'
 
@@ -156,6 +89,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'projects.context_processors.user_permissions',
             ],
         },
     },
@@ -163,46 +97,33 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project_intake.wsgi.application'
 
+# Database configuration
+use_local_sqlite = os.getenv('USE_LOCAL_SQLITE', 'false').lower() in ('1', 'true', 'yes')
+has_postgres_password = bool(os.getenv('POSTGRES_PASSWORD'))
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
-#        'USER': os.getenv('POSTGRES_USER', 'csmart'),
-#        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-#        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
-#        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-#    }
-#}
-
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
-#        'USER': os.getenv('POSTGRES_USER', 'csmart'),
-#        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-#        'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
-#        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-#    }
-#}
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if use_local_sqlite or not has_postgres_password:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'governance_db'),
+            'USER': os.getenv('POSTGRES_USER', 'csmart'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('POSTGRES_HOST', 'az-westus2-eis-postgres1.postgres.database.azure.com'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
     }
-}
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -218,72 +139,69 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
+# Static and media files
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    BASE_DIR / "projects/static",
+    BASE_DIR / 'projects/static',
 ]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-# Use WhiteNoise’s compressed manifest storage for cache-busting
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# Media files (Uploaded files)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Auth redirects
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-SITE_ID = 1
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Allauth settings
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_LOGOUT_ON_GET = True
-ACCOUNT_LOGOUT_REDIRECT_URL = '/'
-ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
+CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-SOCIALACCOUNT_STORE_TOKENS = True
-
-SOCIALACCOUNT_PROVIDERS = {}
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 if ENABLE_AZURE_AD:
-    AZURE_AD_TENANT_ID = os.getenv("DJANGO_AZURE_TENANT_ID", "common")
-    AZURE_AD_CLIENT_ID = os.getenv("DJANGO_AZURE_CLIENT_ID", "")
-    AZURE_AD_CLIENT_SECRET = os.getenv("DJANGO_AZURE_CLIENT_SECRET", "")
-    AZURE_AD_GROUP_MAPPING_RAW = os.getenv("DJANGO_AZURE_GROUP_MAPPING", "")
+    AUTHENTICATION_BACKENDS.append('allauth.account.auth_backends.AuthenticationBackend')
+
+if ENABLE_CAS:
+    AUTHENTICATION_BACKENDS.append('cas.backends.CASBackend')
+
+AUTHENTICATION_BACKENDS = tuple(AUTHENTICATION_BACKENDS)
+
+SITE_ID = int(os.getenv('DJANGO_SITE_ID', '1'))
+
+# Azure AD configuration
+AZURE_AD_GROUP_MAPPING = {}
+
+if ENABLE_AZURE_AD:
+    ACCOUNT_EMAIL_REQUIRED = True
+    ACCOUNT_USERNAME_REQUIRED = False
+    ACCOUNT_AUTHENTICATION_METHOD = 'email'
+    ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+    ACCOUNT_LOGOUT_ON_GET = True
+    ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+    ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+    ACCOUNT_LOGIN_METHODS = {'email'}
+    ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+    SOCIALACCOUNT_STORE_TOKENS = True
+    SOCIALACCOUNT_PROVIDERS = {}
+
+    AZURE_AD_TENANT_ID = os.getenv('DJANGO_AZURE_TENANT_ID', 'common')
+    AZURE_AD_CLIENT_ID = os.getenv('DJANGO_AZURE_CLIENT_ID', '')
+    AZURE_AD_CLIENT_SECRET = os.getenv('DJANGO_AZURE_CLIENT_SECRET', '')
+    AZURE_AD_GROUP_MAPPING_RAW = os.getenv('DJANGO_AZURE_GROUP_MAPPING', '')
 
     AZURE_AD_SCOPES = [
         'openid',
@@ -294,7 +212,6 @@ if ENABLE_AZURE_AD:
         'GroupMember.Read.All',
     ]
 
-    AZURE_AD_GROUP_MAPPING = {}
     if AZURE_AD_GROUP_MAPPING_RAW:
         for item in AZURE_AD_GROUP_MAPPING_RAW.split(','):
             key, _, value = item.partition(':')
@@ -312,41 +229,111 @@ if ENABLE_AZURE_AD:
             'secret': AZURE_AD_CLIENT_SECRET,
         },
     }
+else:
+    SOCIALACCOUNT_STORE_TOKENS = False
+    SOCIALACCOUNT_PROVIDERS = {}
 
-SOCIALACCOUNT_STORE_TOKENS = True
+# CAS configuration
+if ENABLE_CAS:
+    CAS_SERVER_URL = os.getenv('DJANGO_CAS_SERVER_URL', 'https://cas.coloradocollege.edu/cas/')
+    CAS_LOGOUT_COMPLETELY = True
+    CAS_PROVIDE_URL_TO_LOGOUT = True
+    CAS_GATEWAY = False
+    CAS_VERSION = '3'
+    CAS_ADMIN_PREFIX = '/admin'
+    CAS_CREATE_USER = True
+    CAS_AUTO_CREATE_USERS = True
+    CAS_IGNORE_REFERER = True
+    CAS_REDIRECT_URL = os.getenv('DJANGO_CAS_REDIRECT_URL', 'https://governance.coloradocollege.app')
+    CAS_RENAME_ATTRIBUTES = {
+        'msDS-cloudExtensionAttribute1': 'username',
+        'mail': 'email',
+        'givenName': 'first_name',
+        'sn': 'last_name',
+        'fullName': 'full_name',
+        'title': 'title',
+        'department': 'department',
+    }
 
-SOCIALACCOUNT_PROVIDERS = {}
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_AGE = 3600
+    SESSION_SAVE_EVERY_REQUEST = True
 
-if ENABLE_AZURE_AD:
-    AZURE_AD_TENANT_ID = os.getenv("DJANGO_AZURE_TENANT_ID", "common")
-    AZURE_AD_CLIENT_ID = os.getenv("DJANGO_AZURE_CLIENT_ID", "")
-    AZURE_AD_CLIENT_SECRET = os.getenv("DJANGO_AZURE_CLIENT_SECRET", "")
-    AZURE_AD_GROUP_MAPPING_RAW = os.getenv("DJANGO_AZURE_GROUP_MAPPING", "")
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_TRUSTED_ORIGINS.append('https://cas.coloradocollege.edu')
 
-    AZURE_AD_SCOPES = [
-        'openid',
-        'email',
-        'profile',
-        'offline_access',
-        'User.Read',
-        'GroupMember.Read.All',
-    ]
-
-    AZURE_AD_GROUP_MAPPING = {}
-    if AZURE_AD_GROUP_MAPPING_RAW:
-        for item in AZURE_AD_GROUP_MAPPING_RAW.split(','):
-            key, _, value = item.partition(':')
-            if key and value:
-                AZURE_AD_GROUP_MAPPING[key.strip()] = value.strip()
-
-    SOCIALACCOUNT_PROVIDERS['microsoft'] = {
-        'TENANT': AZURE_AD_TENANT_ID,
-        'SCOPE': AZURE_AD_SCOPES,
-        'AUTH_PARAMS': {'prompt': 'select_account'},
-        'METHOD': 'oauth2',
-        'VERIFIED_EMAIL': True,
-        'APP': {
-            'client_id': AZURE_AD_CLIENT_ID,
-            'secret': AZURE_AD_CLIENT_SECRET,
+    if DEBUG:
+        LOGGING = {
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'verbose': {
+                    'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                    'style': '{',
+                },
+                'simple': {
+                    'format': '{levelname} {message}',
+                    'style': '{',
+                },
+            },
+            'handlers': {
+                'file': {
+                    'level': 'DEBUG',
+                    'class': 'logging.FileHandler',
+                    'filename': BASE_DIR / 'debug.log',
+                    'formatter': 'verbose',
+                },
+                'console': {
+                    'level': 'DEBUG',
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'simple',
+                },
+            },
+            'loggers': {
+                'django': {
+                    'handlers': ['file', 'console'],
+                    'level': 'INFO',
+                    'propagate': True,
+                },
+                'projects': {
+                    'handlers': ['file', 'console'],
+                    'level': 'DEBUG',
+                    'propagate': True,
+                },
+                'cas': {
+                    'handlers': ['file', 'console'],
+                    'level': 'DEBUG',
+                    'propagate': True,
+                },
+            },
+        }
+else:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
         },
     }
+

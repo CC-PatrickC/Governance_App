@@ -1247,8 +1247,7 @@
                     </div>
                 {% endif %}
             </div>
-                {% endif %}
-            {% endif %}
+            
             
             <!-- MyRequests Section -->
             <div class="cc-content-area" style="margin-top: 2rem;">
@@ -1515,19 +1514,14 @@
             </div>
             
             <!-- My Assigned Requests Section -->
-            <!-- My Assigned Requests Section -->
             <div class="cc-content-area" style="margin-top: 2rem;">
                 <div class="cc-section-header">
                     <h2>My Assigned Requests</h2>
                     <p class="text-muted">Requests where you are listed as the technician</p>
-                    <h2>My Assigned Requests</h2>
-                    <p class="text-muted">Requests where you are listed as the technician</p>
                 </div>
-                
-                {% if technician_projects %}
+
                 {% if technician_projects %}
                     <div class="cc-projects-grid">
-                        {% for project in technician_projects %}
                         {% for project in technician_projects %}
                         <div class="cc-project-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="showProjectDetails({{ project.id }})">
                             <div class="cc-project-header">
@@ -1554,10 +1548,9 @@
                                     <div class="cc-meta-section">
                                         <div class="cc-meta-title">Stage</div>
                                         <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
-                                        <span class="cc-meta-item" data-bs-toggle="tooltip" title="The current phase of governance review this request is in.">{{ project.get_stage_display }}</span>
                                     </div>
                                 </div>
-                                
+
                                 {% if project.department %}
                                 <div class="cc-department-section">
                                     <div class="cc-department-title">Department</div>
@@ -1566,7 +1559,7 @@
                                 {% endif %}
 
                                 <div class="cc-project-meta-requested">
-                                    Requested by: 
+                                    Requested by:
                                     {% if project.submitted_by %}
                                         {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
                                     {% else %}
@@ -1581,8 +1574,6 @@
                 {% else %}
                     <div class="cc-empty-state">
                         <i class="fas fa-user-tie"></i>
-                        <h4>No Assigned Requests</h4>
-                        <p>You are not currently assigned as a technician for any requests.</p>
                         <h4>No Assigned Requests</h4>
                         <p>You are not currently assigned as a technician for any requests.</p>
                     </div>
@@ -1707,11 +1698,7 @@ function showProjectDetails(projectId) {
                              <div class="col-12">
                                  <div class="detail-card">
                                     <div class="detail-title">Technician Information</div>
-                                    <div class="detail-title">Technician Information</div>
                                      <div class="detail-content">
-                                        <p><strong>Technician:</strong> ${project.technician ? project.technician : 'N/A'}</p>
-                                        <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
-                                        <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
                                         <p><strong>Technician:</strong> ${project.technician ? project.technician : 'N/A'}</p>
                                         <p><strong>Technician Email:</strong> ${project.contact_email || 'N/A'}</p>
                                         <p><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
@@ -1793,14 +1780,7 @@ function openTriageEditModal(projectId) {
         .then(response => {
             console.log('Response status:', response.status);
             console.log('Response headers:', response.headers);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
             if (!response.ok) {
-                // Try to get error details from response
-                return response.text().then(text => {
-                    console.error('Error response body:', text);
-                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Response: ${text}`);
-                });
                 // Try to get error details from response
                 return response.text().then(text => {
                     console.error('Error response body:', text);
@@ -1810,7 +1790,6 @@ function openTriageEditModal(projectId) {
             return response.text();
         })
         .then(html => {
-            console.log('Successfully received HTML response');
             console.log('Successfully received HTML response');
             // Replace modal content with the edit form HTML
             modalBody.innerHTML = html;
@@ -1828,8 +1807,6 @@ function openTriageEditModal(projectId) {
                 deleteBtn.style.display = 'inline-block';
                 
                 
-                // Initialize technician autocomplete
-                initializeTechnicianAutocomplete();
                 // Initialize technician autocomplete
                 initializeTechnicianAutocomplete();
                 
@@ -1919,14 +1896,6 @@ function openTriageEditModal(projectId) {
         })
         .catch(error => {
             console.error('Error loading edit form:', error);
-            console.error('Error stack:', error.stack);
-            modalBody.innerHTML = `<div class="alert alert-danger">
-                <h6>Error loading edit form</h6>
-                <p><strong>Error details:</strong> ${error.message}</p>
-                <p><strong>Project ID:</strong> ${projectId}</p>
-                <p><strong>URL:</strong> /${projectId}/edit-form/</p>
-                <p>Please check the browser console for more details.</p>
-            </div>`;
             console.error('Error stack:', error.stack);
             modalBody.innerHTML = `<div class="alert alert-danger">
                 <h6>Error loading edit form</h6>
@@ -2052,8 +2021,6 @@ function submitTriageEditForm(form, projectId) {
                             
                             // Re-initialize technician autocomplete
                             initializeTechnicianAutocomplete();
-                            // Re-initialize technician autocomplete
-                            initializeTechnicianAutocomplete();
                             
                             // Clear the file input
                             const fileInput = formElement.querySelector('input[type="file"]');
@@ -2069,10 +2036,7 @@ function submitTriageEditForm(form, projectId) {
                 });
             
             // Auto-refresh the MyGovernance page so request lists reflect changes
-            // Auto-refresh the MyGovernance page so request lists reflect changes
             setTimeout(() => {
-                window.location.reload();
-            }, 1500);
                 window.location.reload();
             }, 1500);
         } else {
@@ -2119,12 +2083,7 @@ function submitTriageEditForm(form, projectId) {
 }
 
 // Function to open governance scoring modal with triage and scoring tabs
-// Function to open governance scoring modal with triage and scoring tabs
 function openGovernanceScoringModal(projectId) {
-    const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
-    const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
-    const defaultTab = userCanScore ? 'scoring' : 'triage';
-
     const userCanEditTriage = {% if is_triage_user or is_triage_lead_user or is_superuser %}true{% else %}false{% endif %};
     const userCanScore = {% if is_scoring_user %}true{% else %}false{% endif %};
     const defaultTab = userCanScore ? 'scoring' : 'triage';
@@ -2139,30 +2098,12 @@ function openGovernanceScoringModal(projectId) {
 
     const loadingTemplate = (message) => `
         <div class="text-center py-4">
-    const deleteBtn = document.getElementById('deleteRequestBtn');
-
-    modalTitle.textContent = 'Under Review - Governance';
-
-    const loadingTemplate = (message) => `
-        <div class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2">${message}</p>
-            <p class="mt-2">${message}</p>
         </div>
     `;
-
-    if (saveBtn) {
-        saveBtn.style.display = 'none';
-        saveBtn.onclick = null;
-    }
-    if (deleteBtn) {
-        deleteBtn.style.display = 'none';
-        deleteBtn.onclick = null;
-    }
-
-    modalBody.innerHTML = loadingTemplate('Preparing review data...');
 
     if (saveBtn) {
         saveBtn.style.display = 'none';
@@ -2410,296 +2351,7 @@ function openGovernanceScoringModal(projectId) {
                                 <div class="text-uppercase text-muted small fw-semibold">${project.formatted_id || ('#' + project.id.toString().padStart(3, '0'))}</div>
                                 <h5 class="mb-1">${project.title}</h5>
                                 <div class="text-muted fst-italic">${descriptionSubtitle}</div>
-
-    modalBody.innerHTML = `
-        <ul class="nav nav-tabs" id="governanceModalTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link ${defaultTab === 'triage' ? 'active' : ''}" id="triage-tab" data-bs-toggle="tab" data-bs-target="#triageTabContent" type="button" role="tab" aria-controls="triageTabContent" aria-selected="${defaultTab === 'triage'}">Triage</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link ${defaultTab === 'scoring' ? 'active' : ''}" id="scoring-tab" data-bs-toggle="tab" data-bs-target="#scoringTabContent" type="button" role="tab" aria-controls="scoringTabContent" aria-selected="${defaultTab === 'scoring'}">Scoring</button>
-            </li>
-        </ul>
-        <div class="tab-content pt-3" id="governanceModalTabContent">
-            <div class="tab-pane fade ${defaultTab === 'triage' ? 'show active' : ''}" id="triageTabContent" role="tabpanel" aria-labelledby="triage-tab">
-                ${userCanEditTriage ? loadingTemplate('Loading triage form...') : '<div class="alert alert-info mb-0">You do not have permission to edit this request.</div>'}
-            </div>
-            <div class="tab-pane fade ${defaultTab === 'scoring' ? 'show active' : ''}" id="scoringTabContent" role="tabpanel" aria-labelledby="scoring-tab">
-                ${userCanScore ? loadingTemplate('Loading project details and scoring form...') : '<div class="alert alert-info mb-0">You do not have access to scoring for this request.</div>'}
-            </div>
-        </div>
-    `;
-
-    const triageContent = document.getElementById('triageTabContent');
-    const scoringContent = document.getElementById('scoringTabContent');
-
-    const updateActionButtons = (activeTab) => {
-        if (!saveBtn) {
-            return;
-        }
-        if (activeTab === 'triage' && userCanEditTriage && triageContent.querySelector('form')) {
-            saveBtn.style.display = 'inline-block';
-            if (deleteBtn) {
-                deleteBtn.style.display = 'inline-block';
-            }
-        } else {
-            saveBtn.style.display = 'none';
-            if (deleteBtn) {
-                deleteBtn.style.display = 'none';
-            }
-        }
-    };
-
-    const getActiveTab = () => {
-        const activeButton = document.querySelector('#governanceModalTabs .nav-link.active');
-        if (!activeButton) {
-            return defaultTab;
-        }
-        return activeButton.getAttribute('data-bs-target') === '#triageTabContent' ? 'triage' : 'scoring';
-    };
-
-    document.querySelectorAll('#governanceModalTabs button[data-bs-toggle="tab"]').forEach(tabButton => {
-        tabButton.addEventListener('shown.bs.tab', (event) => {
-            const target = event.target.getAttribute('data-bs-target');
-            const activeTab = target === '#triageTabContent' ? 'triage' : 'scoring';
-            updateActionButtons(activeTab);
-        });
-    });
-
-    // Load triage form if permitted
-    if (userCanEditTriage) {
-        fetch(`/${projectId}/edit-form/`)
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        const error = new Error(text || 'Error loading triage form.');
-                        error.status = response.status;
-                        throw error;
-                    });
-                }
-                return response.text();
-            })
-            .then(html => {
-                triageContent.innerHTML = html;
-                const form = triageContent.querySelector('form');
-
-                if (form) {
-                    form.removeAttribute('action');
-                    form.method = 'POST';
-                    form.onsubmit = function (e) {
-                        e.preventDefault();
-                        submitTriageEditForm(form, projectId);
-                    };
-
-                    if (saveBtn) {
-                        saveBtn.onclick = () => submitTriageEditForm(form, projectId);
-                    }
-                    if (deleteBtn) {
-                        deleteBtn.onclick = () => openDeleteRequestModal(projectId);
-                    }
-
-                initializeTechnicianAutocomplete();
-
-                    window.deleteAttachment = function(projectIdArg, fileId, buttonElement) {
-                        if (!confirm('Are you sure you want to delete this attachment?')) {
-                            return;
-                        }
-
-                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-                        const originalContent = buttonElement.innerHTML;
-                        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                        buttonElement.disabled = true;
-
-                        fetch(`/${projectIdArg}/attachment/${fileId}/delete/`, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRFToken': csrfToken
-                            }
-                        })
-                        .then(resp => resp.json())
-                        .then(data => {
-                            if (data.success) {
-                                const attachmentRow = buttonElement.closest('.list-group-item');
-                                if (attachmentRow) {
-                                    attachmentRow.remove();
-                                }
-
-                                const alertWrapper = document.createElement('div');
-                                alertWrapper.className = 'alert alert-success alert-dismissible fade show mb-3';
-                                alertWrapper.innerHTML = `
-                                    <i class="fas fa-check-circle me-2"></i>
-                                    <strong>Success!</strong> ${data.message}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                `;
-                                triageContent.prepend(alertWrapper);
-                                setTimeout(() => {
-                                    if (alertWrapper && alertWrapper.parentNode) {
-                                        alertWrapper.remove();
-                                    }
-                                }, 3000);
-                            } else {
-                                alert('Error: ' + data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error deleting attachment:', error);
-                            alert('Error deleting attachment. Please try again.');
-                        })
-                        .finally(() => {
-                            buttonElement.innerHTML = originalContent;
-                            buttonElement.disabled = false;
-                        });
-                    };
-                } else {
-                    triageContent.innerHTML = '<div class="alert alert-danger">Error loading edit form.</div>';
-                }
-
-                updateActionButtons(getActiveTab());
-            })
-            .catch(error => {
-                console.error('Error loading edit form:', error);
-                triageContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <h6>Error loading edit form</h6>
-                        <p>${error.status === 403 ? 'You do not have permission to edit this request.' : 'An unexpected error occurred while loading the triage form.'}</p>
-                    </div>
-                `;
-                updateActionButtons(getActiveTab());
-            });
-    }
-
-    // Load scoring content if permitted
-    if (userCanScore) {
-        fetch(`/${projectId}/scoring-details-modal/`)
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        const error = new Error(text || 'Error loading scoring details.');
-                        error.status = response.status;
-                        throw error;
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                const project = data.project;
-                const userScore = data.user_score;
-                const committeeScores = data.committee_scores || [];
-                const committeeLabel = data.committee_label || 'Committee';
-
-                const submittedEmailHtml = project.submitted_by_email ? `<a href="mailto:${project.submitted_by_email}">${project.submitted_by_email}</a>` : 'N/A';
-                const contactEmailHtml = project.contact_email ? `<a href="mailto:${project.contact_email}">${project.contact_email}</a>` : 'N/A';
-
-                const timelineColumns = [];
-                if (project.start_date_formatted) {
-                    timelineColumns.push(`
-                    <div class="col-md-4 col-12">
-                        <div class="border rounded h-100 p-3 bg-light-subtle">
-                            <div class="text-uppercase text-muted small fw-semibold mb-2">Start Date</div>
-                            <div class="fw-medium">${project.start_date_formatted}</div>
-                        </div>
-                    </div>
-                    `);
-                }
-
-                if (project.end_date_formatted) {
-                    timelineColumns.push(`
-                    <div class="col-md-4 col-12">
-                        <div class="border rounded h-100 p-3 bg-light-subtle">
-                            <div class="text-uppercase text-muted small fw-semibold mb-2">Target Completion</div>
-                            <div class="fw-medium">${project.end_date_formatted}</div>
-                        </div>
-                    </div>
-                    `);
-                }
-
-                const timelineHtml = timelineColumns.length
-                    ? `<div class="row g-3 mt-1">
-                            ${timelineColumns.join('')}
-                       </div>`
-                    : '';
-
-                const descriptionSubtitle = project.description ? project.description : 'No description available.';
-
-                const attachmentsHtml = project.files && project.files.length
-                    ? `
-                        <div class="mt-4">
-                            <h6 class="text-uppercase text-muted fw-semibold small">Attachments</h6>
-                            <div class="list-group">
-                                ${project.files.map(file => `
-                                    <a href="${file.url}" class="list-group-item list-group-item-action d-flex align-items-center gap-2" target="_blank">
-                                        <i class="fas fa-paperclip text-muted"></i>
-                                        <span>${file.name}</span>
-                                    </a>
-                                `).join('')}
                             </div>
-                        </div>
-                    `
-                    : '';
-
-                scoringContent.innerHTML = `
-                    <div class="card shadow-sm border-0 mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #D09B2C 0%, #E6B84C 100%); color: black;">
-                            <div>
-                                <div class="text-uppercase text-muted small fw-semibold">${project.formatted_id || ('#' + project.id.toString().padStart(3, '0'))}</div>
-                                <h5 class="mb-1">${project.title}</h5>
-                                <div class="text-muted fst-italic">${descriptionSubtitle}</div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="border rounded h-100 p-3 bg-light-subtle">
-                                        <div class="text-uppercase text-muted small fw-semibold mb-2">Request Summary</div>
-                                        <p class="mb-2"><strong>Request Type:</strong> ${project.project_type_display || 'N/A'}</p>
-                                        <p class="mb-2"><strong>Stage:</strong> ${project.stage_display || 'N/A'}</p>
-                                        <p class="mb-2"><strong>Priority:</strong> ${project.priority_display || project.priority || 'N/A'}</p>
-                                        <p class="mb-2"><strong>Department:</strong> ${project.department || 'N/A'}</p>
-                                        <p class="mb-0"><strong>Submitted:</strong> ${project.submission_date_formatted || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="border rounded h-100 p-3">
-                                        <div class="text-uppercase text-muted small fw-semibold mb-2">Key Contacts</div>
-                                        <p class="mb-2"><strong>Submitted By:</strong> ${project.submitted_by_name || 'Unknown'}</p>
-                                        <p class="mb-2"><strong>Submitted Email:</strong> ${submittedEmailHtml}</p>
-                                        <p class="mb-2"><strong>Technician:</strong> ${project.technician || 'N/A'}</p>
-                                        <p class="mb-2"><strong>Technician Email:</strong> ${contactEmailHtml}</p>
-                                        <p class="mb-0"><strong>Technician Phone:</strong> ${project.contact_phone || 'N/A'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            ${timelineHtml}
-                            <div class="mt-4">
-                                <h6 class="fw-semibold">Description</h6>
-                                <p class="mb-0">${project.description || 'No description available.'}</p>
-                            </div>
-                            ${attachmentsHtml}
-                        </div>
-                    </div>
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-body">
-                            <h6 class="section-header small mb-3">Stage Updates</h6>
-                            <div class="info-content compact" id="stageUpdatesContent">
-                                <p class="text-muted mb-0">Loading stage updates...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="scoring-form-section">
-                        <h6 class="section-header small">Score This Project</h6>
-                        <form id="scoringForm">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Criteria</th>
-                                            <th>Weight</th>
-                                            <th>Your Score (1-5)</th>
-                                            <th>Weighted Score</th>
-                                        </tr>
-                                    </thead>
                         </div>
                         <div class="card-body">
                             <div class="row g-4">
@@ -2768,7 +2420,6 @@ function openGovernanceScoringModal(projectId) {
                                                        value="${userScore ? userScore.strategic_alignment || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
                                                        >
-                                                       >
                                             </td>
                                             <td>
                                                 <span id="strategic_alignment_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2786,7 +2437,6 @@ function openGovernanceScoringModal(projectId) {
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.cost_benefit || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
-                                                       >
                                                        >
                                             </td>
                                             <td>
@@ -2806,7 +2456,6 @@ function openGovernanceScoringModal(projectId) {
                                                        value="${userScore ? userScore.user_impact || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
                                                        >
-                                                       >
                                             </td>
                                             <td>
                                                 <span id="user_impact_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2824,7 +2473,6 @@ function openGovernanceScoringModal(projectId) {
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.ease_of_implementation || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
-                                                       >
                                                        >
                                             </td>
                                             <td>
@@ -2844,7 +2492,6 @@ function openGovernanceScoringModal(projectId) {
                                                        value="${userScore ? userScore.vendor_reputation_support || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
                                                        >
-                                                       >
                                             </td>
                                             <td>
                                                 <span id="vendor_reputation_support_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2863,7 +2510,6 @@ function openGovernanceScoringModal(projectId) {
                                                        value="${userScore ? userScore.security_compliance || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
                                                        >
-                                                       >
                                             </td>
                                             <td>
                                                 <span id="security_compliance_weighted" class="weighted-score" style="font-weight: bold; color: black;">0</span>
@@ -2881,7 +2527,6 @@ function openGovernanceScoringModal(projectId) {
                                                        class="form-control score-input" min="1" max="5" 
                                                        value="${userScore ? userScore.student_centered || '' : ''}"
                                                        onchange="calculateWeightedScore(this)"
-                                                       >
                                                        >
                                             </td>
                                             <td>
@@ -2903,7 +2548,6 @@ function openGovernanceScoringModal(projectId) {
                                 <textarea name="scoring_notes" id="scoring_notes" class="form-control" 
                                         rows="4" placeholder="Add your detailed scoring notes here..."
                                         >${userScore ? userScore.scoring_notes || '' : ''}</textarea>
-                                        >${userScore ? userScore.scoring_notes || '' : ''}</textarea>
                             </div>
 
                             <input type="hidden" name="final_score" id="final_score" value="${userScore ? userScore.final_score || 0 : 0}">
@@ -2914,18 +2558,6 @@ function openGovernanceScoringModal(projectId) {
                                 <div id="saveStatus" class="text-muted"></div>
                             </div>
                         </form>
-                    </div>
-                    
-                    <div class="committee-scores-section mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="section-header small mb-0">${committeeLabel} Scores</h6>
-                            ${committeeScores.length > 0 ? `
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
-                                <label class="form-check-label small" for="hideScorerNames">
-                                    Hide scorer names
-                                </label>
-                            </div>` : ''}
                     </div>
                     
                     <div class="committee-scores-section mt-4">
@@ -2983,89 +2615,7 @@ function openGovernanceScoringModal(projectId) {
                             <i class="fas fa-info-circle me-2"></i>
                             No scores have been submitted yet by this committee.
                         </div>`}
-                        ${committeeScores.length > 0 ? `
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered" id="scoresTable">
-                                <thead>
-                                    <tr>
-                                        <th class="scorer-name-column">Scored By</th>
-                                        <th>Strategic (20%)</th>
-                                        <th>Cost (15%)</th>
-                                        <th>Impact (20%)</th>
-                                        <th>Ease (15%)</th>
-                                        <th>Vendor (10%)</th>
-                                        <th>Security (10%)</th>
-                                        <th>Student (10%)</th>
-                                        <th>Final</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${committeeScores.map(score => `
-                                        <tr>
-                                            <td class="small scorer-name-cell">${score.scored_by}</td>
-                                            <td class="text-center">${score.strategic_alignment != null ? score.strategic_alignment : '-'}</td>
-                                            <td class="text-center">${score.cost_benefit != null ? score.cost_benefit : '-'}</td>
-                                            <td class="text-center">${score.user_impact != null ? score.user_impact : '-'}</td>
-                                            <td class="text-center">${score.ease_of_implementation != null ? score.ease_of_implementation : '-'}</td>
-                                            <td class="text-center">${score.vendor_reputation_support != null ? score.vendor_reputation_support : '-'}</td>
-                                            <td class="text-center">${score.security_compliance != null ? score.security_compliance : '-'}</td>
-                                            <td class="text-center">${score.student_centered != null ? score.student_centered : '-'}</td>
-                                            <td class="text-center fw-bold">${score.final_score != null ? Number(score.final_score).toFixed(2) : '-'}</td>
-                                        </tr>
-                                        <tr class="notes-row">
-                                            <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
-                                                <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
-                                                    score.scoring_notes.trim() : 
-                                                    'Member did not provide any scoring notes.'}
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>` : `
-                        <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
-                            No scores have been submitted yet by this committee.
-                        </div>`}
                     </div>
-                `;
-
-                populateStageUpdates(project.stage_changes);
-
-                document.getElementById('scoringForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveGovernanceScore(projectId);
-                });
-
-                if (committeeScores.length > 0) {
-                    setTimeout(function() {
-                        toggleScorerNames();
-                    }, 100);
-                }
-
-                setTimeout(() => {
-                    const tooltipTriggerList = [].slice.call(scoringContent.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                    tooltipTriggerList.map(function (tooltipTriggerEl) {
-                        return new bootstrap.Tooltip(tooltipTriggerEl);
-                    });
-
-                    scoringContent.querySelectorAll('.score-input').forEach(input => {
-                        calculateWeightedScore(input);
-                    });
-                }, 100);
-            })
-            .catch(error => {
-                console.error('Error loading project details:', error);
-                scoringContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <h6>Error loading scoring details</h6>
-                        <p>${error.status === 403 ? 'You do not have permission to score this request.' : 'An unexpected error occurred while loading scoring information.'}</p>
-                    </div>
-                `;
-            });
-    }
-
-    updateActionButtons(getActiveTab());
                 `;
 
                 populateStageUpdates(project.stage_changes);
@@ -3473,8 +3023,6 @@ function openSuperuserScoringModal(projectId, modalType) {
             const userScore = data.user_score;
             const committeeScores = data.committee_scores || [];
             const committeeLabel = data.committee_label || 'Committee';
-            const committeeScores = data.committee_scores || [];
-            const committeeLabel = data.committee_label || 'Committee';
             
             // Create the modal content with project details and scoring form
             modalBody.innerHTML = `
@@ -3581,29 +3129,12 @@ function openSuperuserScoringModal(projectId, modalType) {
                         </div>` : ''}
                     </div>
                     ${committeeScores.length > 0 ? `
-                <div class="committee-scores-section mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="section-header small mb-0">${committeeLabel} Scores</h6>
-                        ${committeeScores.length > 0 ? `
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="hideScorerNames" checked onchange="toggleScorerNames()">
-                            <label class="form-check-label small" for="hideScorerNames">
-                                Hide scorer names
-                            </label>
-                        </div>` : ''}
-                    </div>
-                    ${committeeScores.length > 0 ? `
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered" id="scoresTable">
                         <table class="table table-sm table-bordered" id="scoresTable">
                             <thead>
                                 <tr>
                                     <th class="scorer-name-column">Scored By</th>
-                                    <th class="scorer-name-column">Scored By</th>
                                     <th>Strategic</th>
-                                    <th>Cost</th>
-                                    <th>Impact</th>
-                                    <th>Ease</th>
                                     <th>Cost</th>
                                     <th>Impact</th>
                                     <th>Ease</th>
@@ -3611,30 +3142,11 @@ function openSuperuserScoringModal(projectId, modalType) {
                                     <th>Security</th>
                                     <th>Student</th>
                                     <th>Final</th>
-                                    <th>Student</th>
-                                    <th>Final</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${committeeScores.map(score => `
-                                ${committeeScores.map(score => `
                                     <tr>
-                                        <td class="small scorer-name-cell">${score.scored_by}</td>
-                                        <td class="text-center">${score.strategic_alignment != null ? score.strategic_alignment : '-'}</td>
-                                        <td class="text-center">${score.cost_benefit != null ? score.cost_benefit : '-'}</td>
-                                        <td class="text-center">${score.user_impact != null ? score.user_impact : '-'}</td>
-                                        <td class="text-center">${score.ease_of_implementation != null ? score.ease_of_implementation : '-'}</td>
-                                        <td class="text-center">${score.vendor_reputation_support != null ? score.vendor_reputation_support : '-'}</td>
-                                        <td class="text-center">${score.security_compliance != null ? score.security_compliance : '-'}</td>
-                                        <td class="text-center">${score.student_centered != null ? score.student_centered : '-'}</td>
-                                        <td class="text-center fw-bold">${score.final_score != null ? Number(score.final_score).toFixed(2) : '-'}</td>
-                                    </tr>
-                                    <tr class="notes-row">
-                                        <td colspan="9" class="small text-muted" style="padding-left: 1rem; padding-top: 0.25rem; padding-bottom: 0.5rem;">
-                                            <strong>Notes:</strong> ${score.scoring_notes && score.scoring_notes.trim() ? 
-                                                score.scoring_notes.trim() : 
-                                                'Member did not provide any scoring notes.'}
-                                        </td>
                                         <td class="small scorer-name-cell">${score.scored_by}</td>
                                         <td class="text-center">${score.strategic_alignment != null ? score.strategic_alignment : '-'}</td>
                                         <td class="text-center">${score.cost_benefit != null ? score.cost_benefit : '-'}</td>
@@ -3655,20 +3167,6 @@ function openSuperuserScoringModal(projectId, modalType) {
                                 `).join('')}
                             </tbody>
                         </table>
-                    </div>` : `
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-info-circle me-2"></i>
-                        No scores have been submitted yet by this committee.
-                    </div>`}
-                </div>
-            `;
-
-            if (committeeScores.length > 0) {
-                setTimeout(() => {
-                    toggleScorerNames();
-                }, 100);
-            }
-
                     </div>` : `
                     <div class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
@@ -3939,33 +3437,20 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.forEach(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-
-    // Initialize Bootstrap tooltips for static page elements
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
 });
 
 // Global autocomplete function
 function initializeTechnicianAutocomplete() {
     console.log('Initializing technician autocomplete');
-function initializeTechnicianAutocomplete() {
-    console.log('Initializing technician autocomplete');
     
     const technicianInput = document.getElementById('technician');
     const suggestionsDiv = document.getElementById('technician_suggestions');
-    const technicianInput = document.getElementById('technician');
-    const suggestionsDiv = document.getElementById('technician_suggestions');
     
-    if (!technicianInput || !suggestionsDiv) {
-        console.log('Technician input or suggestions div not found');
     if (!technicianInput || !suggestionsDiv) {
         console.log('Technician input or suggestions div not found');
         return;
     }
     
-    console.log('Technician input and suggestions div found');
     console.log('Technician input and suggestions div found');
     
     let currentFocus = -1;
@@ -3988,10 +3473,7 @@ function initializeTechnicianAutocomplete() {
     // Remove any existing event listeners
     const newTechnicianInput = technicianInput.cloneNode(true);
     technicianInput.parentNode.replaceChild(newTechnicianInput, technicianInput);
-    const newTechnicianInput = technicianInput.cloneNode(true);
-    technicianInput.parentNode.replaceChild(newTechnicianInput, technicianInput);
     
-    newTechnicianInput.addEventListener('input', function() {
     newTechnicianInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         currentFocus = -1;
@@ -4029,7 +3511,6 @@ function initializeTechnicianAutocomplete() {
             
             suggestion.addEventListener('click', function() {
                 newTechnicianInput.value = user.full_name;
-                newTechnicianInput.value = user.full_name;
                 suggestionsDiv.style.display = 'none';
             });
             
@@ -4040,7 +3521,6 @@ function initializeTechnicianAutocomplete() {
     });
     
     // Handle keyboard navigation
-    newTechnicianInput.addEventListener('keydown', function(e) {
     newTechnicianInput.addEventListener('keydown', function(e) {
         const suggestions = suggestionsDiv.querySelectorAll('.autocomplete-suggestion');
         
@@ -4185,9 +3665,6 @@ function deleteRequest(projectId) {
 // Function to toggle scorer names visibility
 function toggleScorerNames() {
     const checkbox = document.getElementById('hideScorerNames');
-    if (!checkbox) {
-        return;
-    }
     if (!checkbox) {
         return;
     }
