@@ -16,27 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+import cas.views
 
-# Build CAS-specific URL patterns only when CAS is enabled
-cas_urlpatterns = []
-if getattr(settings, "ENABLE_CAS", False):
-    from cas import views as cas_views
-
-    cas_urlpatterns.extend([
-        path('cas-login/', cas_views.login, name='cas_login'),
-        path('cas-logout/', cas_views.logout, name='cas_logout'),
-        # Override admin auth views to use CAS
-        path('admin/login/', cas_views.login, name='admin_login'),
-        path('admin/logout/', cas_views.logout, name='admin_logout'),
-    ])
-
-urlpatterns = cas_urlpatterns + [
+urlpatterns = [
+    # CAS login URLs
+    path('cas-login/', cas.views.login, name='cas_login'),
+    path('cas-logout/', cas.views.logout, name='cas_logout'),
+    # CAS admin overrides - must come BEFORE admin URLs
+    path('admin/login/', cas.views.login, name='admin_login'),
+    path('admin/logout/', cas.views.logout, name='admin_logout'),
     path('admin/', admin.site.urls),
-    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/', include('allauth.urls')),
     path('', include('projects.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
