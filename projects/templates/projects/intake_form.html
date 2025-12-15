@@ -218,13 +218,13 @@
 
         
 
-        <!-- Technician Information -->
-        <div class="form-section">
+        <!-- Technician Information - Hidden -->
+        <div class="form-section" style="display: none;">
             <h3>Technician Information</h3>
             
             <div class="mb-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor">
+                    <input class="form-check-input" type="checkbox" id="same_as_requestor" name="same_as_requestor" checked>
                     <label class="form-check-label" for="same_as_requestor">
                         Technician is same as requestor
                     </label>
@@ -399,14 +399,28 @@ function removeFile(index) {
     updateFileList();
 }
 
-// Contact person same as requestor functionality
+// Contact person same as requestor functionality - Auto-populate technician fields with requestor info
 const sameAsRequestorCheckbox = document.getElementById('same_as_requestor');
 const technicianField = document.getElementById('technician');
 const contactEmailField = document.getElementById('contact_email');
 
+// Auto-populate technician fields with requestor information on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Get current user information
+    const requestorName = '{{ user.first_name }} {{ user.last_name }}'.trim() || '{{ user.username }}';
+    const requestorEmail = '{{ user.email }}';
+    
+    // Auto-fill the fields with requestor info (section is hidden, but fields are populated)
+    if (technicianField && contactEmailField) {
+        technicianField.value = requestorName;
+        contactEmailField.value = requestorEmail;
+        sameAsRequestorCheckbox.checked = true;
+    }
+});
+
 sameAsRequestorCheckbox.addEventListener('change', function() {
     if (this.checked) {
-        // Get current user information (we'll need to pass this from the backend)
+        // Get current user information
         const requestorName = '{{ user.first_name }} {{ user.last_name }}'.trim() || '{{ user.username }}';
         const requestorEmail = '{{ user.email }}';
         
@@ -428,17 +442,17 @@ sameAsRequestorCheckbox.addEventListener('change', function() {
     }
 });
 
-// Form validation
+// Form validation - technician fields are hidden but still required
 document.getElementById('intakeForm').addEventListener('submit', function(e) {
-         const requiredFields = ['title', 'description', 'technician', 'contact_email'];
+    const requiredFields = ['title', 'description', 'technician', 'contact_email'];
     let isValid = true;
     
     requiredFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
-        if (!field.value.trim()) {
+        if (field && !field.value.trim()) {
             field.classList.add('is-invalid');
             isValid = false;
-        } else {
+        } else if (field) {
             field.classList.remove('is-invalid');
         }
     });
