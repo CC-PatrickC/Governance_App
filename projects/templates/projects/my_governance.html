@@ -1,5 +1,6 @@
 {% extends 'base_cc.html' %}
 {% load tz %}
+{% load project_tags %}
 
 {% block title %}MyGovernance{% endblock %}
 
@@ -860,6 +861,25 @@
         border-color: #D09B2C;
         box-shadow: 0 0 0 0.2rem rgba(208, 155, 44, 0.25);
     }
+
+    /* Scoring Status Badges */
+    .cc-scoring-status {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .cc-scoring-status .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .cc-scoring-status .badge i {
+        font-size: 0.75rem;
+    }
 </style>
 {% endblock %}
 
@@ -1060,7 +1080,7 @@
                         <div class="cc-project-card governance-card" data-project-id="{{ project.id }}" style="cursor: pointer;" onclick="openGovernanceScoringModal({{ project.id }})">
                             <div class="cc-project-header">
                                 <div class="cc-project-title">{{ project.title }}</div>
-                                <div class="cc-project-id">#{{ project.id|stringformat:"03d" }}</div>
+                                <div class="cc-project-id">#{{ project.formatted_id }}</div>
                             </div>
                             <div class="cc-project-body">
                                 <div class="cc-project-description">
@@ -1100,6 +1120,25 @@
                                         Unknown
                                     {% endif %}
                                     on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                                
+                                <!-- Scoring Status Indicator -->
+                                <div class="cc-scoring-status">
+                                    {% if project|has_user_scored:user %}
+                                        {% if project|is_scoring_complete_for_user:user %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Scoring Complete
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-edit"></i> Scoring In Progress
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-star"></i> Not Scored
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -1167,6 +1206,25 @@
                                         Unknown
                                     {% endif %}
                                     on {% timezone "America/Denver" %}{{ project.submission_date|date:'M d, Y' }}{% endtimezone %}
+                                </div>
+                                
+                                <!-- Scoring Status Indicator -->
+                                <div class="cc-scoring-status">
+                                    {% if project|has_user_scored:user %}
+                                        {% if project|is_scoring_complete_for_user:user %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Scoring Complete
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-edit"></i> Scoring In Progress
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-star"></i> Not Scored
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

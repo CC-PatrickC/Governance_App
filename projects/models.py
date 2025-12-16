@@ -146,6 +146,34 @@ class Project(models.Model):
             self.final_score = avg_score
             self.save(update_fields=['final_score'])
 
+    def has_user_scored(self, user):
+        """Check if a specific user has already scored this project"""
+        return self.scores.filter(scored_by=user).exists()
+    
+    def get_user_score(self, user):
+        """Get the ProjectScore instance for a specific user, if it exists"""
+        try:
+            return self.scores.get(scored_by=user)
+        except ProjectScore.DoesNotExist:
+            return None
+    
+    def is_scoring_complete_for_user(self, user):
+        """Check if user has completed all scoring criteria for this project"""
+        user_score = self.get_user_score(user)
+        if not user_score:
+            return False
+        
+        # Check if all required scoring fields are filled
+        return all([
+            user_score.strategic_alignment,
+            user_score.cost_benefit,
+            user_score.user_impact,
+            user_score.ease_of_implementation,
+            user_score.vendor_reputation_support,
+            user_score.security_compliance,
+            user_score.student_centered
+        ])
+
     class Meta:
         ordering = ['-submission_date']
         db_table = 'project_requests'

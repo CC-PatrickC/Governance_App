@@ -40,4 +40,19 @@ def has_group(user, group_name):
 @register.filter
 def get_item(dictionary, key):
     """Get an item from a dictionary using a key"""
-    return dictionary.get(key) 
+    return dictionary.get(key)
+
+@register.filter
+def has_user_scored(project, user):
+    """Check if a user has scored a project"""
+    return project.has_user_scored(user)
+
+@register.filter
+def is_scoring_complete_for_user(project, user):
+    """Check if a user has completed scoring for a project"""
+    return project.is_scoring_complete_for_user(user)
+
+@register.filter
+def get_user_score(project, user):
+    """Get the user's score object for a project"""
+    return project.get_user_score(user) 
