@@ -82,7 +82,7 @@ def track_project_changes(project, form_data, user):
         'priority': 'Priority',
         'stage': 'Stage',
         'department': 'Department',
-        'technician': 'Technician',
+        'technician': 'Point of Contact',
         'contact_email': 'Contact Email',
     }
     

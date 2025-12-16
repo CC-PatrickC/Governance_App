@@ -10,6 +10,7 @@ class ProjectForm(forms.ModelForm):
         }
         labels = {
             'title': 'Subject',
+            'technician': 'Point of Contact',
         }
 
     def __init__(self, *args, **kwargs):
