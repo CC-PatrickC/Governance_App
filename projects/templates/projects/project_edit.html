@@ -76,6 +76,12 @@
                     <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
                 </div>
 
+                <div class="mb-3">
+                    <label for="request_by" class="form-label">Request By</label>
+                    <input type="text" class="form-control" id="request_by" name="request_by" value="{{ project.request_by|default:'' }}" placeholder="Person or entity making the request">
+                    <small class="form-text text-muted">Specify who is making this request (can be different from the submitter).</small>
+                </div>
+
                 <div class="mb-3" style="position: relative;">
                     <label for="technician" class="form-label">Technician</label>
                     <input type="text" 

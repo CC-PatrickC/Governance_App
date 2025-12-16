@@ -596,7 +596,7 @@
                     {% endif %}
 
                     <div class="cc-project-meta-requested">
-                        Requested by: 
+                        <strong>Requested by:</strong> 
                         {% if project.submitted_by %}
                             {{ project.submitted_by.get_full_name|default:project.submitted_by.username }}
                         {% else %}

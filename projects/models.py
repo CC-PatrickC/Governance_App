@@ -94,7 +94,7 @@ class Project(models.Model):
 
     @property
     def formatted_id(self):
-        return f"PRJ-{self.id:03d}"
+        return f"REQ-{self.id:03d}"
 
     @property
     def average_score(self):

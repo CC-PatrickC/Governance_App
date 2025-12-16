@@ -470,7 +470,7 @@ def project_update_ajax(request, pk):
         logger.info(f"Stage after setting: {project.stage}")
         
         project.department = request.POST.get('department', '')
-        project.notes = request.POST.get('notes', '')
+        project.request_by = request.POST.get('request_by', '')
         
         # Update triage information
         new_triage_notes = request.POST.get('triage_notes', '')
