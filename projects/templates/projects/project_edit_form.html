@@ -101,6 +101,19 @@
         <label for="title" class="form-label">Request Title *</label>
         <input type="text" class="form-control" id="title" name="title" value="{{ project.title }}" required>
     </div>
+
+    <div class="mb-3" style="position: relative;">
+        <label for="technician" class="form-label">Point of Contact</label>
+        <input type="text" 
+               class="form-control" 
+               id="technician" 
+               name="technician" 
+               value="{{ project.technician|default:'' }}"
+               placeholder="Start typing to search users..."
+               autocomplete="off">
+        <div id="technician_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+        <small class="form-text text-muted">Type to search and assign the point of contact for this request.</small>
+    </div>
     
     <div class="mb-3">
         <label for="description" class="form-label">Description *</label>
@@ -145,19 +158,6 @@
     <div class="mb-3">
         <label for="department" class="form-label">Department</label>
         <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
-    </div>
-
-    <div class="mb-3" style="position: relative;">
-        <label for="technician" class="form-label">Point of Contact</label>
-        <input type="text" 
-               class="form-control" 
-               id="technician" 
-               name="technician" 
-               value="{{ project.technician|default:'' }}"
-               placeholder="Start typing to search users..."
-               autocomplete="off">
-        <div id="technician_suggestions" class="autocomplete-suggestions" style="display: none;"></div>
-        <small class="form-text text-muted">Type to search and assign the point of contact for this request.</small>
     </div>
 
     <div class="mb-3">
