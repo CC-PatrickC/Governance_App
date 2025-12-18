@@ -55,8 +55,7 @@ def is_triage_lead_user(user):
 
 def is_actual_triage_user(user):
     """Check if user is in actual triage groups (not governance leads with triage permissions)"""
-    return (user.is_staff or 
-            user.groups.filter(name='Triage Group').exists() or
+    return (user.groups.filter(name='Triage Group').exists() or
             user.groups.filter(name='Triage Group Lead').exists())
 
 def is_ai_governance_user(user):
