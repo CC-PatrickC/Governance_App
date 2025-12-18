@@ -1992,11 +1992,7 @@ function submitTriageEditForm(form, projectId) {
 
 // Function to open governance scoring modal
 function openGovernanceScoringModal(projectId) {
-    {% if is_triage_user and not is_superuser or is_triage_lead_user and not is_superuser %}
-    // Triage users (but not superusers) get the edit form instead of scoring modal
-    openTriageEditModal(projectId);
-    return;
-    {% endif %}
+    // Governance users (including leads) should always see governance scoring modal
     
     const modal = new bootstrap.Modal(document.getElementById('projectDetailsModal'));
     const modalBody = document.querySelector('#projectDetailsModal .modal-body');
