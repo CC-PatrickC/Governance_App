@@ -82,6 +82,13 @@ def is_process_improvement_user(user):
 def is_process_improvement_lead_user(user):
     return user.is_staff or user.groups.filter(name='Process Improvement Group Lead').exists()
 
+def is_any_governance_lead(user):
+    """Check if user is a governance lead (any type)"""
+    return (is_ai_governance_lead_user(user) or
+            is_erp_governance_lead_user(user) or
+            is_it_governance_lead_user(user) or
+            is_process_improvement_lead_user(user))
+
 def track_project_changes(project, form_data, user):
     """Track changes made to project fields during triage updates"""
     # Define fields to track with their human-readable labels
@@ -661,6 +668,11 @@ def project_detail(request, pk):
             is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user) or
             request.user.is_staff):
             return redirect('projects:project_scoring', pk=pk)
+    
+    # If user is a governance lead, they should NOT be redirected to triage for non-governance projects
+    # They should see the regular project detail view unless it's a governance stage project (handled above)
+    if is_any_governance_lead(request.user):
+        return render(request, 'projects/project_detail.html', {'project': project})
     
     # If user is an actual triage team member, redirect them to the edit form (unless request is closed)
     if is_actual_triage_user(request.user) and project.stage != 'Governance_Closure':
