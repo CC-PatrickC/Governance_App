@@ -53,6 +53,12 @@ def is_triage_user(user):
 def is_triage_lead_user(user):
     return user.is_staff or user.groups.filter(name='Triage Group Lead').exists()
 
+def is_actual_triage_user(user):
+    """Check if user is in actual triage groups (not governance leads with triage permissions)"""
+    return (user.is_staff or 
+            user.groups.filter(name='Triage Group').exists() or
+            user.groups.filter(name='Triage Group Lead').exists())
+
 def is_ai_governance_user(user):
     return user.is_staff or user.groups.filter(name='AI Governance Group').exists()
 
@@ -647,8 +653,18 @@ def project_create(request):
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
-    # If user is a triage team member, redirect them to the edit form (unless request is closed)
-    if (is_triage_user(request.user) or is_triage_lead_user(request.user)) and project.stage != 'Governance_Closure':
+    # If project is in governance stage and user has governance permissions, redirect to scoring
+    if project.stage in ['Under_Review_governance', 'Under_Review_Final_governance']:
+        # Check if user has scoring permissions (governance users)
+        if (is_ai_governance_user(request.user) or is_ai_governance_lead_user(request.user) or
+            is_erp_governance_user(request.user) or is_erp_governance_lead_user(request.user) or
+            is_it_governance_user(request.user) or is_it_governance_lead_user(request.user) or
+            is_process_improvement_user(request.user) or is_process_improvement_lead_user(request.user) or
+            request.user.is_staff):
+            return redirect('projects:project_scoring', pk=pk)
+    
+    # If user is an actual triage team member, redirect them to the edit form (unless request is closed)
+    if is_actual_triage_user(request.user) and project.stage != 'Governance_Closure':
         return redirect('projects:project_update', pk=pk)
     
     return render(request, 'projects/project_detail.html', {'project': project})
