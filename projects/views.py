@@ -43,7 +43,12 @@ def sync_status_with_stage(project):
     return project
 
 def is_triage_user(user):
-    return user.is_staff or user.groups.filter(name='Triage Group').exists()
+    return (user.is_staff or 
+            user.groups.filter(name='Triage Group').exists() or
+            user.groups.filter(name='AI Governance Group Lead').exists() or
+            user.groups.filter(name='ERP Governance Group Lead').exists() or
+            user.groups.filter(name='IT Governance Group Lead').exists() or
+            user.groups.filter(name='Process Improvement Group Lead').exists())
 
 def is_triage_lead_user(user):
     return user.is_staff or user.groups.filter(name='Triage Group Lead').exists()
