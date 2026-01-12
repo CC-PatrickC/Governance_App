@@ -2095,7 +2095,7 @@ function loadGovernanceScoringContent(projectId) {
             const committeeLabel = data.committee_label;
             
             // Create the modal content with project details and scoring form
-            modalBody.innerHTML = `
+            scoringContent.innerHTML = `
                 <div class="mb-3">
                     <h5 class="mb-2">${project.title}</h5>
                     <p class="text-muted small mb-3">${project.description || 'No description available.'}</p>
@@ -2418,7 +2418,7 @@ function loadGovernanceScoringContent(projectId) {
         })
         .catch(error => {
             console.error('Error loading project details:', error);
-            modalBody.innerHTML = '<div class="alert alert-danger">Error loading project details and scoring form.</div>';
+            scoringContent.innerHTML = '<div class="alert alert-danger">Error loading project details and scoring form.</div>';
         });
 }
 
