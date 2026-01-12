@@ -89,6 +89,59 @@ def is_any_governance_lead(user):
             is_it_governance_lead_user(user) or
             is_process_improvement_lead_user(user))
 
+@login_required
+@require_POST
+def governance_stage_update(request, pk):
+    """Allow governance leads to update project stages through governance workflow"""
+    project = get_object_or_404(Project, pk=pk)
+    
+    # Check if user is a governance lead or has triage permissions
+    if not (is_any_governance_lead(request.user) or is_triage_user(request.user)):
+        return JsonResponse({'success': False, 'error': 'You do not have permission to update project stages.'})
+    
+    new_stage = request.POST.get('stage')
+    if not new_stage:
+        return JsonResponse({'success': False, 'error': 'Stage is required.'})
+    
+    # Validate stage
+    valid_stages = dict(Project.STAGE_CHOICES).keys()
+    if new_stage not in valid_stages:
+        return JsonResponse({'success': False, 'error': 'Invalid stage selected.'})
+    
+    # Track the change
+    old_stage = project.stage
+    project.stage = new_stage
+    
+    # Auto-assign final priority rank when moving to Under_Review_Final_governance
+    if new_stage == 'Under_Review_Final_governance' and project.final_priority is None:
+        max_priority = Project.objects.filter(
+            stage='Under_Review_Final_governance',
+        ).aggregate(models.Max('final_priority'))['final_priority__max']
+        project.final_priority = (max_priority or 0) + 1
+    
+    # Sync status with stage
+    project = sync_status_with_stage(project)
+    project.save()
+    
+    # Log the change
+    logger.info(f"Governance stage update: Project {pk} moved from '{old_stage}' to '{new_stage}' by {request.user}")
+    
+    # Create a triage change record
+    TriageChange.objects.create(
+        project=project,
+        field_name='stage',
+        old_value=old_stage,
+        new_value=new_stage,
+        changed_by=request.user
+    )
+    
+    return JsonResponse({
+        'success': True, 
+        'message': f'Project moved to {dict(Project.STAGE_CHOICES)[new_stage]}',
+        'new_stage': new_stage,
+        'stage_display': dict(Project.STAGE_CHOICES)[new_stage]
+    })
+
 def track_project_changes(project, form_data, user):
     """Track changes made to project fields during triage updates"""
     # Define fields to track with their human-readable labels

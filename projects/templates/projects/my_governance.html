@@ -1999,24 +1999,85 @@ function openGovernanceScoringModal(projectId) {
     const modalTitle = document.querySelector('#projectDetailsModal .modal-title');
     const saveBtn = document.getElementById('saveChangesBtn');
     
-    // Update modal title
-    modalTitle.textContent = 'Project Scoring - Governance';
+    // Check if user is governance lead to show triage tab
+    const isGovernanceLead = {% if is_ai_governance_lead_user or is_erp_governance_lead_user or is_it_governance_lead_user or is_process_improvement_lead_user %}true{% else %}false{% endif %};
+    
+    // Update modal title with tabs
+    modalTitle.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span class="me-3">Under Review - Governance</span>
+            <ul class="nav nav-pills nav-sm" id="governanceModalTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="scoring-tab" data-bs-toggle="pill" data-bs-target="#scoring-content" 
+                            type="button" role="tab" aria-controls="scoring-content" aria-selected="true">
+                        Scoring
+                    </button>
+                </li>
+                ${isGovernanceLead ? `
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="triage-tab" data-bs-toggle="pill" data-bs-target="#triage-content" 
+                            type="button" role="tab" aria-controls="triage-content" aria-selected="false">
+                        Triage
+                    </button>
+                </li>
+                ` : ''}
+            </ul>
+        </div>
+    `;
     
     // Hide save button for scoring modal
     saveBtn.style.display = 'none';
     
-    // Show loading state
+    // Create tabbed content structure
     modalBody.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <div class="tab-content" id="governanceModalContent">
+            <div class="tab-pane fade show active" id="scoring-content" role="tabpanel" aria-labelledby="scoring-tab">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading project scoring details...</p>
+                </div>
             </div>
-            <p class="mt-2">Loading project details and scoring form...</p>
+            ${isGovernanceLead ? `
+            <div class="tab-pane fade" id="triage-content" role="tabpanel" aria-labelledby="triage-tab">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading project triage interface...</p>
+                </div>
+            </div>
+            ` : ''}
         </div>
     `;
     
     // Show modal
     modal.show();
+    
+    // Load scoring content by default
+    loadGovernanceScoringContent(projectId);
+    
+    // Add event listeners for tab switching
+    if (isGovernanceLead) {
+        document.getElementById('scoring-tab').addEventListener('click', () => loadGovernanceScoringContent(projectId));
+        document.getElementById('triage-tab').addEventListener('click', () => loadGovernanceTriageContent(projectId));
+    }
+}
+
+// Helper function to load governance scoring content
+function loadGovernanceScoringContent(projectId) {
+    const scoringContent = document.getElementById('scoring-content');
+    
+    // Show loading state
+    scoringContent.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project scoring details...</p>
+        </div>
+    `;
     
     // Load project details and scoring form
     fetch(`/${projectId}/scoring-details-modal/`)
@@ -3084,6 +3145,189 @@ function openSuperuserReadOnlyModal(projectId, modalType) {
                 </div>
             `;
         });
+}
+
+// Helper function to load governance triage content
+function loadGovernanceTriageContent(projectId) {
+    const triageContent = document.getElementById('triage-content');
+    
+    // Show loading state
+    triageContent.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading project triage interface...</p>
+        </div>
+    `;
+    
+    // Load project triage form
+    fetch(`/${projectId}/edit-form/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            triageContent.innerHTML = html;
+            
+            // Add stage management controls for governance leads
+            addStageManagementControls(projectId, triageContent);
+            
+            // Initialize form handlers
+            const form = triageContent.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitTriageEditForm(form, projectId);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading triage interface:', error);
+            triageContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Unable to load triage interface. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Helper function to add stage management controls for governance leads
+function addStageManagementControls(projectId, container) {
+    const stageField = container.querySelector('select[name="stage"]');
+    if (!stageField) return;
+    
+    // Add stage update buttons for governance stages
+    const stageContainer = stageField.closest('.form-group') || stageField.parentElement;
+    
+    const stageButtons = document.createElement('div');
+    stageButtons.className = 'mt-2';
+    stageButtons.innerHTML = `
+        <small class="text-muted d-block mb-2">Quick Stage Actions:</small>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="updateProjectStage(${projectId}, 'Under_Review_Final_governance')">
+                <i class="fas fa-arrow-right me-1"></i>Move to Final Governance
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="updateProjectStage(${projectId}, 'Governance_Closure')">
+                <i class="fas fa-check me-1"></i>Close Project
+            </button>
+        </div>
+    `;
+    
+    stageContainer.appendChild(stageButtons);
+}
+
+// Helper function to update project stage via AJAX
+function updateProjectStage(projectId, newStage) {
+    const formData = new FormData();
+    formData.append('stage', newStage);
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    
+    fetch(`/${projectId}/governance-stage-update/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const triageContent = document.getElementById('triage-content');
+            triageContent.insertBefore(alert, triageContent.firstChild);
+            
+            // Update stage dropdown if it exists
+            const stageSelect = triageContent.querySelector('select[name="stage"]');
+            if (stageSelect) {
+                stageSelect.value = newStage;
+            }
+            
+            // Auto-refresh after a delay
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating stage:', error);
+        alert('Error updating project stage. Please try again.');
+    });
+}
+
+// Helper function to submit triage edit form
+function submitTriageEditForm(form, projectId) {
+    const formData = new FormData(form);
+    
+    // Show loading state
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    submitButton.disabled = true;
+    
+    fetch(form.action || `/${projectId}/edit/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.text();
+        }
+        throw new Error('Network response was not ok');
+    })
+    .then(html => {
+        // Show success message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show';
+        alert.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Project updated successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const triageContent = document.getElementById('triage-content');
+        triageContent.insertBefore(alert, triageContent.firstChild);
+        
+        // Refresh the page after a short delay
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        
+        // Show error message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> Unable to save changes. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const triageContent = document.getElementById('triage-content');
+        triageContent.insertBefore(alert, triageContent.firstChild);
+    })
+    .finally(() => {
+        // Restore button state
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+// Helper function to get CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
 // Function to open final scoring modal
