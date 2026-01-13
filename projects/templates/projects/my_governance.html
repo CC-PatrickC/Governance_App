@@ -3181,6 +3181,7 @@ function loadGovernanceTriageContent(projectId) {
             return response.text();
         })
         .then(html => {
+            console.log('Triage form loaded successfully');
             triageContent.innerHTML = html;
             
             // Add stage management controls for governance leads
@@ -3189,10 +3190,15 @@ function loadGovernanceTriageContent(projectId) {
             // Initialize form handlers
             const form = triageContent.querySelector('form');
             if (form) {
+                console.log('Form found, adding submit event listener');
+                console.log('Form action:', form.action);
                 form.addEventListener('submit', function(e) {
+                    console.log('Form submit intercepted');
                     e.preventDefault();
                     submitTriageEditForm(form, projectId);
                 });
+            } else {
+                console.error('No form found in triage content');
             }
         })
         .catch(error => {
@@ -3295,17 +3301,26 @@ function submitTriageEditForm(form, projectId) {
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
     submitButton.disabled = true;
     
+    // Get CSRF token from the form
+    const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+    
     fetch(form.action || `/${projectId}/edit/`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => {
+        console.log('Response status:', response.status);
         if (response.ok) {
             return response.text();
         }
-        throw new Error('Network response was not ok');
+        throw new Error(`HTTP error! status: ${response.status}`);
     })
     .then(html => {
+        console.log('Form submitted successfully');
         // Show success message
         const alert = document.createElement('div');
         alert.className = 'alert alert-success alert-dismissible fade show';
@@ -3335,12 +3350,12 @@ function submitTriageEditForm(form, projectId) {
     .catch(error => {
         console.error('Error submitting form:', error);
         
-        // Show error message
+        // Show error message with more details
         const alert = document.createElement('div');
         alert.className = 'alert alert-danger alert-dismissible fade show';
         alert.innerHTML = `
             <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Error:</strong> Unable to save changes. Please try again.
+            <strong>Error:</strong> Unable to save changes. ${error.message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         

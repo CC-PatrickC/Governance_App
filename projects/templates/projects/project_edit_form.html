@@ -94,7 +94,7 @@
 }
 </style>
 
-<form id="project-form" method="post" enctype="multipart/form-data" action="{% url 'projects:project_update' project.pk %}">>
+<form id="project-form" method="post" enctype="multipart/form-data" action="{% url 'projects:project_update' project.pk %}">
     {% csrf_token %}
     
     <div class="mb-3">
