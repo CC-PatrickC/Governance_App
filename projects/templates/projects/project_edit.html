@@ -312,7 +312,40 @@
 // Simple logging to verify JavaScript is loaded
 console.log('JavaScript loaded for project edit page');
 
+// Add form submission debugging
 document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('project-form');
+    
+    if (form) {
+        console.log('Form found, adding debug listeners');
+        
+        // Debug form submission
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            
+            // Get all form data
+            const formData = new FormData(form);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ':', value);
+            }
+            
+            // Don't prevent the form submission - let it proceed normally
+        });
+        
+        // Debug button clicks
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.addEventListener('click', function(e) {
+                console.log('Submit button clicked');
+            });
+        }
+    } else {
+        console.error('Form not found!');
+    }
+    
     const technicianInput = document.getElementById('technician');
     const suggestionsDiv = document.getElementById('technician_suggestions');
     let currentFocus = -1;

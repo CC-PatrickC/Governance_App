@@ -749,8 +749,14 @@ def project_update(request, pk):
     
     print(f"\n=== Project Update Debug ===")
     print(f"Request method: {request.method}")
+    print(f"Request path: {request.path}")
     print(f"User: {request.user}")
     print(f"User groups: {[g.name for g in request.user.groups.all()]}")
+    print(f"Project: {project.id} - {project.title}")
+    print(f"Current project values:")
+    print(f"  - Priority: {project.priority}")
+    print(f"  - Stage: {project.stage}")
+    print(f"  - Status: {project.status}")
     
     if request.method == 'POST':
         try:
