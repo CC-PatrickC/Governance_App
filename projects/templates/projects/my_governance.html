@@ -2504,9 +2504,20 @@ function saveGovernanceScore(projectId) {
     .then(data => {
         if (data.success) {
             saveStatus.innerHTML = '<i class="fas fa-check text-success"></i> Score saved successfully!';
+            
+            // Close modal and refresh the page after a short delay
             setTimeout(() => {
-                saveStatus.innerHTML = '';
-            }, 3000);
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Refresh the page
+                setTimeout(() => {
+                    location.reload();
+                }, 300); // Small delay to allow modal close animation
+            }, 1200);
         } else {
             saveStatus.innerHTML = `<i class="fas fa-exclamation-triangle text-danger"></i> ${data.message || 'Error saving score'}`;
             setTimeout(() => {
@@ -3251,10 +3262,19 @@ function updateProjectStage(projectId, newStage) {
                 stageSelect.value = newStage;
             }
             
-            // Auto-refresh after a delay
+            // Close modal and refresh after a delay
             setTimeout(() => {
-                location.reload();
-            }, 2000);
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Refresh the page
+                setTimeout(() => {
+                    location.reload();
+                }, 300); // Small delay to allow modal close animation
+            }, 1500);
         } else {
             alert('Error: ' + data.error);
         }
@@ -3298,10 +3318,19 @@ function submitTriageEditForm(form, projectId) {
         const triageContent = document.getElementById('triage-content');
         triageContent.insertBefore(alert, triageContent.firstChild);
         
-        // Refresh the page after a short delay
+        // Close modal and refresh the page after a short delay
         setTimeout(() => {
-            location.reload();
-        }, 1500);
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('projectDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Refresh the page
+            setTimeout(() => {
+                location.reload();
+            }, 300); // Small delay to allow modal close animation
+        }, 1200);
     })
     .catch(error => {
         console.error('Error submitting form:', error);
