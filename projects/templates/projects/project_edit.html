@@ -71,9 +71,22 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="department" class="form-label">Department</label>
-                    <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="stage" class="form-label">Stage *</label>
+                        <select class="form-select" id="stage" name="stage" required>
+                            {% for value, label in project.STAGE_CHOICES %}
+                            <option value="{{ value }}" {% if project.stage == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <input type="text" class="form-control" id="department" name="department" value="{{ project.department|default:'' }}">
+                    </div>
                 </div>
 
                 <div class="mb-3">

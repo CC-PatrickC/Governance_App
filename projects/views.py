@@ -777,6 +777,14 @@ def project_update(request, pk):
             project.notes = request.POST.get('notes', '')
             project.technician = request.POST.get('technician', '')
             
+            # Update status if provided
+            new_status = request.POST.get('status')
+            if new_status:
+                valid_statuses = dict(Project.STATUS_CHOICES).keys()
+                if new_status in valid_statuses:
+                    project.status = new_status
+                    print(f"Updated status to: {new_status}")
+            
             # Update stage if provided
             new_stage = request.POST.get('stage')
             if new_stage:
