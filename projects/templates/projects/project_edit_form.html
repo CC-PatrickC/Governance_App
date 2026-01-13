@@ -94,7 +94,7 @@
 }
 </style>
 
-<form id="project-form" method="post" enctype="multipart/form-data">
+<form id="project-form" method="post" enctype="multipart/form-data" action="{% url 'projects:project_update' project.pk %}">>
     {% csrf_token %}
     
     <div class="mb-3">
@@ -250,6 +250,12 @@
         </div>
     </div>
     {% endif %}
+
+    <div class="mt-4 d-flex justify-content-end">
+        <button type="submit" class="btn" style="background-color: #D09B2C; border-color: #D09B2C; color: black;">
+            <i class="fas fa-save me-2"></i>Save Changes
+        </button>
+    </div>
 </form>
 
 <script>
